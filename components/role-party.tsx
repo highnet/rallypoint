@@ -1,4 +1,5 @@
 import { Binoculars, BrushCleaning, Hammer, Map, ShieldCheck, Wrench } from "lucide-react";
+import Link from "next/link";
 
 const roles = [
   {
@@ -51,7 +52,12 @@ export function RoleParty() {
       {roles.map((role) => {
         const Icon = role.icon;
         return (
-          <article className="role-sheet" key={role.name}>
+          <Link
+            aria-label={`Open the ${role.name} role contract`}
+            className="role-sheet"
+            href={`/agents/${role.name.toLowerCase()}`}
+            key={role.name}
+          >
             <div className={`role-sigil ${role.color}`}>
               <Icon aria-hidden="true" />
             </div>
@@ -60,7 +66,8 @@ export function RoleParty() {
               <h3>{role.title}</h3>
               <p>{role.detail}</p>
             </div>
-          </article>
+            <span className="role-open" aria-hidden="true">Open contract →</span>
+          </Link>
         );
       })}
     </div>

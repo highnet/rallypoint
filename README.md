@@ -9,20 +9,21 @@ cleanup without requiring a backend or agent-specific runtime.
 
 ## Install
 
-Inspect the registry item:
+Inspect the first-party registry item:
 
 ```bash
-npx shadcn@latest view highnet/highnet-agentic-loop/loop
+npx rallypoint@latest view loop
 ```
 
 Install it:
 
 ```bash
-npx shadcn@latest add highnet/highnet-agentic-loop/loop
+npx rallypoint@latest add loop
 ```
 
-The repository must be public for anonymous GitHub-registry installation. The
-hosted registry endpoint can be used independently when the website is public.
+The zero-dependency CLI ships with Rallypoint’s own registry manifest. It
+verifies file checksums, refuses conflicting writes, supports `--dry-run`, and
+does not require this source repository to be public.
 
 ## Website
 
@@ -38,13 +39,37 @@ npm run dev
 ## Registry development
 
 Source files live under `registry/rallypoint/` and are declared in
-`registry.json`.
+`registry/manifest.json`.
 
 ```bash
-npx shadcn@latest build
+npm run registry:build
 ```
 
-This writes the distributable item to `public/r/loop.json`.
+This writes the distributable item to `public/registry/loop.json` and bundles
+the same payload into `packages/cli/registry/`.
+
+Test the unpublished CLI locally:
+
+```bash
+node packages/cli/bin/rallypoint.mjs view loop
+node packages/cli/bin/rallypoint.mjs add loop --dry-run
+```
+
+## Publishing the CLI
+
+The website package at the repository root is intentionally private and must
+never be published. Publish only from the CLI package:
+
+```bash
+npm ci
+npm run cli:test
+npm pack ./packages/cli --dry-run
+cd packages/cli
+npm publish
+```
+
+The CLI package’s `prepublishOnly` hook rebuilds the checksummed registry before
+npm creates the release tarball.
 
 ## Protocol origin
 

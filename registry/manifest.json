@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "name": "rallypoint",
+  "items": [
+    {
+      "name": "loop",
+      "version": "0.1.0",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, and janitors.",
+      "files": [
+        { "source": "AGENTS.md", "target": "AGENTS.md" },
+        { "source": "docs/AGENT_LOOP.md", "target": "docs/AGENT_LOOP.md" },
+        { "source": ".rallypoint/config.json", "target": ".rallypoint/config.json" },
+        { "source": ".rallypoint/roles/planner.md", "target": ".rallypoint/roles/planner.md" },
+        { "source": ".rallypoint/roles/worker.md", "target": ".rallypoint/roles/worker.md" },
+        { "source": ".rallypoint/roles/reviewer.md", "target": ".rallypoint/roles/reviewer.md" },
+        { "source": ".rallypoint/roles/tester.md", "target": ".rallypoint/roles/tester.md" },
+        { "source": ".rallypoint/roles/fixer.md", "target": ".rallypoint/roles/fixer.md" },
+        { "source": ".rallypoint/roles/janitor.md", "target": ".rallypoint/roles/janitor.md" },
+        { "source": ".rallypoint/scripts/claim.mjs", "target": ".rallypoint/scripts/claim.mjs", "executable": true },
+        { "source": ".rallypoint/scripts/cleanup.mjs", "target": ".rallypoint/scripts/cleanup.mjs", "executable": true }
+      ]
+    }
+  ]
+}

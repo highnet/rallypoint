@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FileCode2, GitFork, PackagePlus } from "lucide-react";
+import { Check, FileCode2, PackagePlus, ScrollText } from "lucide-react";
 
 import { CommandCopy } from "@/components/command-copy";
 import { Button } from "@/components/ui/button";
@@ -15,25 +15,25 @@ const modes: Array<{
   detail: string;
 }> = [
   {
-    id: "shadcn",
-    label: "Registry",
+    id: "npm",
+    label: "npm",
     icon: PackagePlus,
-    command: "npx shadcn@latest add https://rallypoint.dev/r/loop.json",
-    detail: "Adds every protocol file at its intended repository path.",
+    command: "npx rallypoint@latest add loop",
+    detail: "Installs the campaign pack with Rallypoint’s own conflict-safe CLI.",
   },
   {
-    id: "github",
-    label: "GitHub",
-    icon: GitFork,
-    command: "npx shadcn@latest add highnet/highnet-agentic-loop/loop",
-    detail: "Install directly from the GitHub registry once the repository is public.",
+    id: "pnpm",
+    label: "pnpm",
+    icon: ScrollText,
+    command: "pnpm dlx rallypoint@latest add loop",
+    detail: "Runs the same first-party registry installer through pnpm.",
   },
   {
-    id: "manual",
+    id: "inspect",
     label: "Inspect first",
     icon: FileCode2,
-    command: "npx shadcn@latest view highnet/highnet-agentic-loop/loop",
-    detail: "Review the complete payload before writing anything.",
+    command: "npx rallypoint@latest view loop",
+    detail: "Shows every target and checksum without writing to your repository.",
   },
 ];
 
@@ -79,8 +79,8 @@ export function InstallPanel() {
         <CommandCopy command={selected.command} id={`install-${selected.id}`} />
         <p>{selected.detail}</p>
         <div className="install-notes">
-          <span><Check /> Additive</span>
-          <span><Check /> Reviewable</span>
+          <span><Check /> Conflict-safe</span>
+          <span><Check /> Dry-run ready</span>
           <span><Check /> Agent-agnostic</span>
         </div>
       </div>

@@ -96,6 +96,18 @@ body {
   min-height: 100vh;
 }
 
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -112,9 +124,7 @@ a {
 }
 
 .hero {
-  background:
-    radial-gradient(circle at 78% 30%, color-mix(in oklch, var(--quest) 8%, transparent) 0 9%, transparent 35%),
-    var(--surface-deep);
+  background: var(--surface-deep);
   color: var(--felt-foreground);
   min-height: 100svh;
   overflow: clip;
@@ -156,6 +166,98 @@ a {
   height: 34px;
   justify-content: center;
   width: 34px;
+  transition: filter 180ms ease, transform 180ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+button.wordmark-die {
+  cursor: pointer;
+  padding: 0;
+}
+
+.wordmark-die:hover,
+.wordmark-die:focus-visible {
+  filter: brightness(1.08);
+  outline: 2px solid var(--quest);
+  outline-offset: 3px;
+  transform: rotate(7deg) translateY(-2px);
+}
+
+.wordmark-die.is-rolling {
+  animation: die-roll 720ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.wordmark-die.is-critical {
+  background: var(--quest);
+  color: var(--quest-foreground);
+}
+
+.mobile-nav-trigger {
+  align-items: center;
+  background: var(--parchment);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--parchment-foreground);
+  display: none;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.mobile-nav-trigger svg {
+  height: 20px;
+  width: 20px;
+}
+
+.mobile-nav-layer {
+  inset: 0;
+  position: fixed;
+  z-index: 100;
+}
+
+.mobile-nav-backdrop {
+  background: color-mix(in oklch, black 58%, transparent);
+  border: 0;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.mobile-nav-sheet {
+  background: var(--parchment);
+  box-shadow: -20px 0 48px color-mix(in oklch, black 32%, transparent);
+  color: var(--parchment-foreground);
+  display: flex;
+  flex-direction: column;
+  inset-block: 0;
+  max-width: 360px;
+  padding: 34px 26px;
+  position: absolute;
+  right: 0;
+  width: min(86vw, 360px);
+}
+
+.mobile-nav-sheet > p {
+  border-bottom: 1px solid color-mix(in oklch, currentColor 28%, transparent);
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1.35rem;
+  margin: 54px 0 16px;
+  padding-bottom: 22px;
+}
+
+.mobile-nav-sheet a {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in oklch, currentColor 18%, transparent);
+  display: flex;
+  font-size: 1.15rem;
+  font-weight: 700;
+  gap: 18px;
+  min-height: 64px;
+}
+
+.mobile-nav-sheet a span {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.68rem;
+  opacity: 0.58;
 }
 
 .site-header nav {
@@ -237,6 +339,127 @@ a {
   z-index: 2;
 }
 
+.campaign-background {
+  inset: 0;
+  opacity: 0.48;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.campaign-background canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.audience-switch {
+  background: color-mix(in oklch, var(--surface-deep) 88%, black);
+  border: 1px solid color-mix(in oklch, var(--parchment) 28%, transparent);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 10px auto 0;
+  max-width: 1540px;
+  position: relative;
+  width: calc(100% - clamp(44px, 8vw, 128px));
+  z-index: 12;
+}
+
+.audience-switch button {
+  background: transparent;
+  border: 0;
+  color: color-mix(in oklch, var(--felt-foreground) 66%, transparent);
+  cursor: pointer;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.audience-switch button + button {
+  border-left: 1px solid color-mix(in oklch, var(--parchment) 24%, transparent);
+}
+
+.audience-switch button.is-selected {
+  background: var(--parchment);
+  color: var(--parchment-foreground);
+}
+
+.audience-panel {
+  position: relative;
+  z-index: 2;
+}
+
+.agent-quickstart {
+  margin: 0 auto;
+  max-width: 980px;
+  min-height: calc(100svh - 152px);
+  padding: clamp(54px, 8vw, 116px) clamp(22px, 5vw, 72px) 100px;
+}
+
+.agent-quickstart h1 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(3.6rem, 7vw, 6rem);
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  margin: 18px 0 28px;
+  max-width: 12ch;
+}
+
+.agent-quickstart > p:not(.agent-prompt, .agent-constraint) {
+  color: color-mix(in oklch, var(--felt-foreground) 82%, transparent);
+  font-size: 1.12rem;
+  line-height: 1.65;
+  max-width: 65ch;
+}
+
+.agent-prompt,
+.agent-constraint {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.agent-prompt {
+  color: var(--quest);
+}
+
+.agent-quickstart .command-well {
+  max-width: 760px;
+}
+
+.agent-route-list {
+  border-top: 1px solid color-mix(in oklch, var(--parchment) 28%, transparent);
+  margin-top: 48px;
+}
+
+.agent-route-list a {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in oklch, var(--parchment) 20%, transparent);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 190px 1fr;
+  min-height: 68px;
+}
+
+.agent-route-list code {
+  color: var(--quest);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+}
+
+.agent-route-list span {
+  color: color-mix(in oklch, var(--felt-foreground) 78%, transparent);
+}
+
+.agent-constraint {
+  border-left: 3px solid var(--quest);
+  color: color-mix(in oklch, var(--felt-foreground) 76%, transparent);
+  line-height: 1.6;
+  margin-top: 38px;
+  padding-left: 18px;
+}
+
 .hero-copy {
   max-width: 650px;
 }
@@ -262,7 +485,7 @@ a {
 .hero h1,
 .docs-hero h1 {
   font-family: "Palatino Linotype", Palatino, Georgia, serif;
-  font-size: clamp(4.2rem, 7vw, 7rem);
+  font-size: clamp(4.2rem, 7vw, 6rem);
   letter-spacing: -0.04em;
   line-height: 0.88;
   margin: 0;
@@ -303,6 +526,7 @@ a {
   max-width: 650px;
   min-height: 58px;
   padding: 8px 10px 8px 18px;
+  position: relative;
 }
 
 .command-well code {
@@ -324,6 +548,31 @@ a {
   height: 38px;
   padding: 0;
   width: 38px;
+}
+
+.copy-status {
+  background: var(--quest);
+  border-radius: 3px;
+  color: var(--quest-foreground);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.64rem;
+  font-weight: 800;
+  opacity: 0;
+  padding: 5px 8px;
+  pointer-events: none;
+  position: absolute;
+  right: 50px;
+  transform: translateY(4px);
+  transition: opacity 140ms ease, transform 180ms ease;
+}
+
+.copy-status:not(:empty) {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.copy-check {
+  animation: copy-pop 220ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .campaign-table {
@@ -359,7 +608,8 @@ a {
 
 .route-shadow,
 .route-track,
-.route-line {
+.route-line,
+.route-progress {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -384,6 +634,14 @@ a {
   stroke: var(--parchment-foreground);
   stroke-dasharray: 8 18;
   stroke-width: 3px;
+}
+
+.route-progress {
+  stroke: var(--quest);
+  stroke-dasharray: 100;
+  stroke-dashoffset: var(--route-offset);
+  stroke-width: 9px;
+  transition: stroke-dashoffset 520ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .map-stage {
@@ -530,7 +788,7 @@ a {
   max-width: 760px;
 }
 
-.section-heading > p,
+.section-note,
 .proof-section > div > p,
 .docs-kicker {
   color: color-mix(in oklch, currentColor 72%, transparent);
@@ -540,6 +798,14 @@ a {
   letter-spacing: 0.09em;
   margin: 0 0 18px;
   text-transform: uppercase;
+}
+
+.section-note {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1rem;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .section-heading h2,
@@ -642,6 +908,7 @@ a {
   grid-template-columns: 90px minmax(0, 1fr);
   min-height: 154px;
   padding: 24px clamp(4px, 1vw, 16px);
+  position: relative;
   transition: background 180ms ease-out, padding 180ms ease-out;
 }
 
@@ -673,11 +940,28 @@ a {
 .role-green { background: var(--green); color: white; }
 .role-slate { background: var(--slate); color: white; }
 
-.role-sheet > div:last-child {
+.role-sheet > div:nth-child(2) {
   align-items: baseline;
   display: grid;
   gap: 10px 24px;
   grid-template-columns: minmax(110px, 0.35fr) minmax(170px, 0.5fr) minmax(240px, 1fr);
+}
+
+.role-open {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.68rem;
+  opacity: 0;
+  position: absolute;
+  right: 20px;
+  top: 18px;
+  transform: translateX(-8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.role-sheet:hover .role-open,
+.role-sheet:focus-visible .role-open {
+  opacity: 0.68;
+  transform: translateX(0);
 }
 
 .role-name {
@@ -913,6 +1197,206 @@ footer > p {
   width: 20px;
 }
 
+/* Agent role contracts */
+.agent-page {
+  min-height: 100svh;
+}
+
+.agent-hero {
+  background: var(--surface-deep);
+  color: var(--felt-foreground);
+  min-height: 78svh;
+  overflow: clip;
+  position: relative;
+}
+
+.agent-hero .campaign-background {
+  opacity: 0.76;
+}
+
+.agent-hero-content {
+  margin: 0 auto;
+  max-width: 1540px;
+  padding: clamp(80px, 12vh, 150px) clamp(22px, 6vw, 96px) 110px;
+  position: relative;
+  z-index: 2;
+}
+
+.agent-hero-content .back-link {
+  color: color-mix(in oklch, var(--felt-foreground) 76%, transparent);
+  margin-bottom: clamp(50px, 8vh, 90px);
+}
+
+.agent-index {
+  color: var(--quest);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.agent-hero h1 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(5rem, 13vw, 9rem);
+  letter-spacing: -0.04em;
+  line-height: 0.8;
+  margin: 26px 0 20px;
+}
+
+.agent-title {
+  color: var(--quest);
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+  font-style: italic;
+  margin: 0;
+}
+
+.agent-summary {
+  color: color-mix(in oklch, var(--felt-foreground) 84%, transparent);
+  font-size: clamp(1.08rem, 1.6vw, 1.28rem);
+  line-height: 1.6;
+  margin: 34px 0 0;
+  max-width: 48ch;
+}
+
+.agent-contract {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1fr 1fr;
+  padding: 0;
+}
+
+.contract-column {
+  background: var(--parchment);
+  color: var(--parchment-foreground);
+  min-height: 520px;
+  padding: clamp(68px, 8vw, 120px) clamp(26px, 6vw, 96px);
+}
+
+.contract-never {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.contract-heading {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.contract-heading svg {
+  color: var(--quest);
+  flex: 0 0 auto;
+  height: 28px;
+  width: 28px;
+}
+
+.contract-heading h2 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(2.2rem, 4vw, 4.2rem);
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.contract-column ol,
+.contract-column ul {
+  border-top: 1px solid color-mix(in oklch, currentColor 28%, transparent);
+  list-style: none;
+  margin: 52px 0 0;
+  padding: 0;
+}
+
+.contract-column li {
+  border-bottom: 1px solid color-mix(in oklch, currentColor 20%, transparent);
+  font-size: 1.03rem;
+  line-height: 1.6;
+  padding: 22px 4px;
+}
+
+.contract-column ol {
+  counter-reset: contract-step;
+}
+
+.contract-column ol li {
+  counter-increment: contract-step;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 34px 1fr;
+}
+
+.contract-column ol li::before {
+  color: var(--quest);
+  content: counter(contract-step, decimal-leading-zero);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.7rem;
+  padding-top: 5px;
+}
+
+.contract-never li::before {
+  color: var(--red);
+  content: "×";
+  display: inline-block;
+  font-family: "Geist Mono", monospace;
+  font-weight: 900;
+  margin-right: 16px;
+}
+
+.handoff-sheet {
+  background: var(--quest);
+  color: var(--quest-foreground);
+  grid-column: 1 / -1;
+  padding: clamp(64px, 8vw, 116px) clamp(26px, 7vw, 110px);
+}
+
+.handoff-sheet > p,
+.next-role p {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 20px;
+  text-transform: uppercase;
+}
+
+.handoff-sheet h2 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(2.5rem, 5.5vw, 5.6rem);
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  margin: 0;
+  max-width: 18ch;
+}
+
+.handoff-sheet .command-well {
+  margin-top: 44px;
+  max-width: 560px;
+}
+
+.next-role {
+  align-items: center;
+  background: var(--surface-deep);
+  color: var(--felt-foreground);
+  display: flex;
+  gap: 50px;
+  justify-content: space-between;
+  padding: clamp(72px, 9vw, 130px) clamp(26px, 7vw, 110px);
+}
+
+.next-role p {
+  color: var(--quest);
+}
+
+.next-role h2 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(2.3rem, 4.5vw, 4.8rem);
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  margin: 0;
+  max-width: 15ch;
+}
+
 /* Docs */
 .docs-page {
   min-height: 100svh;
@@ -1085,6 +1569,18 @@ td:first-child {
   }
 }
 
+@keyframes die-roll {
+  0% { transform: rotate(0) scale(1); }
+  35% { transform: rotate(130deg) scale(1.18); }
+  72% { transform: rotate(260deg) scale(0.92); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes copy-pop {
+  0% { transform: scale(0.65) rotate(-12deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
 @media (max-width: 1100px) {
   .hero-grid {
     grid-template-columns: 1fr;
@@ -1120,8 +1616,12 @@ td:first-child {
     display: none;
   }
 
+  .mobile-nav-trigger {
+    display: inline-flex;
+  }
+
   .hero h1 {
-    font-size: clamp(3.9rem, 15vw, 6.2rem);
+    font-size: clamp(3.7rem, 14vw, 5.8rem);
   }
 
   .campaign-table {
@@ -1170,7 +1670,7 @@ td:first-child {
     transform: rotate(90deg);
   }
 
-  .role-sheet > div:last-child {
+  .role-sheet > div:nth-child(2) {
     align-items: start;
     grid-template-columns: 1fr;
   }
@@ -1193,6 +1693,19 @@ td:first-child {
   .footer-github {
     justify-self: start;
   }
+
+  .agent-contract {
+    grid-template-columns: 1fr;
+  }
+
+  .handoff-sheet {
+    grid-column: 1;
+  }
+
+  .next-role {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1205,11 +1718,12 @@ td:first-child {
   }
 
   .hero-grid {
-    padding-top: 44px;
+    padding-top: 34px;
   }
 
   .hero h1 {
-    max-width: 7ch;
+    font-size: clamp(3.2rem, 15.5vw, 4.7rem);
+    max-width: 7.5ch;
   }
 
   .hero-actions {
@@ -1225,6 +1739,40 @@ td:first-child {
     margin-inline: -16px;
     min-height: 350px;
     width: calc(100% + 32px);
+  }
+
+  .audience-switch {
+    margin-top: 4px;
+    width: calc(100% - 44px);
+  }
+
+  .audience-switch button {
+    font-size: 0.7rem;
+    min-height: 48px;
+    padding-inline: 8px;
+  }
+
+  .agent-quickstart {
+    padding-top: 58px;
+  }
+
+  .agent-quickstart h1 {
+    font-size: clamp(3.1rem, 14vw, 4.4rem);
+  }
+
+  .agent-route-list a {
+    align-items: start;
+    gap: 8px;
+    grid-template-columns: 1fr;
+    padding: 16px 0;
+  }
+
+  .command-well code {
+    font-size: 0.7rem;
+  }
+
+  .copy-status {
+    display: none;
   }
 
   .role-token {
@@ -1268,6 +1816,31 @@ td:first-child {
   }
 
   .mode-tabs button {
+    width: 100%;
+  }
+
+  .agent-hero {
+    min-height: 710px;
+  }
+
+  .agent-hero .campaign-background {
+    opacity: 0.58;
+  }
+
+  .agent-hero-content {
+    padding-top: 78px;
+  }
+
+  .agent-hero h1 {
+    font-size: clamp(4.5rem, 23vw, 6.5rem);
+  }
+
+  .contract-column {
+    min-height: auto;
+    padding-block: 74px;
+  }
+
+  .next-role a {
     width: 100%;
   }
 

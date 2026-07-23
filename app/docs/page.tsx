@@ -8,7 +8,9 @@ import {
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
+import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Wordmark } from "@/components/wordmark";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -25,10 +27,7 @@ export default function DocsPage() {
   return (
     <main className="docs-page">
       <header className="site-header docs-header">
-        <Link className="wordmark" href="/">
-          <span className="wordmark-die" aria-hidden="true">20</span>
-          Rallypoint
-        </Link>
+        <Wordmark />
         <nav aria-label="Documentation navigation">
           <a href="#principles">Principles</a>
           <a href="#roles">Roles</a>
@@ -43,6 +42,7 @@ export default function DocsPage() {
               <GitFork aria-hidden="true" />
           </a>
           <ThemeToggle />
+          <MobileNav />
         </div>
       </header>
 
@@ -139,16 +139,16 @@ export default function DocsPage() {
             <h2>Install the campaign pack</h2>
           </div>
           <p>
-            The registry writes documentation and prompt files to explicit
-            repository-root paths. Inspect the payload before accepting it if
-            your repository already has an AGENTS.md.
+            Rallypoint’s CLI reads its own signed campaign manifest and writes
+            each file to an explicit repository-root path. It stops on
+            conflicts, so an existing AGENTS.md is never silently replaced.
           </p>
           <CommandCopy
-            command="npx shadcn@latest view highnet/highnet-agentic-loop/loop"
+            command="npx rallypoint@latest view loop"
             id="docs-view"
           />
           <CommandCopy
-            command="npx shadcn@latest add highnet/highnet-agentic-loop/loop"
+            command="npx rallypoint@latest add loop"
             id="docs-install"
           />
           <a

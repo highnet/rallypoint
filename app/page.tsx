@@ -9,24 +9,26 @@ import {
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
+import { AudienceFork } from "@/components/audience-fork";
+import { CampaignBackground } from "@/components/campaign-background";
 import { InstallPanel } from "@/components/install-panel";
+import { MobileNav } from "@/components/mobile-nav";
 import { RoleParty } from "@/components/role-party";
 import { TabletopLoop } from "@/components/tabletop-loop";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Wordmark } from "@/components/wordmark";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const heroCommand = "npx shadcn@latest add highnet/highnet-agentic-loop/loop";
+const heroCommand = "npx rallypoint@latest add loop";
 
 export default function Home() {
   return (
     <main>
       <section className="hero" id="top">
+        <CampaignBackground />
         <header className="site-header">
-          <Link className="wordmark" href="#top" aria-label="Rallypoint home">
-            <span className="wordmark-die" aria-hidden="true">20</span>
-            Rallypoint
-          </Link>
+          <Wordmark href="#top" />
           <nav aria-label="Primary navigation">
             <Link href="#loop">The loop</Link>
             <Link href="#party">Roles</Link>
@@ -42,11 +44,14 @@ export default function Home() {
               <GitFork aria-hidden="true" />
             </a>
             <ThemeToggle />
+            <MobileNav />
           </div>
         </header>
 
-        <div className="hero-grid">
-          <div className="hero-copy">
+        <AudienceFork
+          human={
+            <div className="hero-grid">
+              <div className="hero-copy">
             <div className="campaign-stamp">
               <Sparkles aria-hidden="true" />
               GitHub-native agent orchestration
@@ -74,14 +79,16 @@ export default function Home() {
               </a>
             </div>
             <CommandCopy command={heroCommand} id="hero-command" />
-          </div>
-          <TabletopLoop />
-        </div>
+              </div>
+              <TabletopLoop />
+            </div>
+          }
+        />
       </section>
 
       <section className="manifesto" id="loop">
         <div className="section-heading">
-          <p>One shared campaign board</p>
+          <p className="section-note">One shared campaign board</p>
           <h2>Read state. Claim one quest. Earn the merge.</h2>
         </div>
         <div className="manifesto-copy">
@@ -113,7 +120,7 @@ export default function Home() {
 
       <section className="party-section" id="party">
         <div className="section-heading party-heading">
-          <p>Assemble the party</p>
+          <p className="section-note">Assemble the party</p>
           <h2>Separate roles. Explicit powers. Fewer collisions.</h2>
         </div>
         <RoleParty />
@@ -121,11 +128,11 @@ export default function Home() {
 
       <section className="install-section" id="install">
         <div className="section-heading install-heading">
-          <p>Drop it into an existing repo</p>
+          <p className="section-note">Drop it into an existing repo</p>
           <h2>One command installs the whole campaign.</h2>
           <span>
-            Built as a shadcn-compatible registry item: source-owned,
-            inspectable, and easy to remove.
+            Powered by Rallypoint’s own registry and zero-dependency CLI:
+            source-owned, inspectable, conflict-safe, and easy to remove.
           </span>
         </div>
         <InstallPanel />
@@ -154,10 +161,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <Link className="wordmark footer-wordmark" href="#top">
-          <span className="wordmark-die" aria-hidden="true">20</span>
-          Rallypoint
-        </Link>
+        <Wordmark className="footer-wordmark" href="#top" />
         <p>GitHub is the board. Agents are the party.</p>
         <a
           className="footer-github"

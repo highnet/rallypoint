@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, CheckCircle2, Flag, GitPullRequest, Hammer } from "lucide-react";
+import type { CSSProperties } from "react";
 
 import { useRallypointStore, type LoopStage } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,10 @@ const stages: Array<{
 export function TabletopLoop() {
   const activeStage = useRallypointStore((state) => state.activeStage);
   const setActiveStage = useRallypointStore((state) => state.setActiveStage);
+  const activeIndex = stages.findIndex((stage) => stage.id === activeStage);
+  const routeStyle = {
+    "--route-offset": `${100 - (activeIndex + 1) * 20}`,
+  } as CSSProperties;
 
   return (
     <div className="campaign-table" aria-label="The five-stage Rallypoint agent loop">
@@ -91,6 +96,12 @@ export function TabletopLoop() {
         <path
           className="route-line"
           d="M210 190 C390 75 570 80 700 135 C890 215 925 410 790 535 C650 665 350 640 205 520 C90 425 82 280 210 190 Z"
+        />
+        <path
+          className="route-progress"
+          d="M210 190 C390 75 570 80 700 135 C890 215 925 410 790 535 C650 665 350 640 205 520 C90 425 82 280 210 190 Z"
+          pathLength="100"
+          style={routeStyle}
         />
       </svg>
 

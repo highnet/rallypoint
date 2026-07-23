@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "rallypoint",
+  "items": [
+    {
+      "name": "loop",
+      "version": "0.1.0",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, and janitors.",
+      "fileCount": 11
+    }
+  ]
+}

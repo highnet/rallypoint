@@ -1,0 +1,36 @@
+{
+  "name": "rallypoint",
+  "version": "0.1.0",
+  "description": "Install Rallypoint agent coordination protocols into any repository.",
+  "type": "module",
+  "bin": {
+    "rallypoint": "./bin/rallypoint.mjs"
+  },
+  "scripts": {
+    "prepublishOnly": "node ../../scripts/build-registry.mjs"
+  },
+  "files": [
+    "bin",
+    "registry"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "agents",
+    "agentic",
+    "github",
+    "registry",
+    "cli"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/highnet/highnet-agentic-loop.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/highnet/highnet-agentic-loop#readme",
+  "bugs": {
+    "url": "https://github.com/highnet/highnet-agentic-loop/issues"
+  }
+}

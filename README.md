@@ -25,6 +25,18 @@ The zero-dependency CLI ships with Rallypoint’s own registry manifest. It
 verifies file checksums, refuses conflicting writes, supports `--dry-run`, and
 does not require this source repository to be public.
 
+Then bring the GitHub side of the repository up to date with the installed
+protocol — requires the GitHub CLI (`gh`) installed and authenticated:
+
+```bash
+npx rallypoint@latest init
+```
+
+`init` syncs the configured integration branch to the repository's actual
+default branch, creates the `status:ready`/`prio:*`/etc. labels the loop reads
+and writes, and reports (without changing) whether the default branch has
+protection rules.
+
 ## Website
 
 The marketing and documentation site is a Next.js App Router project using

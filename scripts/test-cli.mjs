@@ -72,7 +72,32 @@ try {
     throw new Error("conflict did not stop the installer");
   }
 
-  console.log("CLI smoke test passed: inspect, dry-run, install, repeat, conflict.");
+  const initFixture = await mkdtemp(resolve(tmpdir(), "rallypoint-cli-init-"));
+  try {
+    const initBeforeAdd = spawnSync(process.execPath, [cli, "init"], {
+      cwd: initFixture,
+      encoding: "utf8",
+    });
+    if (initBeforeAdd.status !== 1 || !initBeforeAdd.stderr.includes("add loop")) {
+      throw new Error("init did not require add loop to run first");
+    }
+
+    spawnSync(process.execPath, [cli, "add", "loop"], { cwd: initFixture });
+    const initNoGh = spawnSync(process.execPath, [cli, "init"], {
+      cwd: initFixture,
+      encoding: "utf8",
+      env: { ...process.env, PATH: "" },
+    });
+    if (initNoGh.status !== 1 || !initNoGh.stderr.includes("GitHub CLI")) {
+      throw new Error("init did not report a missing GitHub CLI");
+    }
+  } finally {
+    await rm(initFixture, { recursive: true, force: true });
+  }
+
+  console.log(
+    "CLI smoke test passed: inspect, dry-run, install, repeat, conflict, init preconditions.",
+  );
 } finally {
   await rm(fixture, { recursive: true, force: true });
 }

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "loop",
+  "title": "Rallypoint Agent Loop",
+  "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, and janitors.",
+  "files": [
+    {
+      "path": "registry/rallypoint/AGENTS.md",
+      "content": "# Rallypoint Agent Protocol\n\nThis repository coordinates humans and coding agents exclusively through GitHub issues, branches, pull requests, labels, and reviews.\n\n## Start every session\n\n1. Read `docs/AGENT_LOOP.md`.\n2. Select exactly one role from `.rallypoint/roles/`.\n3. Read that role prompt completely.\n4. Follow the repository's existing product, architecture, testing, and contribution documentation.\n\n## Hard rules\n\n- One issue, one branch, one pull request.\n- Workers claim exactly one `status:ready` issue before writing code.\n- Claims are made only through `node .rallypoint/scripts/claim.mjs`.\n- Branch from the configured integration branch as `agent/<issue>-<slug>`.\n- Never push directly to protected branches.\n- Never review or approve your own work.\n- Never invent scope. Record ambiguity on the issue.\n- No secrets, credentials, tokens, or local environment files in commits.\n- Keep the repository green. The worker owns failures introduced by its pull request.\n- Only the top-level agent mutates GitHub; subagents may research and verify inside the same claimed issue.\n\n## Delivery\n\nOpen a ready-for-review pull request targeting the configured integration branch. Include `Closes #<issue>` and the local validation results. A new push invalidates any previous reviewer verdict.\n",
+      "type": "registry:file",
+      "target": "~/AGENTS.md"
+    },
+    {
+      "path": "registry/rallypoint/docs/AGENT_LOOP.md",
+      "content": "# The Rallypoint Agent Loop\n\nGitHub is the shared campaign board. Every participant follows the same loop:\n\n```text\nread repository state\n  → claim one ready issue\n  → create one issue branch\n  → implement and verify\n  → open one pull request\n  → independent review\n  → merge and close the issue\n```\n\n## Coordination state\n\nUse GitHub issues as the queue and labels as state:\n\n- `task` — actionable work\n- `status:ready` — scoped and available\n- `status:claimed` — reserved by one worker\n- `status:blocked` — cannot proceed\n- `needs:human` — requires an owner decision or protected action\n- `prio:p0`, `prio:p1`, `prio:p2` — priority\n- `review:approved` — reviewer verdict on a pull request\n\n## Roles\n\n| Role | Claims issues? | Reviews? | Responsibility |\n| --- | --- | --- | --- |\n| Planner | No | No | Keeps a small, ordered backlog of ready issues. |\n| Worker | Exactly one | Never own work | Ships one issue as one pull request. |\n| Reviewer | No | Yes | Judges the current revision against the issue and repository rules. |\n| Tester | Its own filed gap | No | Finds the weakest coverage area and closes one gap. |\n| Fixer | No | No | Addresses review feedback on an existing pull request branch. |\n| Janitor | No | No | Releases stale claims and removes abandoned reservation refs. |\n\n## Atomic claims\n\nMultiple agent sessions may share one GitHub identity, so assignment is not a lock. Rallypoint creates `refs/heads/rallypoint-claims/issue-<N>` as an atomic reservation before changing issue state. Only one caller can create the ref.\n\nRun:\n\n```bash\nnode .rallypoint/scripts/claim.mjs \\\n  --agent-id \"<unique-session-id>\" \\\n  --plan \"first step\" \\\n  --plan \"second step\"\n```\n\nThe script selects the highest-priority unassigned `status:ready` issue. Pass `--issue <N>` only when an operator names a specific issue.\n\n## Working agreement\n\n- Branch from the configured integration branch.\n- Push often enough that the janitor can distinguish live work from abandoned work.\n- Keep changes scoped to the claimed issue.\n- When product intent is genuinely ambiguous, comment the smallest reasonable interpretation or apply `status:blocked` and `needs:human`.\n- Tests accompany behavior changes.\n\n## Review\n\nThe reviewer reads the linked issue, current diff, repository instructions, specifications, and tests. It either records approval or posts actionable requested changes. The author never supplies its own verdict.\n\n## Cleanup\n\nAfter the issue closes:\n\n```bash\nnode .rallypoint/scripts/cleanup.mjs --issue <N>\n```\n\nThe cleanup command refuses to delete a reservation for an open issue.\n",
+      "type": "registry:file",
+      "target": "~/docs/AGENT_LOOP.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/config.json",
+      "content": "{\n  \"$schema\": \"https://rallypoint.dev/schema/config.json\",\n  \"integrationBranch\": \"main\",\n  \"branchPrefix\": \"agent/\",\n  \"claimRefPrefix\": \"rallypoint-claims/issue-\",\n  \"readyBacklog\": {\n    \"minimum\": 5,\n    \"maximum\": 15\n  },\n  \"staleClaimHours\": 3,\n  \"stalePullRequestHours\": 24,\n  \"labels\": {\n    \"task\": \"task\",\n    \"ready\": \"status:ready\",\n    \"claimed\": \"status:claimed\",\n    \"blocked\": \"status:blocked\",\n    \"human\": \"needs:human\",\n    \"approved\": \"review:approved\"\n  }\n}\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/config.json"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/roles/planner.md",
+      "content": "You are the planner in the Rallypoint agent loop.\n\nRead `AGENTS.md`, `docs/AGENT_LOOP.md`, `.rallypoint/config.json`, the roadmap, and the open GitHub issues. Keep the configured number of dependency-aware `status:ready` tasks available. File small issues with explicit acceptance criteria, priority, area, verification, and dependencies. Unblock issues when their dependencies merge. Apply `needs:human` to genuine owner decisions.\n\nDo not claim issues, edit product code, review pull requests, or grant approval.\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/roles/planner.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/roles/worker.md",
+      "content": "You are a worker in the Rallypoint agent loop.\n\nRead `AGENTS.md`, `docs/AGENT_LOOP.md`, and `.rallypoint/config.json`. Claim exactly one ready issue with `.rallypoint/scripts/claim.mjs`, create the prescribed issue branch from the latest integration branch, complete the acceptance criteria, run relevant checks, push, and open one ready-for-review pull request containing `Closes #<issue>`.\n\nDo not choose work outside the claim protocol, hold multiple claims, review your own work, or push directly to a protected branch.\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/roles/worker.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/roles/reviewer.md",
+      "content": "You are the reviewer in the Rallypoint agent loop.\n\nRead `AGENTS.md`, `docs/AGENT_LOOP.md`, and the current pull request's linked issue. Review the current revision against its acceptance criteria, repository rules, specifications, tests, security, and maintainability.\n\nApprove only work you would merge. Otherwise leave a concise list of actionable requested changes. Never modify the branch, fix the code yourself, claim an issue, or review work produced by your own agent session.\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/roles/reviewer.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/roles/tester.md",
+      "content": "You are the tester in the Rallypoint agent loop.\n\nRead the repository instructions and measure coverage across the workspace. Find the weakest meaningful behavior area, file one small `status:ready` coverage-gap issue with the required tests, then claim exactly that issue through `.rallypoint/scripts/claim.mjs --issue <N>`. Add tests, run relevant checks, and open one pull request.\n\nDo not refactor unrelated production code or review your own pull request.\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/roles/tester.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/roles/fixer.md",
+      "content": "You are the fixer in the Rallypoint agent loop.\n\nThis run targets one existing pull request. Read the newest requested-changes verdict and unresolved comments on its current revision. Check out that pull request's branch, address each actionable point with focused commits, run relevant checks, and push to the same branch.\n\nDo not claim another issue, open another pull request, review or approve anything, broaden scope, or push to a different agent's branch.\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/roles/fixer.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/roles/janitor.md",
+      "content": "You are the janitor in the Rallypoint agent loop.\n\nPerform one maintenance pass. Release claims older than the configured threshold when no live issue branch or open pull request proves activity. Restore `status:ready`, remove `status:claimed`, explain the release, and delete the reservation ref. Remind pull requests idle beyond the configured threshold. Clean closed-issue reservation refs with `.rallypoint/scripts/cleanup.mjs`.\n\nMaintenance only: never claim work, edit product code, open a pull request, review, approve, or merge.\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/roles/janitor.md"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/scripts/claim.mjs",
+      "content": "#!/usr/bin/env node\n\nimport { execFileSync } from \"node:child_process\";\nimport { readFileSync } from \"node:fs\";\n\nconst config = JSON.parse(\n  readFileSync(new URL(\"../config.json\", import.meta.url), \"utf8\"),\n);\n\nconst args = process.argv.slice(2);\nconst values = (flag) =>\n  args.flatMap((value, index) =>\n    value === flag && args[index + 1] ? [args[index + 1]] : [],\n  );\nconst value = (flag) => values(flag).at(0);\nconst run = (...command) =>\n  execFileSync(command[0], command.slice(1), {\n    encoding: \"utf8\",\n    stdio: [\"ignore\", \"pipe\", \"pipe\"],\n  }).trim();\n\nconst agentId = value(\"--agent-id\");\nconst requestedIssue = value(\"--issue\");\nconst plans = values(\"--plan\").slice(0, 3);\n\nif (!agentId) {\n  console.error(\"Missing required --agent-id <unique-session-id>.\");\n  process.exit(1);\n}\n\nconst repository = JSON.parse(\n  run(\"gh\", \"repo\", \"view\", \"--json\", \"nameWithOwner,defaultBranchRef\"),\n);\nconst baseBranch = config.integrationBranch || repository.defaultBranchRef.name;\nconst base = JSON.parse(\n  run(\"gh\", \"api\", `repos/${repository.nameWithOwner}/git/ref/heads/${baseBranch}`),\n);\nconst issues = JSON.parse(\n  run(\n    \"gh\",\n    \"issue\",\n    \"list\",\n    \"--state\",\n    \"open\",\n    \"--label\",\n    config.labels.task,\n    \"--label\",\n    config.labels.ready,\n    \"--limit\",\n    \"100\",\n    \"--json\",\n    \"number,title,labels,assignees\",\n  ),\n);\n\nconst priority = (issue) => {\n  const names = issue.labels.map((label) => label.name);\n  if (names.includes(\"prio:p0\")) return 0;\n  if (names.includes(\"prio:p1\")) return 1;\n  return 2;\n};\n\nconst candidates = issues\n  .filter((issue) => issue.assignees.length === 0)\n  .filter((issue) => !requestedIssue || String(issue.number) === requestedIssue)\n  .sort((left, right) => priority(left) - priority(right) || left.number - right.number);\n\nfor (const issue of candidates) {\n  const ref = `refs/heads/${config.claimRefPrefix}${issue.number}`;\n  try {\n    run(\n      \"gh\",\n      \"api\",\n      \"--method\",\n      \"POST\",\n      `repos/${repository.nameWithOwner}/git/refs`,\n      \"-f\",\n      `ref=${ref}`,\n      \"-f\",\n      `sha=${base.object.sha}`,\n    );\n  } catch {\n    continue;\n  }\n\n  try {\n    run(\n      \"gh\",\n      \"issue\",\n      \"edit\",\n      String(issue.number),\n      \"--add-assignee\",\n      \"@me\",\n      \"--remove-label\",\n      config.labels.ready,\n      \"--add-label\",\n      config.labels.claimed,\n    );\n    const body = [\n      `Claimed by Rallypoint agent \\`${agentId}\\`.`,\n      \"\",\n      ...plans.map((plan) => `- ${plan}`),\n    ].join(\"\\n\");\n    run(\"gh\", \"issue\", \"comment\", String(issue.number), \"--body\", body);\n  } catch (error) {\n    try {\n      run(\n        \"gh\",\n        \"api\",\n        \"--method\",\n        \"DELETE\",\n        `repos/${repository.nameWithOwner}/git/${ref}`,\n      );\n    } catch {\n      console.error(`Claim failed and reservation ${ref} requires manual cleanup.`);\n    }\n    throw error;\n  }\n\n  const slug = issue.title\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/^-|-$/g, \"\")\n    .slice(0, 42);\n  console.log(`CLAIMED_ISSUE=${issue.number}`);\n  console.log(`CLAIMED_URL=https://github.com/${repository.nameWithOwner}/issues/${issue.number}`);\n  console.log(`CLAIM_BRANCH=${config.branchPrefix}${issue.number}-${slug}`);\n  process.exit(0);\n}\n\nconsole.error(\"No unreserved status:ready issue is available.\");\nprocess.exit(2);\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/scripts/claim.mjs"
+    },
+    {
+      "path": "registry/rallypoint/.rallypoint/scripts/cleanup.mjs",
+      "content": "#!/usr/bin/env node\n\nimport { execFileSync } from \"node:child_process\";\nimport { readFileSync } from \"node:fs\";\n\nconst config = JSON.parse(\n  readFileSync(new URL(\"../config.json\", import.meta.url), \"utf8\"),\n);\nconst issue = process.argv[process.argv.indexOf(\"--issue\") + 1];\nconst run = (...command) =>\n  execFileSync(command[0], command.slice(1), {\n    encoding: \"utf8\",\n    stdio: [\"ignore\", \"pipe\", \"pipe\"],\n  }).trim();\n\nif (!issue) {\n  console.error(\"Usage: cleanup.mjs --issue <closed-issue-number>\");\n  process.exit(1);\n}\n\nconst repository = JSON.parse(run(\"gh\", \"repo\", \"view\", \"--json\", \"nameWithOwner\"));\nconst state = JSON.parse(\n  run(\"gh\", \"issue\", \"view\", issue, \"--json\", \"state\"),\n).state;\n\nif (state !== \"CLOSED\") {\n  console.error(`Issue #${issue} is ${state.toLowerCase()}; reservation preserved.`);\n  process.exit(2);\n}\n\nrun(\n  \"gh\",\n  \"api\",\n  \"--method\",\n  \"DELETE\",\n  `repos/${repository.nameWithOwner}/git/refs/heads/${config.claimRefPrefix}${issue}`,\n);\nconsole.log(`Removed reservation for closed issue #${issue}.`);\n",
+      "type": "registry:file",
+      "target": "~/.rallypoint/scripts/cleanup.mjs"
+    }
+  ],
+  "type": "registry:item"
+}

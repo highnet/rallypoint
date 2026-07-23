@@ -1,0 +1,70 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "rallypoint",
+  "homepage": "https://rallypoint.dev",
+  "items": [
+    {
+      "name": "loop",
+      "type": "registry:item",
+      "title": "Rallypoint Agent Loop",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, and janitors.",
+      "files": [
+        {
+          "path": "registry/rallypoint/AGENTS.md",
+          "type": "registry:file",
+          "target": "~/AGENTS.md"
+        },
+        {
+          "path": "registry/rallypoint/docs/AGENT_LOOP.md",
+          "type": "registry:file",
+          "target": "~/docs/AGENT_LOOP.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/config.json",
+          "type": "registry:file",
+          "target": "~/.rallypoint/config.json"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/roles/planner.md",
+          "type": "registry:file",
+          "target": "~/.rallypoint/roles/planner.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/roles/worker.md",
+          "type": "registry:file",
+          "target": "~/.rallypoint/roles/worker.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/roles/reviewer.md",
+          "type": "registry:file",
+          "target": "~/.rallypoint/roles/reviewer.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/roles/tester.md",
+          "type": "registry:file",
+          "target": "~/.rallypoint/roles/tester.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/roles/fixer.md",
+          "type": "registry:file",
+          "target": "~/.rallypoint/roles/fixer.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/roles/janitor.md",
+          "type": "registry:file",
+          "target": "~/.rallypoint/roles/janitor.md"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/scripts/claim.mjs",
+          "type": "registry:file",
+          "target": "~/.rallypoint/scripts/claim.mjs"
+        },
+        {
+          "path": "registry/rallypoint/.rallypoint/scripts/cleanup.mjs",
+          "type": "registry:file",
+          "target": "~/.rallypoint/scripts/cleanup.mjs"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1310 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.91 0.035 142);
+  --foreground: oklch(0.23 0.045 154);
+  --surface: oklch(0.88 0.05 142);
+  --surface-deep: oklch(0.37 0.09 157);
+  --felt-foreground: oklch(0.96 0.04 84);
+  --parchment: oklch(0.93 0.055 82);
+  --parchment-emphasis: oklch(0.96 0.04 80);
+  --parchment-foreground: oklch(0.25 0.045 75);
+  --parchment-shadow: oklch(0.54 0.055 70);
+  --quest: oklch(0.69 0.19 49);
+  --quest-foreground: oklch(0.19 0.035 50);
+  --quest-shadow: oklch(0.43 0.15 42);
+  --primary: oklch(0.34 0.09 155);
+  --primary-foreground: oklch(0.96 0.035 86);
+  --button-shadow: oklch(0.18 0.055 155);
+  --muted: oklch(0.82 0.035 145);
+  --muted-foreground: oklch(0.41 0.045 152);
+  --border: oklch(0.53 0.07 147);
+  --ring: oklch(0.64 0.18 48);
+  --red: oklch(0.62 0.2 29);
+  --blue: oklch(0.53 0.17 260);
+  --amber: oklch(0.75 0.17 69);
+  --violet: oklch(0.58 0.16 306);
+  --green: oklch(0.48 0.1 151);
+  --slate: oklch(0.52 0.035 220);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: oklch(0.25 0.075 157);
+  --foreground: oklch(0.93 0.045 86);
+  --surface: oklch(0.29 0.08 158);
+  --surface-deep: oklch(0.18 0.05 160);
+  --felt-foreground: oklch(0.94 0.045 84);
+  --parchment: oklch(0.86 0.07 78);
+  --parchment-emphasis: oklch(0.9 0.06 78);
+  --parchment-foreground: oklch(0.22 0.045 75);
+  --parchment-shadow: oklch(0.15 0.035 154);
+  --quest: oklch(0.72 0.19 51);
+  --quest-foreground: oklch(0.18 0.035 52);
+  --quest-shadow: oklch(0.16 0.055 155);
+  --primary: oklch(0.86 0.07 78);
+  --primary-foreground: oklch(0.22 0.045 75);
+  --button-shadow: oklch(0.12 0.04 158);
+  --muted: oklch(0.32 0.06 158);
+  --muted-foreground: oklch(0.76 0.045 95);
+  --border: oklch(0.46 0.08 153);
+  --ring: oklch(0.73 0.18 52);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-deep: var(--surface-deep);
+  --color-parchment: var(--parchment);
+  --color-parchment-emphasis: var(--parchment-emphasis);
+  --color-parchment-foreground: var(--parchment-foreground);
+  --color-quest: var(--quest);
+  --color-quest-foreground: var(--quest-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --radius-xs: calc(var(--radius) * 0.5);
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+}
+
+* {
+  border-color: var(--border);
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--quest);
+  color: var(--quest-foreground);
+}
+
+.hero {
+  background:
+    radial-gradient(circle at 78% 30%, color-mix(in oklch, var(--quest) 8%, transparent) 0 9%, transparent 35%),
+    var(--surface-deep);
+  color: var(--felt-foreground);
+  min-height: 100svh;
+  overflow: clip;
+  position: relative;
+}
+
+.site-header {
+  align-items: center;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr auto 1fr;
+  margin: 0 auto;
+  max-width: 1540px;
+  padding: 24px clamp(22px, 4vw, 64px);
+  position: relative;
+  z-index: 20;
+}
+
+.wordmark {
+  align-items: center;
+  display: inline-flex;
+  font-size: 1.32rem;
+  font-weight: 800;
+  gap: 10px;
+  letter-spacing: -0.03em;
+  width: fit-content;
+}
+
+.wordmark-die {
+  align-items: center;
+  background: var(--parchment);
+  border: 1px solid color-mix(in oklch, var(--parchment-foreground) 35%, transparent);
+  clip-path: polygon(50% 0%, 95% 25%, 84% 82%, 50% 100%, 16% 82%, 5% 25%);
+  color: var(--parchment-foreground);
+  display: inline-flex;
+  font-family: "Palatino Linotype", Palatino, serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.site-header nav {
+  align-items: center;
+  display: flex;
+  font-size: 0.91rem;
+  font-weight: 620;
+  gap: clamp(18px, 2.4vw, 38px);
+}
+
+.site-header nav a {
+  position: relative;
+}
+
+.site-header nav a::after {
+  background: currentColor;
+  bottom: -7px;
+  content: "";
+  height: 1px;
+  inset-inline: 50%;
+  position: absolute;
+  transition: inset 180ms ease-out;
+}
+
+.site-header nav a:hover::after,
+.site-header nav a:focus-visible::after {
+  inset-inline: 0;
+}
+
+.header-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-self: end;
+}
+
+.github-link,
+.footer-github {
+  align-items: center;
+  display: inline-flex;
+  gap: 9px;
+}
+
+.github-link {
+  border-radius: 999px;
+  padding: 9px;
+}
+
+.github-link svg {
+  height: 22px;
+  width: 22px;
+}
+
+.github-link:focus-visible,
+.github-link:hover {
+  background: color-mix(in oklch, var(--parchment) 16%, transparent);
+}
+
+.theme-toggle,
+.theme-toggle-placeholder {
+  height: 42px;
+  width: 42px;
+}
+
+.theme-toggle-placeholder {
+  display: block;
+}
+
+.hero-grid {
+  align-items: center;
+  display: grid;
+  gap: clamp(26px, 4vw, 72px);
+  grid-template-columns: minmax(380px, 0.78fr) minmax(560px, 1.22fr);
+  margin: 0 auto;
+  max-width: 1540px;
+  min-height: calc(100svh - 96px);
+  padding: clamp(32px, 5vh, 70px) clamp(22px, 4vw, 64px) clamp(44px, 8vh, 96px);
+  position: relative;
+  z-index: 2;
+}
+
+.hero-copy {
+  max-width: 650px;
+}
+
+.campaign-stamp {
+  align-items: center;
+  color: color-mix(in oklch, var(--felt-foreground) 83%, transparent);
+  display: flex;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  gap: 9px;
+  letter-spacing: 0.08em;
+  margin-bottom: 26px;
+  text-transform: uppercase;
+}
+
+.campaign-stamp svg {
+  color: var(--quest);
+  height: 16px;
+  width: 16px;
+}
+
+.hero h1,
+.docs-hero h1 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(4.2rem, 7vw, 7rem);
+  letter-spacing: -0.04em;
+  line-height: 0.88;
+  margin: 0;
+  max-width: 8.5ch;
+  text-wrap: balance;
+}
+
+.hero-lede {
+  color: color-mix(in oklch, var(--felt-foreground) 88%, transparent);
+  font-size: clamp(1.08rem, 1.4vw, 1.28rem);
+  line-height: 1.55;
+  margin: 30px 0 0;
+  max-width: 54ch;
+  text-wrap: pretty;
+}
+
+.hero-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.command-well {
+  align-items: center;
+  background: color-mix(in oklch, var(--surface-deep) 90%, black);
+  border: 1px solid color-mix(in oklch, var(--parchment) 33%, transparent);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 3px 8px color-mix(in oklch, black 38%, transparent),
+    0 2px 0 color-mix(in oklch, var(--parchment) 18%, transparent);
+  color: var(--parchment);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin-top: 30px;
+  max-width: 650px;
+  min-height: 58px;
+  padding: 8px 10px 8px 18px;
+}
+
+.command-well code {
+  font-family: "Geist Mono", monospace;
+  font-size: clamp(0.7rem, 1vw, 0.88rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-icon {
+  color: var(--quest);
+  height: 17px;
+  width: 17px;
+}
+
+.command-copy-button {
+  color: inherit;
+  height: 38px;
+  padding: 0;
+  width: 38px;
+}
+
+.campaign-table {
+  aspect-ratio: 1.36;
+  isolation: isolate;
+  min-height: 580px;
+  position: relative;
+}
+
+.felt-noise {
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in oklch, var(--surface) 15%, transparent), transparent 55%),
+    var(--surface-deep);
+  border: 2px solid color-mix(in oklch, var(--parchment) 24%, transparent);
+  border-radius: 46% 54% 48% 52% / 52% 46% 54% 48%;
+  box-shadow:
+    inset 0 0 44px color-mix(in oklch, black 30%, transparent),
+    0 18px 36px color-mix(in oklch, black 22%, transparent);
+  inset: 1.5%;
+  position: absolute;
+  transform: rotate(-1.5deg);
+  z-index: -3;
+}
+
+.route-map {
+  height: 100%;
+  inset: 0;
+  overflow: visible;
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+}
+
+.route-shadow,
+.route-track,
+.route-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.route-shadow {
+  filter: blur(5px);
+  opacity: 0.52;
+  stroke: color-mix(in oklch, black 55%, var(--surface-deep));
+  stroke-width: 112px;
+  transform: translateY(10px);
+}
+
+.route-track {
+  stroke: var(--parchment);
+  stroke-width: 104px;
+}
+
+.route-line {
+  animation: draw-route 1200ms cubic-bezier(0.19, 1, 0.22, 1) both;
+  opacity: 0.55;
+  stroke: var(--parchment-foreground);
+  stroke-dasharray: 8 18;
+  stroke-width: 3px;
+}
+
+.map-stage {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--parchment-foreground);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  z-index: 5;
+}
+
+.role-token {
+  display: block;
+  filter: drop-shadow(0 8px 5px color-mix(in oklch, black 42%, transparent));
+  height: 68px;
+  position: relative;
+  transition: transform 220ms cubic-bezier(0.19, 1, 0.22, 1), filter 220ms ease;
+  width: 68px;
+}
+
+.map-stage:hover .role-token,
+.map-stage:focus-visible .role-token,
+.map-stage.is-active .role-token {
+  filter: drop-shadow(0 13px 7px color-mix(in oklch, black 36%, transparent));
+  transform: translateY(-8px) rotate(2deg);
+}
+
+.map-stage:focus-visible {
+  outline: 3px solid var(--quest);
+  outline-offset: 7px;
+}
+
+.token-round {
+  background: var(--parchment-emphasis);
+  border: 3px solid color-mix(in oklch, var(--parchment-foreground) 20%, transparent);
+  border-radius: 50%;
+  box-shadow: inset -8px -10px 0 color-mix(in oklch, var(--parchment-shadow) 24%, transparent);
+}
+
+.token-triangle {
+  background: var(--red);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 8px 5px color-mix(in oklch, black 42%, transparent));
+}
+
+.token-square {
+  background: var(--blue);
+  border-radius: 8px;
+  box-shadow: inset -9px -10px 0 color-mix(in oklch, black 23%, transparent);
+  transform: rotate(8deg);
+}
+
+.token-star {
+  background: var(--amber);
+  clip-path: polygon(50% 0%, 61% 34%, 98% 35%, 68% 56%, 79% 93%, 50% 71%, 21% 93%, 32% 56%, 2% 35%, 39% 34%);
+}
+
+.token-pentagon {
+  background: var(--green);
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0 38%);
+}
+
+.stage-copy {
+  background: color-mix(in oklch, var(--parchment) 94%, transparent);
+  border: 1px solid color-mix(in oklch, var(--parchment-foreground) 24%, transparent);
+  border-radius: 5px;
+  box-shadow: 0 3px 0 color-mix(in oklch, black 18%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 116px;
+  padding: 7px 10px;
+}
+
+.stage-heading {
+  align-items: center;
+  display: flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 5px;
+  justify-content: center;
+}
+
+.stage-icon {
+  height: 13px;
+  width: 13px;
+}
+
+.stage-role {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.58rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.map-legend {
+  background: color-mix(in oklch, var(--surface-deep) 93%, black);
+  border: 1px solid color-mix(in oklch, var(--parchment) 35%, transparent);
+  border-radius: 6px;
+  bottom: 7%;
+  color: var(--felt-foreground);
+  display: flex;
+  flex-direction: column;
+  font-size: 0.73rem;
+  gap: 3px;
+  left: 50%;
+  line-height: 1.35;
+  max-width: 310px;
+  padding: 10px 14px;
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.legend-title {
+  color: var(--quest);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manifesto,
+.party-section,
+.install-section,
+.proof-section {
+  padding: clamp(84px, 11vw, 170px) clamp(22px, 6vw, 96px);
+}
+
+.manifesto {
+  background: var(--parchment);
+  color: var(--parchment-foreground);
+  display: grid;
+  gap: 48px clamp(36px, 8vw, 130px);
+  grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 1.1fr);
+}
+
+.section-heading {
+  max-width: 760px;
+}
+
+.section-heading > p,
+.proof-section > div > p,
+.docs-kicker {
+  color: color-mix(in oklch, currentColor 72%, transparent);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  margin: 0 0 18px;
+  text-transform: uppercase;
+}
+
+.section-heading h2,
+.proof-section h2 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(2.8rem, 5vw, 5.7rem);
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.manifesto-copy {
+  align-self: end;
+  font-size: clamp(1.1rem, 1.5vw, 1.35rem);
+  line-height: 1.65;
+  max-width: 650px;
+}
+
+.manifesto-copy > p {
+  margin: 0;
+}
+
+.oath {
+  align-items: flex-start;
+  border-top: 1px solid color-mix(in oklch, var(--parchment-foreground) 32%, transparent);
+  display: flex;
+  gap: 16px;
+  margin-top: 30px;
+  padding-top: 24px;
+}
+
+.oath svg {
+  flex: 0 0 auto;
+  height: 25px;
+  margin-top: 4px;
+  width: 25px;
+}
+
+.oath p {
+  font-size: 0.96rem;
+  margin: 0;
+}
+
+.loop-ribbon {
+  border-bottom: 1px solid color-mix(in oklch, var(--parchment-foreground) 28%, transparent);
+  border-top: 1px solid color-mix(in oklch, var(--parchment-foreground) 28%, transparent);
+  display: grid;
+  gap: 0;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.loop-ribbon > div {
+  align-items: center;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto 1fr auto;
+  min-height: 84px;
+  padding: 12px 18px;
+}
+
+.loop-ribbon span {
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: inline-flex;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.7rem;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.loop-ribbon strong {
+  font-size: 0.87rem;
+}
+
+.loop-ribbon svg {
+  opacity: 0.48;
+}
+
+.party-section {
+  background: var(--background);
+}
+
+.party-heading {
+  margin-bottom: clamp(50px, 7vw, 100px);
+}
+
+.role-party {
+  border-top: 1px solid var(--border);
+}
+
+.role-sheet {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 90px minmax(0, 1fr);
+  min-height: 154px;
+  padding: 24px clamp(4px, 1vw, 16px);
+  transition: background 180ms ease-out, padding 180ms ease-out;
+}
+
+.role-sheet:hover {
+  background: color-mix(in oklch, var(--parchment) 28%, transparent);
+  padding-inline: 24px;
+}
+
+.role-sigil {
+  align-items: center;
+  border: 1px solid color-mix(in oklch, currentColor 25%, transparent);
+  clip-path: polygon(50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%, 8% 25%);
+  color: var(--parchment-foreground);
+  display: flex;
+  height: 66px;
+  justify-content: center;
+  width: 66px;
+}
+
+.role-sigil svg {
+  height: 25px;
+  width: 25px;
+}
+
+.role-violet { background: var(--violet); }
+.role-red { background: var(--red); }
+.role-blue { background: var(--blue); color: white; }
+.role-amber { background: var(--amber); }
+.role-green { background: var(--green); color: white; }
+.role-slate { background: var(--slate); color: white; }
+
+.role-sheet > div:last-child {
+  align-items: baseline;
+  display: grid;
+  gap: 10px 24px;
+  grid-template-columns: minmax(110px, 0.35fr) minmax(170px, 0.5fr) minmax(240px, 1fr);
+}
+
+.role-name {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.74rem !important;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.role-sheet h3 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(1.5rem, 2.4vw, 2.5rem);
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.role-sheet p {
+  color: var(--muted-foreground);
+  font-size: 0.96rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.install-section {
+  background: var(--surface-deep);
+  color: var(--felt-foreground);
+}
+
+.install-heading {
+  margin-bottom: clamp(52px, 7vw, 96px);
+}
+
+.install-heading > span {
+  color: color-mix(in oklch, var(--felt-foreground) 73%, transparent);
+  display: block;
+  font-size: 1.04rem;
+  line-height: 1.55;
+  margin-top: 28px;
+  max-width: 55ch;
+}
+
+.install-grid {
+  align-items: center;
+  display: grid;
+  gap: clamp(38px, 8vw, 130px);
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+}
+
+.install-console {
+  background: color-mix(in oklch, var(--surface-deep) 88%, black);
+  border: 1px solid color-mix(in oklch, var(--parchment) 30%, transparent);
+  border-radius: 10px;
+  box-shadow: inset 0 0 26px color-mix(in oklch, black 22%, transparent);
+  padding: clamp(22px, 4vw, 46px);
+}
+
+.mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mode-tabs button {
+  opacity: 0.65;
+}
+
+.mode-tabs button.is-selected {
+  opacity: 1;
+  transform: translateY(2px);
+}
+
+.install-console > p {
+  color: color-mix(in oklch, var(--felt-foreground) 72%, transparent);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 22px 0 0;
+}
+
+.install-notes {
+  border-top: 1px solid color-mix(in oklch, var(--parchment) 23%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  margin-top: 28px;
+  padding-top: 22px;
+}
+
+.install-notes span {
+  align-items: center;
+  display: inline-flex;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.7rem;
+  gap: 6px;
+  text-transform: uppercase;
+}
+
+.install-notes svg {
+  color: var(--quest);
+  height: 14px;
+  width: 14px;
+}
+
+.file-scroll {
+  background: var(--parchment);
+  box-shadow: 0 18px 26px color-mix(in oklch, black 24%, transparent);
+  color: var(--parchment-foreground);
+  margin: 24px;
+  padding: 42px 40px;
+  position: relative;
+  transform: rotate(1.2deg);
+}
+
+.scroll-roller {
+  background: var(--parchment-emphasis);
+  border: 1px solid color-mix(in oklch, var(--parchment-foreground) 25%, transparent);
+  box-shadow: 0 5px 7px color-mix(in oklch, black 26%, transparent);
+  height: 18px;
+  inset-inline: -15px;
+  position: absolute;
+}
+
+.scroll-roller::before,
+.scroll-roller::after {
+  background: color-mix(in oklch, var(--parchment-foreground) 70%, black);
+  border-radius: 50%;
+  content: "";
+  height: 11px;
+  position: absolute;
+  top: 3px;
+  width: 11px;
+}
+
+.scroll-roller::before { left: 9px; }
+.scroll-roller::after { right: 9px; }
+.scroll-roller-top { top: -8px; }
+.scroll-roller-bottom { bottom: -8px; }
+
+.scroll-title {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 24px;
+}
+
+.file-scroll ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-scroll li {
+  align-items: center;
+  display: flex;
+  font-size: 0.76rem;
+  gap: 10px;
+  min-width: 0;
+}
+
+.file-scroll li span {
+  color: var(--red);
+  font-size: 0.55rem;
+}
+
+.file-scroll code {
+  font-family: "Geist Mono", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proof-section {
+  align-items: center;
+  background: var(--quest);
+  color: var(--quest-foreground);
+  display: grid;
+  gap: clamp(24px, 4vw, 64px);
+  grid-template-columns: auto minmax(260px, 1.3fr) minmax(260px, 1fr) auto;
+}
+
+.proof-mark {
+  align-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  height: 82px;
+  justify-content: center;
+  width: 82px;
+}
+
+.proof-mark svg {
+  height: 34px;
+  width: 34px;
+}
+
+.proof-section h2 {
+  font-size: clamp(2.3rem, 3.8vw, 4.4rem);
+}
+
+.proof-section > p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+footer {
+  align-items: center;
+  background: color-mix(in oklch, var(--surface-deep) 88%, black);
+  color: var(--felt-foreground);
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr auto 1fr;
+  padding: 42px clamp(22px, 6vw, 96px);
+}
+
+footer > p {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.footer-github {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  justify-self: end;
+}
+
+.footer-github svg {
+  height: 20px;
+  width: 20px;
+}
+
+/* Docs */
+.docs-page {
+  min-height: 100svh;
+}
+
+.docs-header {
+  background: var(--surface-deep);
+  color: var(--felt-foreground);
+  max-width: none;
+}
+
+.docs-shell {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 70px clamp(22px, 5vw, 70px) 130px;
+}
+
+.docs-hero {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 74px;
+}
+
+.back-link {
+  align-items: center;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  font-size: 0.85rem;
+  gap: 8px;
+  margin-bottom: 70px;
+}
+
+.back-link svg {
+  height: 16px;
+  width: 16px;
+}
+
+.docs-kicker {
+  color: var(--muted-foreground);
+}
+
+.docs-hero h1 {
+  font-size: clamp(3.2rem, 6vw, 6.3rem);
+  max-width: 12ch;
+}
+
+.docs-hero > p:last-child {
+  color: var(--muted-foreground);
+  font-size: 1.15rem;
+  line-height: 1.7;
+  margin: 34px 0 0;
+  max-width: 68ch;
+}
+
+.docs-section {
+  border-bottom: 1px solid var(--border);
+  padding: 78px 0;
+}
+
+.docs-section-title {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 38px;
+}
+
+.docs-section-title svg {
+  color: var(--quest);
+  height: 25px;
+  width: 25px;
+}
+
+.docs-section h2 {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rule-list li {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 44px 1fr;
+  padding: 21px 0;
+}
+
+.rule-list li:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.rule-list span {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: inline-flex;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.rule-list p {
+  font-size: 1.02rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.docs-table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  min-width: 730px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 15px;
+  text-align: left;
+}
+
+th {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+td {
+  color: var(--muted-foreground);
+  font-size: 0.91rem;
+}
+
+td:first-child {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.docs-install > p {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  max-width: 68ch;
+}
+
+.docs-install .command-well {
+  margin-top: 20px;
+}
+
+.docs-install > a:last-child {
+  margin-top: 32px;
+}
+
+@keyframes draw-route {
+  from {
+    stroke-dashoffset: 520;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    max-width: 760px;
+  }
+
+  .campaign-table {
+    margin: 0 auto;
+    max-width: 900px;
+    min-height: 500px;
+    width: 100%;
+  }
+
+  .proof-section {
+    grid-template-columns: auto 1fr;
+  }
+
+  .proof-section > p,
+  .proof-section > a {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 820px) {
+  .site-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .site-header nav {
+    display: none;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.9rem, 15vw, 6.2rem);
+  }
+
+  .campaign-table {
+    min-height: 430px;
+  }
+
+  .map-stage {
+    width: 110px;
+  }
+
+  .role-token {
+    height: 48px;
+    width: 48px;
+  }
+
+  .stage-copy {
+    min-width: 90px;
+    padding: 5px 7px;
+  }
+
+  .stage-heading {
+    font-size: 0.61rem;
+  }
+
+  .map-legend {
+    display: none;
+  }
+
+  .manifesto {
+    grid-template-columns: 1fr;
+  }
+
+  .loop-ribbon {
+    grid-template-columns: 1fr;
+  }
+
+  .loop-ribbon > div {
+    border-bottom: 1px solid color-mix(in oklch, var(--parchment-foreground) 20%, transparent);
+  }
+
+  .loop-ribbon > div:last-child {
+    border-bottom: 0;
+  }
+
+  .loop-ribbon svg {
+    transform: rotate(90deg);
+  }
+
+  .role-sheet > div:last-child {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .install-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-scroll {
+    margin-inline: auto;
+    max-width: 580px;
+    width: calc(100% - 36px);
+  }
+
+  footer {
+    grid-template-columns: 1fr;
+  }
+
+  footer > p,
+  .footer-github {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header {
+    padding-block: 18px;
+  }
+
+  .github-link {
+    display: none;
+  }
+
+  .hero-grid {
+    padding-top: 44px;
+  }
+
+  .hero h1 {
+    max-width: 7ch;
+  }
+
+  .hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-actions a {
+    width: 100%;
+  }
+
+  .campaign-table {
+    margin-inline: -16px;
+    min-height: 350px;
+    width: calc(100% + 32px);
+  }
+
+  .role-token {
+    height: 38px;
+    width: 38px;
+  }
+
+  .stage-copy {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--parchment);
+    min-width: 84px;
+    padding: 0;
+    text-shadow: 0 1px 3px black;
+  }
+
+  .stage-role {
+    display: none;
+  }
+
+  .manifesto,
+  .party-section,
+  .install-section,
+  .proof-section {
+    padding-inline: 22px;
+  }
+
+  .role-sheet {
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+
+  .role-sigil {
+    height: 52px;
+    width: 52px;
+  }
+
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .mode-tabs button {
+    width: 100%;
+  }
+
+  .proof-section {
+    grid-template-columns: 1fr;
+  }
+
+  .proof-section > p,
+  .proof-section > a {
+    grid-column: 1;
+  }
+
+  .proof-mark {
+    height: 64px;
+    width: 64px;
+  }
+
+  .docs-shell {
+    padding-top: 44px;
+  }
+
+  .back-link {
+    margin-bottom: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

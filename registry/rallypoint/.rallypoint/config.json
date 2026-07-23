@@ -1,0 +1,20 @@
+{
+  "$schema": "https://rallypoint.dev/schema/config.json",
+  "integrationBranch": "main",
+  "branchPrefix": "agent/",
+  "claimRefPrefix": "rallypoint-claims/issue-",
+  "readyBacklog": {
+    "minimum": 5,
+    "maximum": 15
+  },
+  "staleClaimHours": 3,
+  "stalePullRequestHours": 24,
+  "labels": {
+    "task": "task",
+    "ready": "status:ready",
+    "claimed": "status:claimed",
+    "blocked": "status:blocked",
+    "human": "needs:human",
+    "approved": "review:approved"
+  }
+}

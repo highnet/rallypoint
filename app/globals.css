@@ -579,6 +579,7 @@ button.wordmark-die {
   aspect-ratio: 1.36;
   isolation: isolate;
   min-height: 580px;
+  min-width: 0;
   position: relative;
 }
 
@@ -1583,7 +1584,7 @@ td:first-child {
 
 @media (max-width: 1100px) {
   .hero-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-copy {
@@ -1604,6 +1605,18 @@ td:first-child {
   .proof-section > p,
   .proof-section > a {
     grid-column: 2;
+  }
+}
+
+@media (max-width: 1040px) {
+  .install-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-scroll {
+    margin-inline: auto;
+    max-width: 580px;
+    width: calc(100% - 36px);
   }
 }
 
@@ -1673,16 +1686,6 @@ td:first-child {
   .role-sheet > div:nth-child(2) {
     align-items: start;
     grid-template-columns: 1fr;
-  }
-
-  .install-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .file-scroll {
-    margin-inline: auto;
-    max-width: 580px;
-    width: calc(100% - 36px);
   }
 
   footer {

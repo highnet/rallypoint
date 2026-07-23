@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   access,
@@ -11,7 +12,7 @@ import {
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const command = args[0];
@@ -38,11 +39,18 @@ ${strong("Usage")}
   rallypoint list
   rallypoint view <item>
   rallypoint add <item> [--dry-run] [--force] [--cwd <path>]
+  rallypoint init [--dry-run] [--cwd <path>]
 
 ${strong("Registry")}
   Uses the campaign registry bundled with this CLI. Set
   RALLYPOINT_REGISTRY_URL or pass --registry <url> to inspect
   and install from another Rallypoint-compatible endpoint.
+
+${strong("Init")}
+  Run after "add loop". Confirms the GitHub CLI is installed and
+  authenticated, syncs .rallypoint/config.json's integration branch to the
+  repository's actual default branch, creates the labels the loop depends
+  on, and reports whether the default branch has protection rules.
 `.trim());
 }
 
@@ -184,6 +192,126 @@ async function addItem(name) {
   );
 }
 
+function requiredLabels(labels) {
+  return [
+    { name: labels.task, color: "1d76db", description: "Actionable work" },
+    { name: labels.ready, color: "0e8a16", description: "Scoped and available" },
+    { name: labels.claimed, color: "fbca04", description: "Reserved by one worker" },
+    { name: labels.blocked, color: "d93f0b", description: "Cannot proceed" },
+    { name: labels.human, color: "5319e7", description: "Requires an owner decision or protected action" },
+    { name: labels.approved, color: "0e8a16", description: "Reviewer verdict on a pull request" },
+    { name: "prio:p0", color: "b60205", description: "Priority: highest" },
+    { name: "prio:p1", color: "d93f0b", description: "Priority: high" },
+    { name: "prio:p2", color: "fbca04", description: "Priority: normal" },
+  ];
+}
+
+function gh(...command) {
+  return execFileSync("gh", command, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+async function initRepo() {
+  const cwd = resolve(value("--cwd") || process.cwd());
+  const dryRun = has("--dry-run");
+  const configPath = resolve(cwd, ".rallypoint/config.json");
+
+  if (!(await exists(configPath))) {
+    throw new Error(`No .rallypoint/config.json in ${cwd}. Run “rallypoint add loop” first.`);
+  }
+  const config = JSON.parse(await readFile(configPath, "utf8"));
+
+  console.log(`${strong(dryRun ? "Init (dry run)" : "Init")}\n`);
+
+  try {
+    gh("--version");
+  } catch {
+    throw new Error(`GitHub CLI (“gh”) was not found. Install it from https://cli.github.com and retry.`);
+  }
+
+  let login;
+  try {
+    login = gh("api", "user", "--jq", ".login");
+  } catch {
+    throw new Error(`“gh” is not authenticated. Run “gh auth login” and retry.`);
+  }
+  console.log(`  ${green("ok")}    authenticated as ${login}`);
+
+  let repository;
+  try {
+    repository = JSON.parse(gh("repo", "view", "--json", "nameWithOwner,defaultBranchRef"));
+  } catch {
+    throw new Error(`“gh” could not resolve a GitHub repository for ${cwd}. Run inside a clone of the target repository.`);
+  }
+  console.log(`  ${green("ok")}    repository ${repository.nameWithOwner}`);
+
+  const defaultBranch = repository.defaultBranchRef.name;
+  if (config.integrationBranch !== defaultBranch) {
+    console.log(`  ${amber("sync")}  integrationBranch ${config.integrationBranch} -> ${defaultBranch}`);
+    config.integrationBranch = defaultBranch;
+    if (!dryRun) {
+      await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    }
+  } else {
+    console.log(`  ${green("ok")}    integrationBranch already ${defaultBranch}`);
+  }
+
+  let existingLabels;
+  try {
+    existingLabels = new Set(
+      JSON.parse(gh("label", "list", "--json", "name", "--limit", "200")).map((label) => label.name),
+    );
+  } catch (error) {
+    throw new Error(`Could not list labels for ${repository.nameWithOwner}: ${error.message}`);
+  }
+
+  const failures = [];
+  for (const label of requiredLabels(config.labels)) {
+    if (existingLabels.has(label.name)) {
+      console.log(`  ${muted("same")}  label ${label.name}`);
+      continue;
+    }
+    if (dryRun) {
+      console.log(`  ${green("add ")}  label ${label.name}`);
+      continue;
+    }
+    try {
+      gh("label", "create", label.name, "--color", label.color, "--description", label.description);
+      console.log(`  ${green("add ")}  label ${label.name}`);
+    } catch (error) {
+      failures.push(label.name);
+      console.log(`  ${amber("fail")}  label ${label.name}: ${error.message.split("\n")[0]}`);
+    }
+  }
+
+  let protection = "unknown";
+  try {
+    gh("api", `repos/${repository.nameWithOwner}/branches/${defaultBranch}/protection`);
+    protection = "protected";
+  } catch (error) {
+    protection = /404/.test(error.message) ? "unprotected" : "unknown";
+  }
+  if (protection === "protected") {
+    console.log(`  ${green("ok")}    ${defaultBranch} has branch protection`);
+  } else if (protection === "unprotected") {
+    console.log(`  ${amber("warn")}  ${defaultBranch} has no branch protection rules`);
+  } else {
+    console.log(`  ${muted("skip")}  could not read branch protection for ${defaultBranch} (needs admin scope)`);
+  }
+
+  if (failures.length) {
+    console.log(
+      `\n${amber(`Init finished with ${failures.length} label failure(s).`)} Create them manually or re-run “rallypoint init”.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`\n${dryRun ? muted("Dry run complete · no changes written") : green("Rallypoint is ready.")}`);
+}
+
 try {
   if (has("--version") || has("-v")) {
     console.log(VERSION);
@@ -193,6 +321,8 @@ try {
     await viewItem(itemName);
   } else if (command === "add" && itemName) {
     await addItem(itemName);
+  } else if (command === "init") {
+    await initRepo();
   } else {
     help();
     if (command && !has("--help") && !has("-h")) process.exitCode = 1;

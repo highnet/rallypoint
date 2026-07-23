@@ -7,6 +7,7 @@ workers, reviewers, testers, fixers, and janitors.
 npx rallypoint@latest view loop
 npx rallypoint@latest add loop --dry-run
 npx rallypoint@latest add loop
+npx rallypoint@latest init
 ```
 
 The CLI is dependency-free. It ships with Rallypoint’s own checksummed registry,
@@ -15,3 +16,21 @@ to be public.
 
 Use `--force` only after reviewing conflicts. Use `--cwd <path>` to target a
 repository other than the current directory.
+
+## `init`
+
+Run `init` after `add loop`. It requires the GitHub CLI (`gh`) installed and
+authenticated, and it talks to the live repository, so it's a separate step
+from the purely local, checksum-verified file writes `add` performs. It:
+
+- confirms `gh` is installed and authenticated
+- syncs `.rallypoint/config.json`'s `integrationBranch` to the repository's
+  actual default branch
+- creates the labels the loop depends on (`task`, `status:ready`,
+  `status:claimed`, `status:blocked`, `needs:human`, `review:approved`,
+  `prio:p0`, `prio:p1`, `prio:p2`) if they don't already exist
+- reports whether the default branch has protection rules, without changing
+  repository settings
+
+`init` is idempotent and supports `--dry-run` and `--cwd <path>`, same as
+`add`.

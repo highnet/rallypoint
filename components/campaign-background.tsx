@@ -108,7 +108,7 @@ export function CampaignBackground({
           metalness: 0.08,
         }),
       );
-      const emphasized = variant === "agent" && index === focus;
+      const emphasized = variant === "agent" && index === focus % positions.length;
       token.position.set(
         emphasized ? 0 : x,
         emphasized ? 0.2 : -0.52,

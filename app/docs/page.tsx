@@ -128,6 +128,12 @@ export default function DocsPage() {
                   <td>No</td>
                   <td>Releases stale claims and reservations.</td>
                 </tr>
+                <tr>
+                  <td>Orchestrator</td>
+                  <td>Never</td>
+                  <td>Never</td>
+                  <td>Surveys the queue and recommends role session counts, on demand.</td>
+                </tr>
               </tbody>
             </table>
           </div>

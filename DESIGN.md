@@ -87,7 +87,7 @@ sizes below.
   test or a direct shell check.
 - `view loop` writes nothing.
 - `add loop --dry-run` writes nothing.
-- `add loop` installs 12 checksummed files.
+- `add loop` installs 13 checksummed files.
 - A repeat install is idempotent.
 - A conflicting file other than `AGENTS.md` stops the entire write unless the
   user explicitly supplies `--force`.

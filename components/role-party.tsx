@@ -1,4 +1,4 @@
-import { Binoculars, BrushCleaning, Hammer, Map, ShieldCheck, Wrench } from "lucide-react";
+import { Binoculars, BrushCleaning, Hammer, Map, Radar, ShieldCheck, Wrench } from "lucide-react";
 import Link from "next/link";
 
 const roles = [
@@ -43,6 +43,13 @@ const roles = [
     detail: "Releases stale claims and clears abandoned reservations.",
     icon: BrushCleaning,
     color: "role-slate",
+  },
+  {
+    name: "Orchestrator",
+    title: "The quartermaster",
+    detail: "Surveys the queue on demand and recommends who to send out next.",
+    icon: Radar,
+    color: "role-teal",
   },
 ];
 

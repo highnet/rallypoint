@@ -48,6 +48,7 @@ const files = [
   ".rallypoint/roles/tester.md",
   ".rallypoint/roles/fixer.md",
   ".rallypoint/roles/janitor.md",
+  ".rallypoint/roles/orchestrator.md",
 ];
 
 export function InstallPanel() {

@@ -1,7 +1,7 @@
 # Rallypoint CLI
 
 Install a repository-native operating protocol for coordinating planners,
-workers, reviewers, testers, fixers, and janitors.
+workers, reviewers, testers, fixers, janitors, and an on-demand orchestrator.
 
 ```bash
 npx rallypoint@latest view loop

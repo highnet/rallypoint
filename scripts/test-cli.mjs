@@ -40,7 +40,7 @@ async function missing(path) {
 
 try {
   const view = run(["view", "loop"]);
-  if (!view.includes("12 files · no changes written")) {
+  if (!view.includes("13 files · no changes written")) {
     throw new Error("view did not report the complete manifest");
   }
 
@@ -65,7 +65,7 @@ try {
   }
 
   const repeat = run(["add", "loop"]);
-  if (!repeat.includes("12 already current")) {
+  if (!repeat.includes("13 already current")) {
     throw new Error("repeat install was not idempotent");
   }
 

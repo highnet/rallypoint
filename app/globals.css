@@ -1744,6 +1744,74 @@ footer > p {
   padding: 70px clamp(22px, 5vw, 70px) 130px;
 }
 
+.docs-quick-nav {
+  display: none;
+}
+
+@media (min-width: 1440px) {
+  .docs-quick-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    position: fixed;
+    right: 34px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+  }
+
+  .docs-quick-nav a {
+    align-items: center;
+    color: var(--muted-foreground);
+    display: flex;
+    flex-direction: column;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.62rem;
+    gap: 6px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .docs-quick-nav-label {
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .docs-quick-nav:hover .docs-quick-nav-label,
+  .docs-quick-nav a:focus-visible .docs-quick-nav-label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .docs-quick-nav a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  .docs-quick-nav a:hover {
+    color: var(--foreground);
+  }
+
+  .docs-quick-nav-hex {
+    align-items: center;
+    background: var(--parchment);
+    clip-path: polygon(50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%, 8% 25%);
+    color: var(--parchment-foreground);
+    display: flex;
+    font-weight: 700;
+    height: 26px;
+    justify-content: center;
+    width: 26px;
+  }
+
+  .docs-quick-nav a:hover .docs-quick-nav-hex {
+    background: var(--quest);
+    color: var(--quest-foreground);
+  }
+}
+
 .docs-hero {
   border-bottom: 1px solid var(--border);
   padding-bottom: 74px;
@@ -1869,7 +1937,16 @@ td {
   text-align: left;
 }
 
+thead tr {
+  border-bottom: 2px solid var(--brass);
+}
+
+tbody tr:nth-child(even) {
+  background: color-mix(in oklch, var(--parchment) 16%, transparent);
+}
+
 th {
+  color: var(--brass);
   font-family: "Geist Mono", monospace;
   font-size: 0.7rem;
   letter-spacing: 0.07em;

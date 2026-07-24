@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
+import { DocsQuickNav } from "@/components/docs-quick-nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
@@ -96,6 +97,8 @@ export default function DocsPage() {
           <MobileNav />
         </div>
       </header>
+
+      <DocsQuickNav />
 
       <article className="docs-shell">
         <div className="docs-hero">

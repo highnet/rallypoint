@@ -14,7 +14,7 @@ export function TabletopLoop() {
   const activeIndex = loopStages.findIndex((stage) => stage.id === activeStage);
   const active = loopStages[activeIndex] ?? loopStages[0];
   const routeStyle = {
-    "--route-offset": `${100 - (activeIndex + 1) * 20}`,
+    "--route-offset": `${100 - activeIndex * 20}`,
   } as CSSProperties;
 
   const legendContent = (

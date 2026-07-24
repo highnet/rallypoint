@@ -44,6 +44,33 @@ const rolePrompts = [
   },
 ];
 
+const humanPrompts = [
+  {
+    label: "A simple, polite ask",
+    prompt: "Could you grab the next ready issue and ship it? Thanks!",
+  },
+  {
+    label: "With extra context the role file doesn’t need",
+    prompt:
+      "A couple of users got stuck on the auth step in yesterday's onboarding call — can you check the backlog reflects that, add whatever's missing, and reprioritize anything blocking a fix?",
+  },
+  {
+    label: "Chained into one message",
+    prompt:
+      "Run the planner to top up the ready queue, then have a worker pick up whatever's highest priority, and kick off review as soon as that PR is open.",
+  },
+  {
+    label: "Several roles at once",
+    prompt:
+      "Spin up three workers in parallel on the three oldest ready issues, and have a reviewer standing by for whichever one finishes first.",
+  },
+  {
+    label: "On a schedule",
+    prompt:
+      "Set this up to loop: run the janitor every morning to clear stale claims, and have the orchestrator check in every few hours to tell me what's next.",
+  },
+];
+
 const rules = [
   "One issue, one branch, one pull request.",
   "A worker claims exactly one ready issue before editing code.",
@@ -189,11 +216,12 @@ export default function DocsPage() {
             <h2>Prompt the party</h2>
           </div>
           <p>
-            A role is one file, so prompting an agent to become that role
-            means pointing a fresh session at <code>AGENTS.md</code> and
-            exactly one file under <code>.rallypoint/roles/</code> — nothing
-            else to explain. This works the same whether a human or another
-            agent is doing the prompting.
+            A role is one file, so at minimum, prompting an agent to become
+            that role means pointing a fresh session at{" "}
+            <code>AGENTS.md</code> and exactly one file under{" "}
+            <code>.rallypoint/roles/</code>. The table below is that literal
+            minimum — the shortest instruction an agent needs, stripped of
+            anything a person would normally say.
           </p>
           <p>
             Don’t know what should happen next? Prompt the orchestrator
@@ -223,6 +251,24 @@ export default function DocsPage() {
             command="Read AGENTS.md, then read .rallypoint/roles/orchestrator.md. Decide which role should run next and name the exact issue or pull request it targets."
             id="docs-prompt-orchestrator"
           />
+
+          <h3 className="docs-subheading">How a person actually asks</h3>
+          <p>
+            Nobody talks like the table above. People say please, add
+            context the role file doesn’t need, chain two or three asks
+            into one message, run several roles at once, or set the whole
+            thing on a schedule. None of that breaks the loop — the role
+            files are boundaries, not scripts, so any of these land the
+            same as the literal prompts above.
+          </p>
+          <ul className="prompt-examples">
+            {humanPrompts.map(({ label, prompt }) => (
+              <li className="prompt-example" key={label}>
+                <p className="prompt-label">{label}</p>
+                <p className="prompt-text">“{prompt}”</p>
+              </li>
+            ))}
+          </ul>
         </section>
       </article>
     </main>

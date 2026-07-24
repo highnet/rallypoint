@@ -1528,8 +1528,53 @@ td:first-child {
   margin-top: 20px;
 }
 
-.docs-install > a:last-child {
-  margin-top: 32px;
+.docs-prompting > p {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  max-width: 68ch;
+}
+
+.docs-prompting .command-well {
+  margin-top: 20px;
+}
+
+.docs-subheading {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+  margin: 52px 0 18px;
+}
+
+.prompt-examples {
+  display: grid;
+  gap: 16px;
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+}
+
+.prompt-example {
+  background: color-mix(in oklch, var(--parchment) 8%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+}
+
+.prompt-label {
+  color: var(--muted-foreground);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.prompt-text {
+  font-family: "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.6;
+  margin: 0;
 }
 
 @keyframes draw-route {

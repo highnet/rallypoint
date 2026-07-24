@@ -6,6 +6,7 @@ export const agents = [
     summary: "Keeps a dependency-aware queue of small, ready quests.",
     color: "violet",
     token: "hex",
+    charge: "bearing-star",
     does: [
       "Reads repository rules, the roadmap, open issues, and dependencies.",
       "Maintains 5–15 ready tasks with explicit acceptance criteria.",
@@ -21,6 +22,7 @@ export const agents = [
     summary: "Claims one quest and ships one focused pull request.",
     color: "red",
     token: "triangle",
+    charge: "keystone-mark",
     does: [
       "Atomically claims exactly one ready issue.",
       "Creates one issue branch from the current integration branch.",
@@ -36,6 +38,7 @@ export const agents = [
     summary: "Judges another agent’s diff and alone may grant approval.",
     color: "blue",
     token: "square",
+    charge: "chop-seal",
     does: [
       "Reads the linked quest, repository rules, and current revision.",
       "Checks correctness, security, maintainability, tests, and scope.",
@@ -51,6 +54,7 @@ export const agents = [
     summary: "Finds the weakest meaningful behavior and closes its coverage gap.",
     color: "amber",
     token: "star",
+    charge: "blaze-mark",
     does: [
       "Measures coverage across the workspace.",
       "Files one small, reproducible coverage-gap quest.",
@@ -66,6 +70,7 @@ export const agents = [
     summary: "Returns a reviewed pull request to a mergeable state.",
     color: "green",
     token: "pentagon",
+    charge: "stitch-mark",
     does: [
       "Reads the newest requested-changes verdict and unresolved comments.",
       "Applies focused fixes on the existing pull-request branch.",
@@ -81,6 +86,7 @@ export const agents = [
     summary: "Releases stale coordination state without touching product work.",
     color: "slate",
     token: "round",
+    charge: "ward-ring",
     does: [
       "Finds claims with no branch or pull-request evidence of activity.",
       "Restores abandoned issues to the ready queue.",
@@ -96,6 +102,7 @@ export const agents = [
     summary: "Reads the shared queue and dispatches the next agent role to run.",
     color: "rose",
     token: "diamond",
+    charge: "rally-point",
     does: [
       "Reads the ready queue, open claims, and pull-request state across the repository.",
       "Decides which role — planner, worker, reviewer, tester, fixer, or janitor — runs next.",

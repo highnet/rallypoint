@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CommandCopy } from "@/components/command-copy";
 import { AudienceFork } from "@/components/audience-fork";
 import { CampaignBackground } from "@/components/campaign-background";
+import { GiltDivider } from "@/components/gilt-divider";
 import { InstallPanel } from "@/components/install-panel";
 import { LoopRibbon } from "@/components/loop-ribbon";
 import { MobileNav } from "@/components/mobile-nav";
@@ -132,6 +133,8 @@ export default function Home() {
           <OwnershipBand />
         </div>
       </section>
+
+      <GiltDivider />
 
       <section className="proof-section">
         <div className="proof-mark" aria-hidden="true">

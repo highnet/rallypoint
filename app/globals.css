@@ -186,9 +186,42 @@ a {
   width: fit-content;
 }
 
+.gilt-divider {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  margin: 0 auto;
+  max-width: 1540px;
+  padding: 44px clamp(22px, 6vw, 96px);
+}
+
+.gilt-divider span {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brass) 15%,
+    var(--brass) 85%,
+    transparent
+  );
+  flex: 1;
+  height: 1px;
+}
+
+.gilt-divider svg {
+  color: var(--brass);
+  fill: currentColor;
+  flex: 0 0 auto;
+  height: 14px;
+  width: 14px;
+}
+
 .wordmark-die {
   align-items: center;
-  background: var(--parchment);
+  background:
+    linear-gradient(115deg, color-mix(in oklch, white 45%, transparent) 0%, transparent 32%),
+    linear-gradient(245deg, color-mix(in oklch, white 22%, transparent) 0%, transparent 46%),
+    linear-gradient(325deg, color-mix(in oklch, black 20%, transparent) 0%, transparent 42%),
+    var(--parchment);
   border: 1px solid color-mix(in oklch, var(--parchment-foreground) 35%, transparent);
   clip-path: polygon(50% 0%, 95% 25%, 84% 82%, 50% 100%, 16% 82%, 5% 25%);
   color: var(--parchment-foreground);
@@ -220,7 +253,11 @@ button.wordmark-die {
 }
 
 .wordmark-die.is-critical {
-  background: var(--quest);
+  background:
+    linear-gradient(115deg, color-mix(in oklch, white 45%, transparent) 0%, transparent 32%),
+    linear-gradient(245deg, color-mix(in oklch, white 22%, transparent) 0%, transparent 46%),
+    linear-gradient(325deg, color-mix(in oklch, black 20%, transparent) 0%, transparent 42%),
+    var(--quest);
   color: var(--quest-foreground);
 }
 
@@ -256,6 +293,7 @@ button.wordmark-die {
 }
 
 .mobile-nav-sheet {
+  animation: sheet-unfurl 340ms cubic-bezier(0.19, 1, 0.22, 1);
   background: var(--parchment);
   box-shadow: -20px 0 48px color-mix(in oklch, black 32%, transparent);
   color: var(--parchment-foreground);
@@ -263,10 +301,49 @@ button.wordmark-die {
   flex-direction: column;
   inset-block: 0;
   max-width: 360px;
+  overflow: hidden;
   padding: 34px 26px;
   position: absolute;
   right: 0;
+  transform-origin: top;
   width: min(86vw, 360px);
+}
+
+.mobile-nav-roller {
+  background: var(--parchment-emphasis);
+  border-bottom: 1px solid color-mix(in oklch, var(--parchment-foreground) 25%, transparent);
+  box-shadow: 0 5px 7px color-mix(in oklch, black 26%, transparent);
+  height: 18px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.mobile-nav-roller::before,
+.mobile-nav-roller::after {
+  background: color-mix(in oklch, var(--parchment-foreground) 70%, black);
+  border-radius: 50%;
+  content: "";
+  height: 11px;
+  position: absolute;
+  top: 3px;
+  width: 11px;
+}
+
+.mobile-nav-roller::before { left: 9px; }
+.mobile-nav-roller::after { right: 9px; }
+
+@keyframes sheet-unfurl {
+  0% { transform: scaleY(0.08); }
+  60% { transform: scaleY(1.03); }
+  100% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-sheet {
+    animation: none;
+  }
 }
 
 .mobile-nav-sheet > p {
@@ -602,8 +679,9 @@ button.wordmark-die {
 }
 
 .copy-status {
-  background: var(--quest);
+  background: radial-gradient(circle at 30% 25%, var(--brass-bright), var(--quest) 60%);
   border-radius: 3px;
+  box-shadow: 0 3px 6px color-mix(in oklch, black 35%, transparent);
   color: var(--quest-foreground);
   font-family: "Geist Mono", monospace;
   font-size: 0.64rem;
@@ -618,8 +696,15 @@ button.wordmark-die {
 }
 
 .copy-status:not(:empty) {
+  animation: wax-stamp 380ms cubic-bezier(0.19, 1, 0.22, 1);
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-status:not(:empty) {
+    animation: none;
+  }
 }
 
 .copy-check {
@@ -894,6 +979,34 @@ button.wordmark-die {
 
 .section-heading {
   max-width: 760px;
+}
+
+/*
+ * Scroll-triggered reveal — a pure CSS scroll-driven animation (no
+ * IntersectionObserver needed). Gated behind @supports so browsers
+ * without it (and reduced-motion users) simply see headings at rest,
+ * fully visible, never stuck at the keyframe's "from" state.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section-heading,
+    .docs-section-title {
+      animation: heading-reveal linear both;
+      animation-range: entry 0% cover 35%;
+      animation-timeline: view(block);
+    }
+  }
+}
+
+@keyframes heading-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section-note,
@@ -1263,7 +1376,28 @@ button.wordmark-die {
   isolation: isolate;
   justify-content: center;
   position: relative;
+  transition: transform 260ms cubic-bezier(0.19, 1, 0.22, 1), box-shadow 260ms ease;
   width: 66px;
+}
+
+.role-sheet:hover .role-sigil,
+.role-sheet:focus-visible .role-sigil {
+  box-shadow:
+    inset 0 2px 3px color-mix(in oklch, white 32%, transparent),
+    inset 0 -3px 5px color-mix(in oklch, black 28%, transparent),
+    0 10px 16px color-mix(in oklch, black 32%, transparent);
+  transform: rotate(-6deg) translateY(-4px) scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-sigil {
+    transition: none;
+  }
+
+  .role-sheet:hover .role-sigil,
+  .role-sheet:focus-visible .role-sigil {
+    transform: none;
+  }
 }
 
 .role-sigil::before {
@@ -1405,8 +1539,15 @@ button.wordmark-die {
 }
 
 .mode-tabs button.is-selected {
+  animation: pip-tumble 420ms cubic-bezier(0.19, 1, 0.22, 1);
   opacity: 1;
   transform: translateY(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-tabs button.is-selected {
+    animation: none;
+  }
 }
 
 .install-console > p {
@@ -2147,6 +2288,19 @@ td:first-child {
   100% { transform: scale(1) rotate(0); }
 }
 
+@keyframes wax-stamp {
+  0% { transform: translateY(-10px) scale(1.5) rotate(-8deg); }
+  55% { transform: translateY(2px) scale(0.94) rotate(2deg); }
+  100% { transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes pip-tumble {
+  0% { transform: translateY(2px) rotate(0deg) scale(1); }
+  35% { transform: translateY(-3px) rotate(-12deg) scale(1.05); }
+  70% { transform: translateY(1px) rotate(6deg) scale(0.98); }
+  100% { transform: translateY(2px) rotate(0deg) scale(1); }
+}
+
 @media (max-width: 1100px) {
   .hero-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2507,5 +2661,38 @@ td:first-child {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Page-turn route transition — opt-in via the native View Transitions
+ * API. Inert (no-op) in browsers or navigations that don't support it,
+ * so this is purely additive.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: page-turn-out 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  ::view-transition-new(root) {
+    animation: page-turn-in 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
+  }
+}
+
+@keyframes page-turn-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985) translateY(8px);
+  }
+}
+
+@keyframes page-turn-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985) translateY(-8px);
   }
 }

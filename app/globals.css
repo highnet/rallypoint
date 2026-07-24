@@ -753,6 +753,7 @@ button.wordmark-die {
 .manifesto,
 .party-section,
 .install-section,
+.ownership-section,
 .proof-section {
   padding: clamp(84px, 11vw, 170px) clamp(22px, 6vw, 96px);
 }
@@ -879,6 +880,28 @@ button.wordmark-die {
 
 .role-party {
   border-top: 1px solid var(--border);
+}
+
+.ownership-section {
+  background: var(--background);
+}
+
+.ownership-list {
+  max-width: 900px;
+}
+
+.ownership-list span {
+  color: var(--quest);
+}
+
+.ownership-list span svg {
+  height: 18px;
+  width: 18px;
+}
+
+.ownership-title {
+  font-weight: 700;
+  margin: 0 0 4px;
 }
 
 .role-sheet {

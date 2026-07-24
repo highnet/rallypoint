@@ -12,6 +12,7 @@ import { AudienceFork } from "@/components/audience-fork";
 import { CampaignBackground } from "@/components/campaign-background";
 import { InstallPanel } from "@/components/install-panel";
 import { MobileNav } from "@/components/mobile-nav";
+import { OwnershipBand } from "@/components/ownership-band";
 import { RoleParty } from "@/components/role-party";
 import { TabletopLoop } from "@/components/tabletop-loop";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -128,6 +129,14 @@ export default function Home() {
           </span>
         </div>
         <InstallPanel />
+      </section>
+
+      <section className="ownership-section" id="ownership">
+        <div className="section-heading">
+          <p className="section-note">No lock-in, no subscription</p>
+          <h2>You own what gets installed.</h2>
+        </div>
+        <OwnershipBand />
       </section>
 
       <section className="proof-section">

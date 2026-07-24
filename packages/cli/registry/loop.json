@@ -5,6 +5,12 @@
   "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, and an orchestrator that dispatches them.",
   "files": [
     {
+      "path": ".rallypoint/LICENSE",
+      "executable": false,
+      "sha256": "d543827b17be1d23b9de910c7dbec00cbf151ae2c4be8420d9d12ec97ca0d823",
+      "content": "MIT License\n\nCopyright (c) 2026 Highnet\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n"
+    },
+    {
       "path": "AGENTS.md",
       "executable": false,
       "sha256": "25709fbec9458e2d4e5dd7f855649fb109465604d135a4c78c27be8271f457da",

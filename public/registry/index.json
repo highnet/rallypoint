@@ -6,7 +6,7 @@
       "name": "loop",
       "version": "0.1.0",
       "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, and an orchestrator that dispatches them.",
-      "fileCount": 12
+      "fileCount": 13
     }
   ]
 }

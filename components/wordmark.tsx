@@ -40,7 +40,24 @@ export function Wordmark({ className, href = "/" }: WordmarkProps) {
         title="Roll for initiative"
         type="button"
       >
-        {roll}
+        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <g className="wordmark-die-facets">
+            <path d="M16 3 7 9 16 9Z" />
+            <path d="M16 3 16 9 25 9Z" />
+            <path d="M7 9 5 19 16 24Z" />
+            <path d="M7 9 16 24 25 9Z" className="wordmark-die-front" />
+            <path d="M16 24 25 9 27 19Z" />
+            <path d="M16 29 5 19 16 24Z" />
+            <path d="M16 29 16 24 27 19Z" />
+          </g>
+          <path
+            className="wordmark-die-outline"
+            d="M16 3 25 9 27 19 16 29 5 19 7 9Z"
+          />
+          <text x="16" y="20.5" textAnchor="middle">
+            {roll}
+          </text>
+        </svg>
       </button>
       <Link href={href}>Rallypoint</Link>
       <span className="sr-only" aria-live="polite">

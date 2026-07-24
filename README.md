@@ -71,18 +71,28 @@ node packages/cli/bin/rallypoint.mjs add loop --dry-run
 ## Publishing the CLI
 
 The website package at the repository root is intentionally private and must
-never be published. Publish only from the CLI package:
+never be published. The CLI package publishes to npm automatically.
+
+`.github/workflows/publish-cli.yml` runs on every push to `main` that touches
+`packages/cli/package.json`. It runs `npm run cli:test`, compares the local
+version against what's already on npm, and publishes only when they differ —
+so bumping the version and merging to `main` is the entire release process.
+A run that finds nothing new to publish exits cleanly rather than failing.
+
+To cut a release: bump `version` in `packages/cli/package.json` (and the
+matching `VERSION` const in `packages/cli/bin/rallypoint.mjs`), then merge to
+`main`. No manual `npm publish` step is needed.
+
+For a local dry run before merging:
 
 ```bash
 npm ci
 npm run cli:test
 npm pack ./packages/cli --dry-run
-cd packages/cli
-npm publish
 ```
 
 The CLI package’s `prepublishOnly` hook rebuilds the checksummed registry before
-npm creates the release tarball.
+npm creates the release tarball, in both the local and automated flows.
 
 ## Protocol origin
 

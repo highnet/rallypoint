@@ -31,8 +31,8 @@
     {
       "path": ".rallypoint/config.json",
       "executable": false,
-      "sha256": "4fa3e069723240088727fa74c4d5ee071e5a20a181241a4d9d3ed26a98a2f880",
-      "content": "{\n  \"$schema\": \"https://rallypoint.dev/schema/config.json\",\n  \"integrationBranch\": \"main\",\n  \"branchPrefix\": \"agent/\",\n  \"claimRefPrefix\": \"rallypoint-claims/issue-\",\n  \"readyBacklog\": {\n    \"minimum\": 5,\n    \"maximum\": 15\n  },\n  \"staleClaimHours\": 3,\n  \"stalePullRequestHours\": 24,\n  \"labels\": {\n    \"task\": \"task\",\n    \"ready\": \"status:ready\",\n    \"claimed\": \"status:claimed\",\n    \"blocked\": \"status:blocked\",\n    \"human\": \"needs:human\",\n    \"approved\": \"review:approved\"\n  }\n}\n"
+      "sha256": "c695324f4aa3dbba944b7663f359dd618ea1f3586e4f36268eea9f67c2b29835",
+      "content": "{\n  \"$schema\": \"https://rallypoint.tools/schema/config.json\",\n  \"integrationBranch\": \"main\",\n  \"branchPrefix\": \"agent/\",\n  \"claimRefPrefix\": \"rallypoint-claims/issue-\",\n  \"readyBacklog\": {\n    \"minimum\": 5,\n    \"maximum\": 15\n  },\n  \"staleClaimHours\": 3,\n  \"stalePullRequestHours\": 24,\n  \"labels\": {\n    \"task\": \"task\",\n    \"ready\": \"status:ready\",\n    \"claimed\": \"status:claimed\",\n    \"blocked\": \"status:blocked\",\n    \"human\": \"needs:human\",\n    \"approved\": \"review:approved\"\n  }\n}\n"
     },
     {
       "path": ".rallypoint/roles/planner.md",

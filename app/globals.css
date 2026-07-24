@@ -260,7 +260,7 @@ button.wordmark-die {
   opacity: 0.58;
 }
 
-.site-header nav {
+.site-header > nav {
   align-items: center;
   display: flex;
   font-size: 0.91rem;
@@ -268,11 +268,11 @@ button.wordmark-die {
   gap: clamp(18px, 2.4vw, 38px);
 }
 
-.site-header nav a {
+.site-header > nav a {
   position: relative;
 }
 
-.site-header nav a::after {
+.site-header > nav a::after {
   background: currentColor;
   bottom: -7px;
   content: "";
@@ -282,8 +282,8 @@ button.wordmark-die {
   transition: inset 180ms ease-out;
 }
 
-.site-header nav a:hover::after,
-.site-header nav a:focus-visible::after {
+.site-header > nav a:hover::after,
+.site-header > nav a:focus-visible::after {
   inset-inline: 0;
 }
 
@@ -579,6 +579,7 @@ button.wordmark-die {
   aspect-ratio: 1.36;
   isolation: isolate;
   min-height: 580px;
+  min-width: 0;
   position: relative;
 }
 
@@ -1583,7 +1584,7 @@ td:first-child {
 
 @media (max-width: 1100px) {
   .hero-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-copy {
@@ -1607,12 +1608,24 @@ td:first-child {
   }
 }
 
+@media (max-width: 1040px) {
+  .install-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .file-scroll {
+    margin-inline: auto;
+    max-width: 580px;
+    width: calc(100% - 36px);
+  }
+}
+
 @media (max-width: 820px) {
   .site-header {
     grid-template-columns: 1fr auto;
   }
 
-  .site-header nav {
+  .site-header > nav {
     display: none;
   }
 
@@ -1673,16 +1686,6 @@ td:first-child {
   .role-sheet > div:nth-child(2) {
     align-items: start;
     grid-template-columns: 1fr;
-  }
-
-  .install-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .file-scroll {
-    margin-inline: auto;
-    max-width: 580px;
-    width: calc(100% - 36px);
   }
 
   footer {

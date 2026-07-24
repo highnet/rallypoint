@@ -26,8 +26,11 @@ Use GitHub issues as the queue and labels as state:
 
 ## Roles
 
+Every session adopts exactly one role. The orchestrator decides which role a new session should adopt by reading the same repository state described below; every other role then works within its own boundary alone.
+
 | Role | Claims issues? | Reviews? | Responsibility |
 | --- | --- | --- | --- |
+| Orchestrator | No | No | Reads repository state and dispatches the next role to run. |
 | Planner | No | No | Keeps a small, ordered backlog of ready issues. |
 | Worker | Exactly one | Never own work | Ships one issue as one pull request. |
 | Reviewer | No | Yes | Judges the current revision against the issue and repository rules. |

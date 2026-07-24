@@ -5,7 +5,7 @@
     {
       "name": "loop",
       "version": "0.1.0",
-      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, and janitors.",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, and an orchestrator that dispatches them.",
       "files": [
         { "source": "AGENTS.md", "target": "AGENTS.md" },
         { "source": "docs/AGENT_LOOP.md", "target": "docs/AGENT_LOOP.md" },
@@ -16,6 +16,7 @@
         { "source": ".rallypoint/roles/tester.md", "target": ".rallypoint/roles/tester.md" },
         { "source": ".rallypoint/roles/fixer.md", "target": ".rallypoint/roles/fixer.md" },
         { "source": ".rallypoint/roles/janitor.md", "target": ".rallypoint/roles/janitor.md" },
+        { "source": ".rallypoint/roles/orchestrator.md", "target": ".rallypoint/roles/orchestrator.md" },
         { "source": ".rallypoint/scripts/claim.mjs", "target": ".rallypoint/scripts/claim.mjs", "executable": true },
         { "source": ".rallypoint/scripts/cleanup.mjs", "target": ".rallypoint/scripts/cleanup.mjs", "executable": true }
       ]

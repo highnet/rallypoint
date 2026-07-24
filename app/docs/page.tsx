@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   CircleDot,
   GitBranch,
-  GitFork,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -11,8 +10,6 @@ import { CommandCopy } from "@/components/command-copy";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const rules = [
   "One issue, one branch, one pull request.",
@@ -34,13 +31,6 @@ export default function DocsPage() {
           <a href="#install">Install</a>
         </nav>
         <div className="header-actions">
-          <a
-            aria-label="Rallypoint repository on GitHub"
-            className="github-link"
-            href="https://github.com/highnet/highnet-agentic-loop"
-          >
-              <GitFork aria-hidden="true" />
-          </a>
           <ThemeToggle />
           <MobileNav />
         </div>
@@ -128,6 +118,12 @@ export default function DocsPage() {
                   <td>No</td>
                   <td>Releases stale claims and reservations.</td>
                 </tr>
+                <tr>
+                  <td>Orchestrator</td>
+                  <td>No</td>
+                  <td>No</td>
+                  <td>Reads state and dispatches the next role.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -151,13 +147,6 @@ export default function DocsPage() {
             command="npx rallypoint@latest add loop"
             id="docs-install"
           />
-          <a
-            className={cn(buttonVariants({ variant: "quest", size: "lg" }))}
-            href="https://github.com/highnet/highnet-agentic-loop"
-          >
-            Open the repository
-            <GitFork />
-          </a>
         </section>
       </article>
     </main>

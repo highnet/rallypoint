@@ -2,7 +2,6 @@ import {
   ArrowDown,
   ArrowRight,
   GitBranch,
-  GitFork,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -36,13 +35,6 @@ export default function Home() {
             <Link href="/docs">Playbook</Link>
           </nav>
           <div className="header-actions">
-            <a
-              aria-label="Rallypoint repository on GitHub"
-              className="github-link"
-              href="https://github.com/highnet/highnet-agentic-loop"
-            >
-              <GitFork aria-hidden="true" />
-            </a>
             <ThemeToggle />
             <MobileNav />
           </div>
@@ -163,13 +155,6 @@ export default function Home() {
       <footer>
         <Wordmark className="footer-wordmark" href="#top" />
         <p>GitHub is the board. Agents are the party.</p>
-        <a
-          className="footer-github"
-          href="https://github.com/highnet/highnet-agentic-loop"
-        >
-          <GitFork aria-hidden="true" />
-          highnet/highnet-agentic-loop
-        </a>
       </footer>
     </main>
   );

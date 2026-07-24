@@ -89,6 +89,21 @@ export const agents = [
     never: ["Claims work", "Edits product code", "Reviews, approves, or merges"],
     handoff: "A truthful queue with stale reservations removed and no product diff.",
   },
+  {
+    slug: "orchestrator",
+    name: "Orchestrator",
+    title: "The quartermaster",
+    summary: "Surveys the board on demand and recommends who to send out next.",
+    color: "teal",
+    token: "diamond",
+    does: [
+      "Reads the ready, claimed, blocked, and needs-human split, plus open pull requests by review state.",
+      "Compares the ready backlog against the configured range.",
+      "Recommends how many sessions of each role to start, with one line of reasoning per role.",
+    ],
+    never: ["Claims an issue", "Edits product code or reviews a pull request", "Starts a session without operator confirmation"],
+    handoff: "A session-count recommendation the operator confirms before anything is launched.",
+  },
 ] as const;
 
 export type Agent = (typeof agents)[number];

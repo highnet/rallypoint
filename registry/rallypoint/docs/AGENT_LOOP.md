@@ -34,6 +34,7 @@ Use GitHub issues as the queue and labels as state:
 | Tester | Its own filed gap | No | Finds the weakest coverage area and closes one gap. |
 | Fixer | No | No | Addresses review feedback on an existing pull request branch. |
 | Janitor | No | No | Releases stale claims and removes abandoned reservation refs. |
+| Orchestrator | Never | Never | Surveys the queue and open pull requests, then recommends how many sessions of each role to start; never acts without operator confirmation. |
 
 ## Atomic claims
 

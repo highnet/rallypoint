@@ -28,6 +28,7 @@
   --violet: oklch(0.58 0.16 306);
   --green: oklch(0.48 0.1 151);
   --slate: oklch(0.52 0.035 220);
+  --teal: oklch(0.55 0.1 195);
   --radius: 0.5rem;
 }
 
@@ -575,6 +576,30 @@ button.wordmark-die {
   animation: copy-pop 220ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
+.campaign-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.map-hint {
+  align-items: center;
+  color: color-mix(in oklch, var(--felt-foreground) 70%, transparent);
+  display: inline-flex;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  gap: 8px;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.map-hint svg {
+  color: var(--quest);
+  height: 15px;
+  width: 15px;
+}
+
 .campaign-table {
   aspect-ratio: 1.36;
   isolation: isolate;
@@ -748,18 +773,25 @@ button.wordmark-die {
   background: color-mix(in oklch, var(--surface-deep) 93%, black);
   border: 1px solid color-mix(in oklch, var(--parchment) 35%, transparent);
   border-radius: 6px;
-  bottom: 7%;
   color: var(--felt-foreground);
   display: flex;
   flex-direction: column;
   font-size: 0.73rem;
   gap: 3px;
-  left: 50%;
   line-height: 1.35;
-  max-width: 310px;
   padding: 10px 14px;
+}
+
+.map-legend-overlay {
+  bottom: 7%;
+  left: 50%;
+  max-width: 310px;
   position: absolute;
   transform: translateX(-50%);
+}
+
+.map-legend-static {
+  display: none;
 }
 
 .legend-title {
@@ -768,6 +800,29 @@ button.wordmark-die {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.legend-link {
+  align-items: center;
+  color: var(--quest);
+  display: inline-flex;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  gap: 6px;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.legend-link svg {
+  height: 12px;
+  transition: transform 160ms ease;
+  width: 12px;
+}
+
+.legend-link:hover svg,
+.legend-link:focus-visible svg {
+  transform: translateX(3px);
 }
 
 .manifesto,
@@ -851,6 +906,14 @@ button.wordmark-die {
   margin: 0;
 }
 
+.loop-ribbon-hint {
+  color: color-mix(in oklch, var(--parchment-foreground) 68%, transparent);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.78rem;
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+}
+
 .loop-ribbon {
   border-bottom: 1px solid color-mix(in oklch, var(--parchment-foreground) 28%, transparent);
   border-top: 1px solid color-mix(in oklch, var(--parchment-foreground) 28%, transparent);
@@ -858,18 +921,39 @@ button.wordmark-die {
   gap: 0;
   grid-column: 1 / -1;
   grid-template-columns: repeat(5, 1fr);
+  margin-top: 14px;
 }
 
-.loop-ribbon > div {
+.loop-step {
   align-items: center;
+  background: none;
+  border: 0;
+  border-right: 1px solid color-mix(in oklch, var(--parchment-foreground) 18%, transparent);
+  color: inherit;
+  cursor: pointer;
   display: grid;
   gap: 9px;
   grid-template-columns: auto 1fr auto;
   min-height: 84px;
   padding: 12px 18px;
+  text-align: left;
+  transition: background 160ms ease;
 }
 
-.loop-ribbon span {
+.loop-step:last-of-type {
+  border-right: 0;
+}
+
+.loop-step:hover,
+.loop-step:focus-visible {
+  background: color-mix(in oklch, var(--parchment-foreground) 6%, transparent);
+}
+
+.loop-step.is-active {
+  background: color-mix(in oklch, var(--parchment-foreground) 9%, transparent);
+}
+
+.loop-step-number {
   align-items: center;
   border: 1px solid currentColor;
   border-radius: 50%;
@@ -878,15 +962,73 @@ button.wordmark-die {
   font-size: 0.7rem;
   height: 28px;
   justify-content: center;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
   width: 28px;
 }
 
-.loop-ribbon strong {
+.loop-step.is-active .loop-step-number {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--parchment-foreground);
+}
+
+.loop-step[data-stage="build"].is-active .loop-step-number,
+.loop-step[data-stage="merge"].is-active .loop-step-number {
+  color: white;
+}
+
+.loop-step strong {
   font-size: 0.87rem;
 }
 
-.loop-ribbon svg {
+.loop-step-arrow {
   opacity: 0.48;
+}
+
+.loop-step-detail {
+  animation: loop-step-reveal 200ms ease both;
+  align-items: center;
+  border-top: 1px dashed color-mix(in oklch, var(--parchment-foreground) 26%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  grid-column: 1 / -1;
+  padding: 16px 18px;
+}
+
+.loop-step-detail p {
+  color: color-mix(in oklch, var(--parchment-foreground) 80%, transparent);
+  flex: 1 1 320px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.loop-step-detail a {
+  align-items: center;
+  color: var(--quest);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 6px;
+}
+
+.loop-step-detail a svg {
+  height: 13px;
+  transition: transform 160ms ease;
+  width: 13px;
+}
+
+.loop-step-detail a:hover svg,
+.loop-step-detail a:focus-visible svg {
+  transform: translateX(3px);
+}
+
+@keyframes loop-step-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .party-section {
@@ -940,6 +1082,7 @@ button.wordmark-die {
 .role-amber { background: var(--amber); }
 .role-green { background: var(--green); color: white; }
 .role-slate { background: var(--slate); color: white; }
+.role-teal { background: var(--teal); color: white; }
 
 .role-sheet > div:nth-child(2) {
   align-items: baseline;
@@ -1243,6 +1386,7 @@ footer > p {
   letter-spacing: -0.04em;
   line-height: 0.8;
   margin: 26px 0 20px;
+  overflow-wrap: break-word;
 }
 
 .agent-title {
@@ -1659,8 +1803,12 @@ td:first-child {
     font-size: 0.61rem;
   }
 
-  .map-legend {
+  .map-legend-overlay {
     display: none;
+  }
+
+  .map-legend-static {
+    display: flex;
   }
 
   .manifesto {
@@ -1671,15 +1819,16 @@ td:first-child {
     grid-template-columns: 1fr;
   }
 
-  .loop-ribbon > div {
+  .loop-step {
     border-bottom: 1px solid color-mix(in oklch, var(--parchment-foreground) 20%, transparent);
+    border-right: 0;
   }
 
-  .loop-ribbon > div:last-child {
+  .loop-step:last-of-type {
     border-bottom: 0;
   }
 
-  .loop-ribbon svg {
+  .loop-step-arrow {
     transform: rotate(90deg);
   }
 
@@ -1835,7 +1984,7 @@ td:first-child {
   }
 
   .agent-hero h1 {
-    font-size: clamp(4.5rem, 23vw, 6.5rem);
+    font-size: clamp(4rem, 18vw, 6.5rem);
   }
 
   .contract-column {

@@ -128,6 +128,12 @@ export default function DocsPage() {
                   <td>No</td>
                   <td>Releases stale claims and reservations.</td>
                 </tr>
+                <tr>
+                  <td>Orchestrator</td>
+                  <td>Never</td>
+                  <td>Never</td>
+                  <td>Surveys the queue and recommends role session counts, on demand.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -141,7 +147,10 @@ export default function DocsPage() {
           <p>
             Rallypoint’s CLI reads its own signed campaign manifest and writes
             each file to an explicit repository-root path. It stops on
-            conflicts, so an existing AGENTS.md is never silently replaced.
+            conflicts rather than overwriting anything silently. An existing
+            AGENTS.md gets special handling: it’s left untouched, the rest of
+            the loop still installs, and the CLI suggests adding a one-line{" "}
+            <code>@AGENTIC_LOOP.md</code> reference to it.
           </p>
           <CommandCopy
             command="npx rallypoint@latest view loop"

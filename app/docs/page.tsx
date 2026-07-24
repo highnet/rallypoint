@@ -1,13 +1,8 @@
-import {
-  ArrowLeft,
-  CircleDot,
-  GitBranch,
-  MessageSquare,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
+import { DocsQuickNav } from "@/components/docs-quick-nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
@@ -97,6 +92,8 @@ export default function DocsPage() {
         </div>
       </header>
 
+      <DocsQuickNav />
+
       <article className="docs-shell">
         <div className="docs-hero">
           <Link className="back-link" href="/">
@@ -114,22 +111,28 @@ export default function DocsPage() {
 
         <section className="docs-section" id="principles">
           <div className="docs-section-title">
-            <ShieldCheck />
+            <svg aria-hidden="true">
+              <use href="#charge-ward-shield" />
+            </svg>
             <h2>The party oath</h2>
           </div>
-          <ol className="rule-list">
-            {rules.map((rule, index) => (
-              <li key={rule}>
-                <span>{index + 1}</span>
-                <p>{rule}</p>
-              </li>
-            ))}
-          </ol>
+          <div className="oath-charter ledger-panel">
+            <ol className="rule-list oath-list">
+              {rules.map((rule, index) => (
+                <li key={rule}>
+                  <span>{index + 1}</span>
+                  <p>{rule}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
         </section>
 
         <section className="docs-section" id="roles">
           <div className="docs-section-title">
-            <CircleDot />
+            <svg aria-hidden="true">
+              <use href="#charge-circle-mark" />
+            </svg>
             <h2>Role boundaries</h2>
           </div>
           <div className="docs-table-wrap">
@@ -192,7 +195,9 @@ export default function DocsPage() {
 
         <section className="docs-section docs-install" id="install">
           <div className="docs-section-title">
-            <GitBranch />
+            <svg aria-hidden="true">
+              <use href="#charge-way-mark" />
+            </svg>
             <h2>Install the campaign pack</h2>
           </div>
           <p>
@@ -215,7 +220,9 @@ export default function DocsPage() {
 
         <section className="docs-section docs-prompting" id="prompting">
           <div className="docs-section-title">
-            <MessageSquare />
+            <svg aria-hidden="true">
+              <use href="#charge-parley-mark" />
+            </svg>
             <h2>Prompt the party</h2>
           </div>
           <p>
@@ -266,7 +273,8 @@ export default function DocsPage() {
           </p>
           <ul className="prompt-examples">
             {humanPrompts.map(({ label, prompt }) => (
-              <li className="prompt-example" key={label}>
+              <li className="prompt-example ledger-panel" key={label}>
+                <span aria-hidden="true" className="prompt-waypoint" />
                 <p className="prompt-label">{label}</p>
                 <p className="prompt-text">“{prompt}”</p>
               </li>

@@ -137,9 +137,11 @@ export function CampaignBackground({
     die.castShadow = true;
     group.add(die);
 
-    const ambient = new THREE.HemisphereLight(0xf8e8bd, 0x10271f, 2.35);
+    const baseAmbientIntensity = 2.35;
+    const baseKeyIntensity = 5.2;
+    const ambient = new THREE.HemisphereLight(0xf8e8bd, 0x10271f, baseAmbientIntensity);
     scene.add(ambient);
-    const key = new THREE.DirectionalLight(0xffd98f, 5.2);
+    const key = new THREE.DirectionalLight(0xffd98f, baseKeyIntensity);
     key.position.set(-5, 11, 6);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -178,6 +180,12 @@ export function CampaignBackground({
             (-0.52 + Math.sin(time * 0.0012 + index) * 0.035 - token.position.y) *
             0.08;
         });
+        key.intensity =
+          baseKeyIntensity +
+          Math.sin(time * 0.008) * 0.22 +
+          Math.sin(time * 0.037) * 0.14 +
+          (Math.random() - 0.5) * 0.18;
+        ambient.intensity = baseAmbientIntensity + Math.sin(time * 0.006 + 1.5) * 0.08;
       }
       renderer.render(scene, camera);
       frame = window.requestAnimationFrame(render);

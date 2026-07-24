@@ -186,6 +186,35 @@ a {
   width: fit-content;
 }
 
+.gilt-divider {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  margin: 0 auto;
+  max-width: 1540px;
+  padding: 44px clamp(22px, 6vw, 96px);
+}
+
+.gilt-divider span {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brass) 15%,
+    var(--brass) 85%,
+    transparent
+  );
+  flex: 1;
+  height: 1px;
+}
+
+.gilt-divider svg {
+  color: var(--brass);
+  fill: currentColor;
+  flex: 0 0 auto;
+  height: 14px;
+  width: 14px;
+}
+
 .wordmark-die {
   align-items: center;
   background: transparent;
@@ -314,6 +343,7 @@ button.wordmark-die {
 }
 
 .mobile-nav-sheet {
+  animation: sheet-unfurl 340ms cubic-bezier(0.19, 1, 0.22, 1);
   background: var(--parchment);
   box-shadow: -20px 0 48px color-mix(in oklch, black 32%, transparent);
   color: var(--parchment-foreground);
@@ -321,10 +351,49 @@ button.wordmark-die {
   flex-direction: column;
   inset-block: 0;
   max-width: 360px;
+  overflow: hidden;
   padding: 34px 26px;
   position: absolute;
   right: 0;
+  transform-origin: top;
   width: min(86vw, 360px);
+}
+
+.mobile-nav-roller {
+  background: var(--parchment-emphasis);
+  border-bottom: 1px solid color-mix(in oklch, var(--parchment-foreground) 25%, transparent);
+  box-shadow: 0 5px 7px color-mix(in oklch, black 26%, transparent);
+  height: 18px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.mobile-nav-roller::before,
+.mobile-nav-roller::after {
+  background: color-mix(in oklch, var(--parchment-foreground) 70%, black);
+  border-radius: 50%;
+  content: "";
+  height: 11px;
+  position: absolute;
+  top: 3px;
+  width: 11px;
+}
+
+.mobile-nav-roller::before { left: 9px; }
+.mobile-nav-roller::after { right: 9px; }
+
+@keyframes sheet-unfurl {
+  0% { transform: scaleY(0.08); }
+  60% { transform: scaleY(1.03); }
+  100% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-sheet {
+    animation: none;
+  }
 }
 
 .mobile-nav-sheet > p {
@@ -426,36 +495,51 @@ button.wordmark-die {
 }
 
 .audience-switch {
-  background: color-mix(in oklch, var(--surface-deep) 88%, black);
-  border: 1px solid color-mix(in oklch, var(--parchment) 28%, transparent);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin: 10px auto 0;
+  display: flex;
+  gap: 8px;
+  margin: 0 auto;
   max-width: 1540px;
+  padding: 0 clamp(22px, 4vw, 64px);
   position: relative;
-  width: calc(100% - clamp(44px, 8vw, 128px));
+  width: 100%;
   z-index: 12;
 }
 
 .audience-switch button {
-  background: transparent;
-  border: 0;
-  color: color-mix(in oklch, var(--felt-foreground) 66%, transparent);
+  background: linear-gradient(
+    180deg,
+    var(--leather) 0%,
+    color-mix(in oklch, var(--leather) 82%, black) 100%
+  );
+  border: 1px solid color-mix(in oklch, black 32%, var(--leather));
+  border-bottom: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  color: color-mix(in oklch, var(--leather-foreground) 82%, transparent);
   cursor: pointer;
+  flex: 1;
   font-family: "Geist Mono", monospace;
   font-size: 0.76rem;
   font-weight: 700;
-  min-height: 44px;
-  padding: 10px 16px;
+  min-height: 52px;
+  padding: 12px 16px 22px;
+  transform: translateY(8px);
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
 }
 
-.audience-switch button + button {
-  border-left: 1px solid color-mix(in oklch, var(--parchment) 24%, transparent);
+.audience-switch button:hover {
+  transform: translateY(4px);
 }
 
 .audience-switch button.is-selected {
-  background: var(--parchment);
+  background: linear-gradient(180deg, var(--parchment-emphasis), var(--parchment));
   color: var(--parchment-foreground);
+  transform: translateY(0);
+  z-index: 2;
+}
+
+.audience-switch button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .audience-panel {
@@ -540,6 +624,8 @@ button.wordmark-die {
 
 .campaign-stamp {
   align-items: center;
+  border: 1.5px dashed color-mix(in oklch, var(--felt-foreground) 45%, transparent);
+  border-radius: 3px;
   color: color-mix(in oklch, var(--felt-foreground) 83%, transparent);
   display: flex;
   font-family: "Geist Mono", monospace;
@@ -547,7 +633,10 @@ button.wordmark-die {
   gap: 9px;
   letter-spacing: 0.08em;
   margin-bottom: 26px;
+  padding: 7px 14px 7px 11px;
   text-transform: uppercase;
+  transform: rotate(-1.1deg);
+  width: fit-content;
 }
 
 .campaign-stamp svg {
@@ -588,21 +677,34 @@ button.wordmark-die {
 
 .command-well {
   align-items: center;
-  background: color-mix(in oklch, var(--surface-deep) 90%, black);
-  border: 1px solid color-mix(in oklch, var(--parchment) 33%, transparent);
-  border-radius: 9px;
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklch, var(--leather) 94%, black) 0%,
+    var(--leather) 100%
+  );
+  border: 1px solid color-mix(in oklch, black 35%, var(--leather));
+  border-radius: 3px;
   box-shadow:
-    inset 0 3px 8px color-mix(in oklch, black 38%, transparent),
-    0 2px 0 color-mix(in oklch, var(--parchment) 18%, transparent);
-  color: var(--parchment);
+    inset 0 0 0 1px color-mix(in oklch, var(--leather-stitch) 55%, transparent),
+    inset 0 2px 5px color-mix(in oklch, black 40%, transparent);
+  color: var(--leather-foreground);
   display: grid;
   gap: 12px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   margin-top: 30px;
   max-width: 650px;
   min-height: 58px;
-  padding: 8px 10px 8px 18px;
+  padding: 10px 12px 10px 20px;
   position: relative;
+}
+
+.command-well::before {
+  border: 1px dashed color-mix(in oklch, var(--leather-stitch) 62%, transparent);
+  border-radius: 2px;
+  content: "";
+  inset: 5px;
+  pointer-events: none;
+  position: absolute;
 }
 
 .command-well code {
@@ -614,7 +716,7 @@ button.wordmark-die {
 }
 
 .command-icon {
-  color: var(--quest);
+  color: var(--leather-stitch);
   height: 17px;
   width: 17px;
 }
@@ -627,8 +729,9 @@ button.wordmark-die {
 }
 
 .copy-status {
-  background: var(--quest);
+  background: radial-gradient(circle at 30% 25%, var(--brass-bright), var(--quest) 60%);
   border-radius: 3px;
+  box-shadow: 0 3px 6px color-mix(in oklch, black 35%, transparent);
   color: var(--quest-foreground);
   font-family: "Geist Mono", monospace;
   font-size: 0.64rem;
@@ -643,8 +746,15 @@ button.wordmark-die {
 }
 
 .copy-status:not(:empty) {
+  animation: wax-stamp 380ms cubic-bezier(0.19, 1, 0.22, 1);
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-status:not(:empty) {
+    animation: none;
+  }
 }
 
 .copy-check {
@@ -914,10 +1024,39 @@ button.wordmark-die {
   display: grid;
   gap: 48px clamp(36px, 8vw, 130px);
   grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 1.1fr);
+  position: relative;
 }
 
 .section-heading {
   max-width: 760px;
+}
+
+/*
+ * Scroll-triggered reveal — a pure CSS scroll-driven animation (no
+ * IntersectionObserver needed). Gated behind @supports so browsers
+ * without it (and reduced-motion users) simply see headings at rest,
+ * fully visible, never stuck at the keyframe's "from" state.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section-heading,
+    .docs-section-title {
+      animation: heading-reveal linear both;
+      animation-range: entry 0% cover 35%;
+      animation-timeline: view(block);
+    }
+  }
+}
+
+@keyframes heading-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section-note,
@@ -1127,9 +1266,10 @@ button.wordmark-die {
 .ledger-panel {
   --panel-notch: 16px;
   background:
-    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(var(--parchment), var(--parchment)) padding-box,
     linear-gradient(135deg, var(--brass-bright), var(--brass) 45%, var(--brass-shadow)) border-box;
   border: 1px solid transparent;
+  color: var(--parchment-foreground);
   clip-path: polygon(
     var(--panel-notch) 0%,
     calc(100% - var(--panel-notch)) 0%,
@@ -1140,7 +1280,61 @@ button.wordmark-die {
     0% calc(100% - var(--panel-notch)),
     0% var(--panel-notch)
   );
+  isolation: isolate;
   position: relative;
+}
+
+/*
+ * Parchment weathering — a faint fractal-noise grain plus a handful of
+ * fixed foxing blotches, layered behind content on the large parchment
+ * fields (never on the felt-toned surfaces). `clip-path: inherit` keeps
+ * both layers confined to notched hosts like .ledger-panel.
+ */
+.manifesto,
+.ledger-panel,
+.contract-column:not(.contract-never),
+.file-scroll {
+  isolation: isolate;
+}
+
+.manifesto::before,
+.manifesto::after,
+.ledger-panel::before,
+.ledger-panel::after,
+.contract-column:not(.contract-never)::before,
+.contract-column:not(.contract-never)::after,
+.file-scroll::before,
+.file-scroll::after {
+  clip-path: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.manifesto::after,
+.ledger-panel::after,
+.contract-column:not(.contract-never)::after,
+.file-scroll::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  mix-blend-mode: multiply;
+  opacity: 0.035;
+}
+
+.manifesto::before,
+.ledger-panel::before,
+.contract-column:not(.contract-never)::before,
+.file-scroll::before {
+  background-image:
+    radial-gradient(circle at 12% 22%, var(--foxing) 0%, transparent 9%),
+    radial-gradient(circle at 82% 14%, var(--foxing) 0%, transparent 7%),
+    radial-gradient(circle at 63% 76%, var(--foxing) 0%, transparent 11%),
+    radial-gradient(circle at 26% 88%, var(--foxing) 0%, transparent 6%),
+    radial-gradient(circle at 92% 60%, var(--foxing) 0%, transparent 8%),
+    radial-gradient(circle at 45% 42%, var(--foxing) 0%, transparent 5%);
+  opacity: 0.4;
 }
 
 .role-party {
@@ -1165,6 +1359,11 @@ button.wordmark-die {
 
 .ownership-section {
   background: var(--background);
+}
+
+.ownership-charter,
+.oath-charter {
+  padding: clamp(8px, 3vw, 20px) clamp(24px, 5vw, 64px);
 }
 
 .ownership-list {
@@ -1222,9 +1421,47 @@ button.wordmark-die {
   clip-path: polygon(50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%, 8% 25%);
   color: var(--ink, var(--parchment-foreground));
   display: flex;
+  filter: url(#wax-edge);
   height: 66px;
+  isolation: isolate;
   justify-content: center;
+  position: relative;
+  transition: transform 260ms cubic-bezier(0.19, 1, 0.22, 1), box-shadow 260ms ease;
   width: 66px;
+}
+
+.role-sheet:hover .role-sigil,
+.role-sheet:focus-visible .role-sigil {
+  box-shadow:
+    inset 0 2px 3px color-mix(in oklch, white 32%, transparent),
+    inset 0 -3px 5px color-mix(in oklch, black 28%, transparent),
+    0 10px 16px color-mix(in oklch, black 32%, transparent);
+  transform: rotate(-6deg) translateY(-4px) scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-sigil {
+    transition: none;
+  }
+
+  .role-sheet:hover .role-sigil,
+  .role-sheet:focus-visible .role-sigil {
+    transform: none;
+  }
+}
+
+.role-sigil::before {
+  background: radial-gradient(
+    circle at 34% 26%,
+    color-mix(in oklch, white 40%, transparent),
+    transparent 62%
+  );
+  clip-path: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
 }
 
 .role-sigil svg {
@@ -1337,11 +1574,8 @@ button.wordmark-die {
 }
 
 .install-console {
-  background: color-mix(in oklch, var(--surface-deep) 88%, black);
-  border: 1px solid color-mix(in oklch, var(--parchment) 30%, transparent);
-  border-radius: 10px;
-  box-shadow: inset 0 0 26px color-mix(in oklch, black 22%, transparent);
-  padding: clamp(22px, 4vw, 46px);
+  box-shadow: 0 22px 34px color-mix(in oklch, black 30%, transparent);
+  padding: clamp(30px, 4vw, 52px);
 }
 
 .mode-tabs {
@@ -1355,19 +1589,26 @@ button.wordmark-die {
 }
 
 .mode-tabs button.is-selected {
+  animation: pip-tumble 420ms cubic-bezier(0.19, 1, 0.22, 1);
   opacity: 1;
   transform: translateY(2px);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .mode-tabs button.is-selected {
+    animation: none;
+  }
+}
+
 .install-console > p {
-  color: color-mix(in oklch, var(--felt-foreground) 72%, transparent);
+  color: color-mix(in oklch, var(--parchment-foreground) 74%, transparent);
   font-size: 0.88rem;
   line-height: 1.55;
   margin: 22px 0 0;
 }
 
 .install-notes {
-  border-top: 1px solid color-mix(in oklch, var(--parchment) 23%, transparent);
+  border-top: 1px solid color-mix(in oklch, var(--parchment-foreground) 22%, transparent);
   display: flex;
   flex-wrap: wrap;
   gap: 18px 28px;
@@ -1473,9 +1714,20 @@ button.wordmark-die {
 
 .proof-mark {
   align-items: center;
-  border: 2px solid currentColor;
+  background: radial-gradient(
+    circle at 32% 26%,
+    var(--brass-bright),
+    var(--brass) 55%,
+    var(--brass-shadow) 100%
+  );
   border-radius: 50%;
+  box-shadow:
+    0 8px 16px color-mix(in oklch, black 38%, transparent),
+    inset 0 -5px 9px color-mix(in oklch, black 30%, transparent),
+    inset 0 3px 4px color-mix(in oklch, white 35%, transparent);
+  color: var(--brass-shadow);
   display: flex;
+  filter: url(#wax-edge);
   height: 82px;
   justify-content: center;
   width: 82px;
@@ -1528,6 +1780,14 @@ footer > p {
   position: relative;
 }
 
+.agent-violet { --role-accent: var(--violet); }
+.agent-red { --role-accent: var(--red); }
+.agent-blue { --role-accent: var(--blue); }
+.agent-amber { --role-accent: var(--amber); }
+.agent-green { --role-accent: var(--green); }
+.agent-slate { --role-accent: var(--slate); }
+.agent-rose { --role-accent: var(--rose); }
+
 .agent-hero .campaign-background {
   opacity: 0.76;
 }
@@ -1546,7 +1806,7 @@ footer > p {
 }
 
 .agent-index {
-  color: var(--quest);
+  color: color-mix(in oklch, var(--role-accent, var(--quest)) 78%, var(--felt-foreground) 22%);
   font-family: "Geist Mono", monospace;
   font-size: 0.76rem;
   font-weight: 800;
@@ -1566,7 +1826,7 @@ footer > p {
 }
 
 .agent-title {
-  color: var(--quest);
+  color: color-mix(in oklch, var(--role-accent, var(--quest)) 78%, var(--felt-foreground) 22%);
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 3vw, 2.7rem);
   font-style: italic;
@@ -1588,6 +1848,27 @@ footer > p {
   gap: 1px;
   grid-template-columns: 1fr 1fr;
   padding: 0;
+  position: relative;
+}
+
+/* The spellbook gutter — a book-spine shadow marking the fold between pages. */
+.agent-contract::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, black 20%, transparent) 44%,
+    color-mix(in oklch, black 32%, transparent) 50%,
+    color-mix(in oklch, black 20%, transparent) 56%,
+    transparent
+  );
+  bottom: 0;
+  content: "";
+  left: calc(50% - 26px);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 52px;
+  z-index: 3;
 }
 
 .contract-column {
@@ -1595,6 +1876,7 @@ footer > p {
   color: var(--parchment-foreground);
   min-height: 520px;
   padding: clamp(68px, 8vw, 120px) clamp(26px, 6vw, 96px);
+  position: relative;
 }
 
 .contract-never {
@@ -1743,6 +2025,74 @@ footer > p {
   padding: 70px clamp(22px, 5vw, 70px) 130px;
 }
 
+.docs-quick-nav {
+  display: none;
+}
+
+@media (min-width: 1440px) {
+  .docs-quick-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    position: fixed;
+    right: 34px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+  }
+
+  .docs-quick-nav a {
+    align-items: center;
+    color: var(--muted-foreground);
+    display: flex;
+    flex-direction: column;
+    font-family: "Geist Mono", monospace;
+    font-size: 0.62rem;
+    gap: 6px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .docs-quick-nav-label {
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .docs-quick-nav:hover .docs-quick-nav-label,
+  .docs-quick-nav a:focus-visible .docs-quick-nav-label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .docs-quick-nav a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  .docs-quick-nav a:hover {
+    color: var(--foreground);
+  }
+
+  .docs-quick-nav-hex {
+    align-items: center;
+    background: var(--parchment);
+    clip-path: polygon(50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%, 8% 25%);
+    color: var(--parchment-foreground);
+    display: flex;
+    font-weight: 700;
+    height: 26px;
+    justify-content: center;
+    width: 26px;
+  }
+
+  .docs-quick-nav a:hover .docs-quick-nav-hex {
+    background: var(--quest);
+    color: var(--quest-foreground);
+  }
+}
+
 .docs-hero {
   border-bottom: 1px solid var(--border);
   padding-bottom: 74px;
@@ -1825,6 +2175,16 @@ footer > p {
   border-bottom: 1px solid var(--border);
 }
 
+.ownership-list li:first-child,
+.oath-list li:first-child {
+  border-top: 0;
+}
+
+.ownership-list li:last-child,
+.oath-list li:last-child {
+  border-bottom: 0;
+}
+
 .rule-list span {
   align-items: center;
   border: 1px solid var(--border);
@@ -1860,7 +2220,16 @@ td {
   text-align: left;
 }
 
+thead tr {
+  border-bottom: 2px solid var(--brass);
+}
+
+tbody tr:nth-child(even) {
+  background: color-mix(in oklch, var(--parchment) 16%, transparent);
+}
+
 th {
+  color: var(--brass);
   font-family: "Geist Mono", monospace;
   font-size: 0.7rem;
   letter-spacing: 0.07em;
@@ -1915,14 +2284,21 @@ td:first-child {
 }
 
 .prompt-example {
-  background: color-mix(in oklch, var(--parchment) 8%, transparent);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 18px 22px;
+  padding: 20px 24px 20px 36px;
+}
+
+.prompt-waypoint {
+  background: var(--quest);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  height: 14px;
+  left: 0;
+  position: absolute;
+  top: 24px;
+  width: 12px;
 }
 
 .prompt-label {
-  color: var(--muted-foreground);
+  color: color-mix(in oklch, var(--parchment-foreground) 70%, transparent);
   font-family: "Geist Mono", monospace;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
@@ -1931,6 +2307,7 @@ td:first-child {
 }
 
 .prompt-text {
+  color: var(--parchment-foreground);
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-style: italic;
@@ -1959,6 +2336,19 @@ td:first-child {
 @keyframes copy-pop {
   0% { transform: scale(0.65) rotate(-12deg); }
   100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes wax-stamp {
+  0% { transform: translateY(-10px) scale(1.5) rotate(-8deg); }
+  55% { transform: translateY(2px) scale(0.94) rotate(2deg); }
+  100% { transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes pip-tumble {
+  0% { transform: translateY(2px) rotate(0deg) scale(1); }
+  35% { transform: translateY(-3px) rotate(-12deg) scale(1.05); }
+  70% { transform: translateY(1px) rotate(6deg) scale(0.98); }
+  100% { transform: translateY(2px) rotate(0deg) scale(1); }
 }
 
 @media (max-width: 1100px) {
@@ -2106,6 +2496,10 @@ td:first-child {
     grid-template-columns: 1fr;
   }
 
+  .agent-contract::before {
+    display: none;
+  }
+
   .handoff-sheet {
     grid-column: 1;
   }
@@ -2146,8 +2540,8 @@ td:first-child {
   }
 
   .audience-switch {
-    margin-top: 4px;
-    width: calc(100% - 44px);
+    gap: 5px;
+    padding-inline: 16px;
   }
 
   .audience-switch button {
@@ -2317,5 +2711,38 @@ td:first-child {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Page-turn route transition — opt-in via the native View Transitions
+ * API. Inert (no-op) in browsers or navigations that don't support it,
+ * so this is purely additive.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: page-turn-out 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  ::view-transition-new(root) {
+    animation: page-turn-in 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
+  }
+}
+
+@keyframes page-turn-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985) translateY(8px);
+  }
+}
+
+@keyframes page-turn-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985) translateY(-8px);
   }
 }

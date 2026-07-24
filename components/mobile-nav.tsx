@@ -48,6 +48,7 @@ export function MobileNav() {
             type="button"
           />
           <nav aria-label="Mobile navigation" className="mobile-nav-sheet">
+            <div aria-hidden="true" className="mobile-nav-roller" />
             <p>Choose the next waypoint</p>
             {links.map((link, index) => (
               <Link href={link.href} key={link.href} onClick={() => setOpen(false)}>

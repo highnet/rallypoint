@@ -133,6 +133,94 @@ export function HeraldrySprite() {
         <path d="M24 24 L6 6 M24 24 L42 6 M24 24 L6 42 M24 24 L42 42" />
         <circle cx="24" cy="24" r="5" />
       </symbol>
+
+      {/* Manifest mark — a quill mid-stroke over its written line */}
+      <symbol
+        id="charge-manifest-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 36 L34 8" />
+        <path d="M34 8 L41 5 L38 12 Z" />
+        <path d="M16 32 L22 26 M20 28 L26 22 M24 24 L30 18" />
+        <path d="M7 41 H25" />
+      </symbol>
+
+      {/* Spark mark — a four-point flourish, for eyebrow/kicker copy */}
+      <symbol
+        id="charge-spark-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M24 4 C24 16 24 16 36 16 C24 16 24 16 24 28 C24 16 24 16 12 16 C24 16 24 16 24 4 Z" />
+        <path d="M38 32 L40 38 L46 40 L40 42 L38 48 L36 42 L30 40 L36 38 Z" />
+      </symbol>
+
+      {/* Ward shield — an oath-keeper's shield, for constraint/promise copy */}
+      <symbol
+        id="charge-ward-shield"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M24 4 L42 11 V23 C42 34 34 41 24 44 C14 41 6 34 6 23 V11 Z" />
+        <path d="M15 23 L21 29 L33 16" />
+      </symbol>
+
+      {/* Way mark — a forked path, for install/pipeline copy */}
+      <symbol
+        id="charge-way-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="10" r="4" />
+        <circle cx="12" cy="38" r="4" />
+        <circle cx="36" cy="24" r="4" />
+        <path d="M12 14 V26 C12 30 14 30 18 30 H32 M12 26 C12 22 14 20 18 20 H32" />
+      </symbol>
+
+      {/* Circle mark — a ringed waypoint, for the role roster copy */}
+      <symbol
+        id="charge-circle-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="24" cy="24" r="18" />
+        <circle cx="24" cy="24" r="6" />
+      </symbol>
+
+      {/* Parley mark — a folded message, for prompting copy */}
+      <symbol
+        id="charge-parley-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M6 10 H42 V32 H18 L10 40 V32 H6 Z" />
+        <path d="M14 18 H34 M14 24 H26" />
+      </symbol>
     </svg>
   );
 }

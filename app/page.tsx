@@ -1,15 +1,10 @@
-import {
-  ArrowDown,
-  ArrowRight,
-  GitBranch,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { ArrowDown, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
 import { AudienceFork } from "@/components/audience-fork";
 import { CampaignBackground } from "@/components/campaign-background";
+import { GiltDivider } from "@/components/gilt-divider";
 import { InstallPanel } from "@/components/install-panel";
 import { LoopRibbon } from "@/components/loop-ribbon";
 import { MobileNav } from "@/components/mobile-nav";
@@ -47,7 +42,9 @@ export default function Home() {
             <div className="hero-grid">
               <div className="hero-copy">
             <div className="campaign-stamp">
-              <Sparkles aria-hidden="true" />
+              <svg aria-hidden="true">
+                <use href="#charge-spark-mark" />
+              </svg>
               GitHub-native agent orchestration
             </div>
             <h1>Your agents need a quest log.</h1>
@@ -92,7 +89,9 @@ export default function Home() {
             and pull requests are the gates every change must pass.
           </p>
           <div className="oath">
-            <ShieldCheck aria-hidden="true" />
+            <svg aria-hidden="true">
+              <use href="#charge-ward-shield" />
+            </svg>
             <p>
               No side-channel database. No agent reviews its own work. No
               worker carries more than one claimed issue.
@@ -130,12 +129,18 @@ export default function Home() {
           <p className="section-note">No lock-in, no subscription</p>
           <h2>You own what gets installed.</h2>
         </div>
-        <OwnershipBand />
+        <div className="ownership-charter ledger-panel">
+          <OwnershipBand />
+        </div>
       </section>
+
+      <GiltDivider />
 
       <section className="proof-section">
         <div className="proof-mark" aria-hidden="true">
-          <GitBranch />
+          <svg>
+            <use href="#charge-way-mark" />
+          </svg>
         </div>
         <div>
           <p>Proven in the wild</p>

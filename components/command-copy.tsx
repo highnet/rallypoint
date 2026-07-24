@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Terminal } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,9 @@ export function CommandCopy({ className, command, id }: CommandCopyProps) {
 
   return (
     <div className={cn("command-well", className)}>
-      <Terminal aria-hidden="true" className="command-icon" />
+      <svg aria-hidden="true" className="command-icon">
+        <use href="#charge-manifest-mark" />
+      </svg>
       <code>{command}</code>
       <span className="copy-status" aria-live="polite">
         {isCopied ? "Quest copied" : ""}

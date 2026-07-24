@@ -530,21 +530,34 @@ button.wordmark-die {
 
 .command-well {
   align-items: center;
-  background: color-mix(in oklch, var(--surface-deep) 90%, black);
-  border: 1px solid color-mix(in oklch, var(--parchment) 33%, transparent);
-  border-radius: 9px;
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklch, var(--leather) 94%, black) 0%,
+    var(--leather) 100%
+  );
+  border: 1px solid color-mix(in oklch, black 35%, var(--leather));
+  border-radius: 3px;
   box-shadow:
-    inset 0 3px 8px color-mix(in oklch, black 38%, transparent),
-    0 2px 0 color-mix(in oklch, var(--parchment) 18%, transparent);
-  color: var(--parchment);
+    inset 0 0 0 1px color-mix(in oklch, var(--leather-stitch) 55%, transparent),
+    inset 0 2px 5px color-mix(in oklch, black 40%, transparent);
+  color: var(--leather-foreground);
   display: grid;
   gap: 12px;
   grid-template-columns: auto minmax(0, 1fr) auto;
   margin-top: 30px;
   max-width: 650px;
   min-height: 58px;
-  padding: 8px 10px 8px 18px;
+  padding: 10px 12px 10px 20px;
   position: relative;
+}
+
+.command-well::before {
+  border: 1px dashed color-mix(in oklch, var(--leather-stitch) 62%, transparent);
+  border-radius: 2px;
+  content: "";
+  inset: 5px;
+  pointer-events: none;
+  position: absolute;
 }
 
 .command-well code {
@@ -556,7 +569,7 @@ button.wordmark-die {
 }
 
 .command-icon {
-  color: var(--quest);
+  color: var(--leather-stitch);
   height: 17px;
   width: 17px;
 }

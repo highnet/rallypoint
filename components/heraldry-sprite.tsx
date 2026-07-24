@@ -133,6 +133,22 @@ export function HeraldrySprite() {
         <path d="M24 24 L6 6 M24 24 L42 6 M24 24 L6 42 M24 24 L42 42" />
         <circle cx="24" cy="24" r="5" />
       </symbol>
+
+      {/* Manifest mark — a quill mid-stroke over its written line */}
+      <symbol
+        id="charge-manifest-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M12 36 L34 8" />
+        <path d="M34 8 L41 5 L38 12 Z" />
+        <path d="M16 32 L22 26 M20 28 L26 22 M24 24 L30 18" />
+        <path d="M7 41 H25" />
+      </symbol>
     </svg>
   );
 }

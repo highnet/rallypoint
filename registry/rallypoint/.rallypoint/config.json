@@ -1,5 +1,5 @@
 {
-  "$schema": "https://rallypoint.dev/schema/config.json",
+  "$schema": "https://rallypoint.tools/schema/config.json",
   "integrationBranch": "main",
   "branchPrefix": "agent/",
   "claimRefPrefix": "rallypoint-claims/issue-",

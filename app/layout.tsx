@@ -27,19 +27,36 @@ const cinzelDecorative = Cinzel_Decorative({
   weight: ["700", "900"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rallypoint.tools";
+const title = "Rallypoint — A disciplined agent loop";
+const description =
+  "Install planners, workers, reviewers, testers, fixers, and a GitHub-native coordination protocol into any repository.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Rallypoint — A disciplined agent loop",
+    default: title,
     template: "%s · Rallypoint",
   },
-  description:
-    "Install planners, workers, reviewers, testers, fixers, and a GitHub-native coordination protocol into any repository.",
+  description,
   other: {
     "codex-preview": "development",
   },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
+  },
+  openGraph: {
+    title,
+    description,
+    url: siteUrl,
+    siteName: "Rallypoint",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
   },
 };
 

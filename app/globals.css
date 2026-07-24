@@ -198,9 +198,9 @@ button.wordmark-die {
   border-radius: 50%;
   color: var(--parchment-foreground);
   display: none;
-  height: 42px;
+  height: 44px;
   justify-content: center;
-  width: 42px;
+  width: 44px;
 }
 
 .mobile-nav-trigger svg {
@@ -318,8 +318,8 @@ button.wordmark-die {
 
 .theme-toggle,
 .theme-toggle-placeholder {
-  height: 42px;
-  width: 42px;
+  height: 44px;
+  width: 44px;
 }
 
 .theme-toggle-placeholder {

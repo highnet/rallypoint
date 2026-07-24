@@ -497,6 +497,8 @@ button.wordmark-die {
 
 .campaign-stamp {
   align-items: center;
+  border: 1.5px dashed color-mix(in oklch, var(--felt-foreground) 45%, transparent);
+  border-radius: 3px;
   color: color-mix(in oklch, var(--felt-foreground) 83%, transparent);
   display: flex;
   font-family: "Geist Mono", monospace;
@@ -504,7 +506,10 @@ button.wordmark-die {
   gap: 9px;
   letter-spacing: 0.08em;
   margin-bottom: 26px;
+  padding: 7px 14px 7px 11px;
   text-transform: uppercase;
+  transform: rotate(-1.1deg);
+  width: fit-content;
 }
 
 .campaign-stamp svg {
@@ -884,6 +889,7 @@ button.wordmark-die {
   display: grid;
   gap: 48px clamp(36px, 8vw, 130px);
   grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 1.1fr);
+  position: relative;
 }
 
 .section-heading {
@@ -1111,7 +1117,61 @@ button.wordmark-die {
     0% calc(100% - var(--panel-notch)),
     0% var(--panel-notch)
   );
+  isolation: isolate;
   position: relative;
+}
+
+/*
+ * Parchment weathering — a faint fractal-noise grain plus a handful of
+ * fixed foxing blotches, layered behind content on the large parchment
+ * fields (never on the felt-toned surfaces). `clip-path: inherit` keeps
+ * both layers confined to notched hosts like .ledger-panel.
+ */
+.manifesto,
+.ledger-panel,
+.contract-column:not(.contract-never),
+.file-scroll {
+  isolation: isolate;
+}
+
+.manifesto::before,
+.manifesto::after,
+.ledger-panel::before,
+.ledger-panel::after,
+.contract-column:not(.contract-never)::before,
+.contract-column:not(.contract-never)::after,
+.file-scroll::before,
+.file-scroll::after {
+  clip-path: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.manifesto::after,
+.ledger-panel::after,
+.contract-column:not(.contract-never)::after,
+.file-scroll::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  mix-blend-mode: multiply;
+  opacity: 0.035;
+}
+
+.manifesto::before,
+.ledger-panel::before,
+.contract-column:not(.contract-never)::before,
+.file-scroll::before {
+  background-image:
+    radial-gradient(circle at 12% 22%, var(--foxing) 0%, transparent 9%),
+    radial-gradient(circle at 82% 14%, var(--foxing) 0%, transparent 7%),
+    radial-gradient(circle at 63% 76%, var(--foxing) 0%, transparent 11%),
+    radial-gradient(circle at 26% 88%, var(--foxing) 0%, transparent 6%),
+    radial-gradient(circle at 92% 60%, var(--foxing) 0%, transparent 8%),
+    radial-gradient(circle at 45% 42%, var(--foxing) 0%, transparent 5%);
+  opacity: 0.4;
 }
 
 .role-party {
@@ -1197,9 +1257,26 @@ button.wordmark-die {
   clip-path: polygon(50% 0, 92% 25%, 92% 75%, 50% 100%, 8% 75%, 8% 25%);
   color: var(--ink, var(--parchment-foreground));
   display: flex;
+  filter: url(#wax-edge);
   height: 66px;
+  isolation: isolate;
   justify-content: center;
+  position: relative;
   width: 66px;
+}
+
+.role-sigil::before {
+  background: radial-gradient(
+    circle at 34% 26%,
+    color-mix(in oklch, white 40%, transparent),
+    transparent 62%
+  );
+  clip-path: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
 }
 
 .role-sigil svg {
@@ -1445,9 +1522,20 @@ button.wordmark-die {
 
 .proof-mark {
   align-items: center;
-  border: 2px solid currentColor;
+  background: radial-gradient(
+    circle at 32% 26%,
+    var(--brass-bright),
+    var(--brass) 55%,
+    var(--brass-shadow) 100%
+  );
   border-radius: 50%;
+  box-shadow:
+    0 8px 16px color-mix(in oklch, black 38%, transparent),
+    inset 0 -5px 9px color-mix(in oklch, black 30%, transparent),
+    inset 0 3px 4px color-mix(in oklch, white 35%, transparent);
+  color: var(--brass-shadow);
   display: flex;
+  filter: url(#wax-edge);
   height: 82px;
   justify-content: center;
   width: 82px;
@@ -1596,6 +1684,7 @@ footer > p {
   color: var(--parchment-foreground);
   min-height: 520px;
   padding: clamp(68px, 8vw, 120px) clamp(26px, 6vw, 96px);
+  position: relative;
 }
 
 .contract-never {

@@ -12,6 +12,7 @@ import { CommandCopy } from "@/components/command-copy";
 import { AudienceFork } from "@/components/audience-fork";
 import { CampaignBackground } from "@/components/campaign-background";
 import { InstallPanel } from "@/components/install-panel";
+import { LoopRibbon } from "@/components/loop-ribbon";
 import { MobileNav } from "@/components/mobile-nav";
 import { RoleParty } from "@/components/role-party";
 import { TabletopLoop } from "@/components/tabletop-loop";
@@ -105,17 +106,10 @@ export default function Home() {
             </p>
           </div>
         </div>
-        <div className="loop-ribbon" aria-label="Rallypoint workflow">
-          {["Read state", "Claim", "Build", "Review", "Merge"].map(
-            (stage, index) => (
-              <div key={stage}>
-                <span>{index + 1}</span>
-                <strong>{stage}</strong>
-                {index < 4 && <ArrowRight aria-hidden="true" />}
-              </div>
-            ),
-          )}
-        </div>
+        <p className="loop-ribbon-hint">
+          Tap a step to see what it does and open the role that owns it.
+        </p>
+        <LoopRibbon />
       </section>
 
       <section className="party-section" id="party">

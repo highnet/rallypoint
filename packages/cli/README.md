@@ -48,3 +48,11 @@ from the purely local, checksum-verified file writes `add` performs. It:
 
 `init` is idempotent and supports `--dry-run` and `--cwd <path>`, same as
 `add`.
+
+## Publishing
+
+Releases are automated. Bump `version` in `package.json` (and the matching
+`VERSION` const in `bin/rallypoint.mjs`), then merge to `main` — a GitHub
+Actions workflow (`.github/workflows/publish-cli.yml`) runs the CLI test
+gate and publishes to npm if the new version isn't already there. No manual
+`npm publish` step is required.

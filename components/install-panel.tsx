@@ -39,7 +39,9 @@ const modes: Array<{
 
 const files = [
   "AGENTS.md",
+  "AGENTIC_LOOP.md",
   "docs/AGENT_LOOP.md",
+  ".rallypoint/LICENSE",
   ".rallypoint/config.json",
   ".rallypoint/roles/planner.md",
   ".rallypoint/roles/worker.md",
@@ -47,6 +49,7 @@ const files = [
   ".rallypoint/roles/tester.md",
   ".rallypoint/roles/fixer.md",
   ".rallypoint/roles/janitor.md",
+  ".rallypoint/roles/orchestrator.md",
 ];
 
 export function InstallPanel() {

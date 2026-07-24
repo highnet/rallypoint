@@ -4,11 +4,12 @@
   "items": [
     {
       "name": "loop",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, and an orchestrator that dispatches them.",
       "files": [
         { "source": "LICENSE", "target": ".rallypoint/LICENSE" },
         { "source": "AGENTS.md", "target": "AGENTS.md" },
+        { "source": "AGENTIC_LOOP.md", "target": "AGENTIC_LOOP.md" },
         { "source": "docs/AGENT_LOOP.md", "target": "docs/AGENT_LOOP.md" },
         { "source": ".rallypoint/config.json", "target": ".rallypoint/config.json" },
         { "source": ".rallypoint/roles/planner.md", "target": ".rallypoint/roles/planner.md" },

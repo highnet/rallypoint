@@ -13,7 +13,8 @@
     "test": "npm run lint && tsc --noEmit",
     "lint": "eslint . --ignore-pattern .next",
     "registry:build": "node scripts/build-registry.mjs",
-    "cli:test": "npm run registry:build && node scripts/test-cli.mjs"
+    "cli:test": "npm run registry:build && node scripts/test-cli.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@types/three": "^0.185.1",
@@ -30,12 +31,15 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
+    "husky": "^9.1.7",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3"
   },

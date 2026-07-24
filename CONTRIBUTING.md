@@ -49,6 +49,15 @@ npm run test
 
 This runs `eslint` and `tsc --noEmit`. Fix any errors it reports.
 
+## Commit messages
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`fix: ...`, `feat: ...`, `chore: ...`, `feat!: ...`/`BREAKING CHANGE:` for
+breaking changes). A Husky `commit-msg` hook runs commitlint locally and
+rejects commits that don't conform. This isn't just style — commits touching
+`packages/cli` drive [release-please](https://github.com/googleapis/release-please)'s
+automatic version bump and changelog for the published `rallypoint` package.
+
 ## Pull requests
 
 1. Fork the repository and create a branch from `main`.

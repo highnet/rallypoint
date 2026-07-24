@@ -68,26 +68,29 @@ node packages/cli/bin/rallypoint.mjs view loop
 node packages/cli/bin/rallypoint.mjs add loop --dry-run
 ```
 
-## Publishing the CLI
+## Releasing the CLI
 
 The website package at the repository root is intentionally private and must
-never be published. The CLI package publishes to npm automatically.
+never be published. The CLI package (`packages/cli`, published as `rallypoint`)
+releases via [release-please](https://github.com/googleapis/release-please) —
+there's no manual version bump.
 
-`.github/workflows/publish-cli.yml` runs on every push to `main` that touches
-`packages/cli/package.json`. It runs `npm run cli:test`, compares the local
-version against what's already on npm, and publishes only when they differ —
-so bumping the version and merging to `main` is the entire release process.
-A run that finds nothing new to publish exits cleanly rather than failing.
+Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/)
+(`fix:`, `feat:`, `feat!:`/`BREAKING CHANGE:`, `chore:`, etc.) — a Husky
+`commit-msg` hook enforces this locally via commitlint. release-please reads
+those messages to decide the next semver bump and keeps a standing "Release
+packages/cli x.y.z" pull request up to date with the version bump (in both
+`package.json` and the `VERSION` const in `bin/rallypoint.mjs`) and changelog.
 
-Authentication uses npm's [Trusted Publisher](https://docs.npmjs.com/trusted-publishers)
-OIDC flow, scoped to this exact repo and workflow filename — there's no
+Merging that release PR is the entire release process:
+`.github/workflows/publish-cli.yml` runs release-please on every push to
+`main`; when it detects the release PR was just merged, it runs
+`npm run cli:test` and publishes the new version to npm. Authentication uses
+npm's [Trusted Publisher](https://docs.npmjs.com/trusted-publishers) OIDC
+flow, scoped to this exact repo and workflow filename — there's no
 `NPM_TOKEN` secret to rotate or leak.
 
-To cut a release: bump `version` in `packages/cli/package.json` (and the
-matching `VERSION` const in `packages/cli/bin/rallypoint.mjs`), then merge to
-`main`. No manual `npm publish` step is needed.
-
-For a local dry run before merging:
+For a local dry run before merging a release PR:
 
 ```bash
 npm ci

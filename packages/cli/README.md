@@ -51,8 +51,11 @@ from the purely local, checksum-verified file writes `add` performs. It:
 
 ## Publishing
 
-Releases are automated. Bump `version` in `package.json` (and the matching
-`VERSION` const in `bin/rallypoint.mjs`), then merge to `main` — a GitHub
-Actions workflow (`.github/workflows/publish-cli.yml`) runs the CLI test
-gate and publishes to npm if the new version isn't already there. No manual
-`npm publish` step is required.
+Releases are automated via [release-please](https://github.com/googleapis/release-please),
+driven by [Conventional Commits](https://www.conventionalcommits.org/) on
+commits touching this package (enforced locally by a Husky `commit-msg` hook).
+release-please maintains a standing release pull request that bumps `version`
+in `package.json` and the matching `VERSION` const in `bin/rallypoint.mjs`.
+Merging that PR is the entire release step — `.github/workflows/publish-cli.yml`
+then runs the CLI test gate and publishes to npm. No manual `npm publish` or
+version bump is required.

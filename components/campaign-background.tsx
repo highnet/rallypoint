@@ -8,10 +8,10 @@ type CampaignBackgroundProps = {
   variant?: "hero" | "agent";
 };
 
-const tokenColors = [0x8b62ae, 0xc84d37, 0x3d64ad, 0xd29a32, 0x3f8156, 0x63777b];
+const tokenColors = [0x8b62ae, 0xc84d37, 0x3d64ad, 0xd29a32, 0x3f8156, 0x63777b, 0xa8456f];
 
 function tokenGeometry(index: number) {
-  switch (index % 6) {
+  switch (index % 7) {
     case 0:
       return new THREE.CylinderGeometry(0.72, 0.72, 0.36, 6);
     case 1:
@@ -22,8 +22,10 @@ function tokenGeometry(index: number) {
       return new THREE.CylinderGeometry(0.78, 0.78, 0.35, 5);
     case 4:
       return new THREE.DodecahedronGeometry(0.72, 0);
-    default:
+    case 5:
       return new THREE.CylinderGeometry(0.72, 0.72, 0.36, 20);
+    default:
+      return new THREE.OctahedronGeometry(0.82, 0);
   }
 }
 
@@ -97,6 +99,7 @@ export function CampaignBackground({
       [4.1, 1.5],
       [0.7, 3],
       [-3.7, 2],
+      [0.9, -3.9],
     ];
     const tokens: THREE.Mesh[] = [];
     positions.forEach(([x, z], index) => {

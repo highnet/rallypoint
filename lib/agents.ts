@@ -89,6 +89,21 @@ export const agents = [
     never: ["Claims work", "Edits product code", "Reviews, approves, or merges"],
     handoff: "A truthful queue with stale reservations removed and no product diff.",
   },
+  {
+    slug: "orchestrator",
+    name: "Orchestrator",
+    title: "The marshal",
+    summary: "Reads the shared queue and dispatches the next agent role to run.",
+    color: "rose",
+    token: "diamond",
+    does: [
+      "Reads the ready queue, open claims, and pull-request state across the repository.",
+      "Decides which role — planner, worker, reviewer, tester, fixer, or janitor — runs next.",
+      "Starts that agent's session and hands it the exact quest it needs.",
+    ],
+    never: ["Claims an issue itself", "Edits product code or reviews a diff", "Grants approval or merges a pull request"],
+    handoff: "A dispatched agent session, matched to the right role, with a clear starting quest.",
+  },
 ] as const;
 
 export type Agent = (typeof agents)[number];

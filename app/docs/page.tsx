@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   CircleDot,
   GitBranch,
+  MessageSquare,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +11,38 @@ import { CommandCopy } from "@/components/command-copy";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
+
+const rolePrompts = [
+  {
+    role: "Orchestrator",
+    prompt:
+      "Read AGENTS.md, then read .rallypoint/roles/orchestrator.md. Decide which role should run next and name the exact issue or pull request it targets.",
+  },
+  {
+    role: "Planner",
+    prompt: "Read AGENTS.md, then read .rallypoint/roles/planner.md and follow it exactly.",
+  },
+  {
+    role: "Worker",
+    prompt: "Read AGENTS.md, then read .rallypoint/roles/worker.md and follow it exactly.",
+  },
+  {
+    role: "Reviewer",
+    prompt: "Read AGENTS.md, then read .rallypoint/roles/reviewer.md and follow it exactly.",
+  },
+  {
+    role: "Tester",
+    prompt: "Read AGENTS.md, then read .rallypoint/roles/tester.md and follow it exactly.",
+  },
+  {
+    role: "Fixer",
+    prompt: "Read AGENTS.md, then read .rallypoint/roles/fixer.md and follow it exactly.",
+  },
+  {
+    role: "Janitor",
+    prompt: "Read AGENTS.md, then read .rallypoint/roles/janitor.md and follow it exactly.",
+  },
+];
 
 const rules = [
   "One issue, one branch, one pull request.",
@@ -29,6 +62,7 @@ export default function DocsPage() {
           <a href="#principles">Principles</a>
           <a href="#roles">Roles</a>
           <a href="#install">Install</a>
+          <a href="#prompting">Prompting</a>
         </nav>
         <div className="header-actions">
           <ThemeToggle />
@@ -146,6 +180,48 @@ export default function DocsPage() {
           <CommandCopy
             command="npx rallypoint@latest add loop"
             id="docs-install"
+          />
+        </section>
+
+        <section className="docs-section docs-prompting" id="prompting">
+          <div className="docs-section-title">
+            <MessageSquare />
+            <h2>Prompt the party</h2>
+          </div>
+          <p>
+            A role is one file, so prompting an agent to become that role
+            means pointing a fresh session at <code>AGENTS.md</code> and
+            exactly one file under <code>.rallypoint/roles/</code> — nothing
+            else to explain. This works the same whether a human or another
+            agent is doing the prompting.
+          </p>
+          <p>
+            Don’t know what should happen next? Prompt the orchestrator
+            first. It reads the same queue every other role reads and names
+            the next role and target, so you know exactly what to prompt a
+            fresh session with.
+          </p>
+          <div className="docs-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Prompt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rolePrompts.map(({ role, prompt }) => (
+                  <tr key={role}>
+                    <td>{role}</td>
+                    <td>{prompt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <CommandCopy
+            command="Read AGENTS.md, then read .rallypoint/roles/orchestrator.md. Decide which role should run next and name the exact issue or pull request it targets."
+            id="docs-prompt-orchestrator"
           />
         </section>
       </article>

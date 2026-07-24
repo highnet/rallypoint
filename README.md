@@ -79,6 +79,10 @@ version against what's already on npm, and publishes only when they differ —
 so bumping the version and merging to `main` is the entire release process.
 A run that finds nothing new to publish exits cleanly rather than failing.
 
+Authentication uses npm's [Trusted Publisher](https://docs.npmjs.com/trusted-publishers)
+OIDC flow, scoped to this exact repo and workflow filename — there's no
+`NPM_TOKEN` secret to rotate or leak.
+
 To cut a release: bump `version` in `packages/cli/package.json` (and the
 matching `VERSION` const in `packages/cli/bin/rallypoint.mjs`), then merge to
 `main`. No manual `npm publish` step is needed.

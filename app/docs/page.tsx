@@ -116,14 +116,16 @@ export default function DocsPage() {
             </svg>
             <h2>The party oath</h2>
           </div>
-          <ol className="rule-list">
-            {rules.map((rule, index) => (
-              <li key={rule}>
-                <span>{index + 1}</span>
-                <p>{rule}</p>
-              </li>
-            ))}
-          </ol>
+          <div className="oath-charter ledger-panel">
+            <ol className="rule-list oath-list">
+              {rules.map((rule, index) => (
+                <li key={rule}>
+                  <span>{index + 1}</span>
+                  <p>{rule}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
         </section>
 
         <section className="docs-section" id="roles">
@@ -271,7 +273,8 @@ export default function DocsPage() {
           </p>
           <ul className="prompt-examples">
             {humanPrompts.map(({ label, prompt }) => (
-              <li className="prompt-example" key={label}>
+              <li className="prompt-example ledger-panel" key={label}>
+                <span aria-hidden="true" className="prompt-waypoint" />
                 <p className="prompt-label">{label}</p>
                 <p className="prompt-text">“{prompt}”</p>
               </li>

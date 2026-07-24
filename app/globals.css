@@ -1097,9 +1097,10 @@ button.wordmark-die {
 .ledger-panel {
   --panel-notch: 16px;
   background:
-    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(var(--parchment), var(--parchment)) padding-box,
     linear-gradient(135deg, var(--brass-bright), var(--brass) 45%, var(--brass-shadow)) border-box;
   border: 1px solid transparent;
+  color: var(--parchment-foreground);
   clip-path: polygon(
     var(--panel-notch) 0%,
     calc(100% - var(--panel-notch)) 0%,
@@ -1135,6 +1136,10 @@ button.wordmark-die {
 
 .ownership-section {
   background: var(--background);
+}
+
+.ownership-charter {
+  padding: clamp(8px, 3vw, 20px) clamp(24px, 5vw, 64px);
 }
 
 .ownership-list {
@@ -1307,11 +1312,8 @@ button.wordmark-die {
 }
 
 .install-console {
-  background: color-mix(in oklch, var(--surface-deep) 88%, black);
-  border: 1px solid color-mix(in oklch, var(--parchment) 30%, transparent);
-  border-radius: 10px;
-  box-shadow: inset 0 0 26px color-mix(in oklch, black 22%, transparent);
-  padding: clamp(22px, 4vw, 46px);
+  box-shadow: 0 22px 34px color-mix(in oklch, black 30%, transparent);
+  padding: clamp(30px, 4vw, 52px);
 }
 
 .mode-tabs {
@@ -1330,14 +1332,14 @@ button.wordmark-die {
 }
 
 .install-console > p {
-  color: color-mix(in oklch, var(--felt-foreground) 72%, transparent);
+  color: color-mix(in oklch, var(--parchment-foreground) 74%, transparent);
   font-size: 0.88rem;
   line-height: 1.55;
   margin: 22px 0 0;
 }
 
 .install-notes {
-  border-top: 1px solid color-mix(in oklch, var(--parchment) 23%, transparent);
+  border-top: 1px solid color-mix(in oklch, var(--parchment-foreground) 22%, transparent);
   display: flex;
   flex-wrap: wrap;
   gap: 18px 28px;
@@ -1793,6 +1795,14 @@ footer > p {
 
 .rule-list li:last-child {
   border-bottom: 1px solid var(--border);
+}
+
+.ownership-list li:first-child {
+  border-top: 0;
+}
+
+.ownership-list li:last-child {
+  border-bottom: 0;
 }
 
 .rule-list span {

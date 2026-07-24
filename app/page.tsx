@@ -130,7 +130,9 @@ export default function Home() {
           <p className="section-note">No lock-in, no subscription</p>
           <h2>You own what gets installed.</h2>
         </div>
-        <OwnershipBand />
+        <div className="ownership-charter ledger-panel">
+          <OwnershipBand />
+        </div>
       </section>
 
       <section className="proof-section">

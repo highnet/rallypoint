@@ -59,7 +59,7 @@ export function InstallPanel() {
 
   return (
     <div className="install-grid">
-      <div className="install-console">
+      <div className="install-console ledger-panel">
         <div className="mode-tabs" role="tablist" aria-label="Install methods">
           {modes.map((mode) => {
             const Icon = mode.icon;

@@ -17,6 +17,19 @@ to be public.
 Use `--force` only after reviewing conflicts. Use `--cwd <path>` to target a
 repository other than the current directory.
 
+### `AGENTS.md` is the one exception
+
+Every other conflicting file stops the entire install — nothing is written
+until you resolve it or pass `--force`. A pre-existing `AGENTS.md` is
+different: it's usually owned by the repository or another tool, so `add`
+leaves it untouched, installs everything else (including `AGENTIC_LOOP.md`,
+which carries the actual protocol), and prints the one-line fix:
+
+```
+AGENTS.md already exists and was left unchanged. Add this line so agents pick up the loop:
+  @AGENTIC_LOOP.md
+```
+
 ## `init`
 
 Run `init` after `add loop`. It requires the GitHub CLI (`gh`) installed and

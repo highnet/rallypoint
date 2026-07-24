@@ -147,6 +147,7 @@ async function addItem(name) {
   const force = has("--force");
   const changes = [];
   const conflicts = [];
+  let agentsMdSkipped = false;
 
   for (const file of item.files) {
     const destination = safeDestination(cwd, file.path);
@@ -156,6 +157,12 @@ async function addItem(name) {
         changes.push({ ...file, destination, action: "unchanged" });
       } else if (force) {
         changes.push({ ...file, destination, action: "overwrite" });
+      } else if (file.path === "AGENTS.md") {
+        // A pre-existing AGENTS.md almost always belongs to another tool or
+        // to the repository owner. Never block the whole install over it —
+        // leave it untouched and suggest the one-line fix instead.
+        changes.push({ ...file, destination, action: "skip" });
+        agentsMdSkipped = true;
       } else {
         conflicts.push(file.path);
       }
@@ -175,21 +182,32 @@ async function addItem(name) {
 
   console.log(`${strong(dryRun ? "Dry run" : "Installing")} ${green(item.name)} ${muted(`v${item.version}`)}\n`);
   for (const file of changes) {
-    const marker = file.action === "unchanged" ? muted("same") : file.action === "overwrite" ? amber("write") : green("add ");
+    const marker =
+      file.action === "unchanged" ? muted("same") :
+      file.action === "overwrite" ? amber("write") :
+      file.action === "skip" ? amber("skip") :
+      green("add ");
     console.log(`  ${marker}  ${file.path}`);
-    if (!dryRun && file.action !== "unchanged") {
+    if (!dryRun && file.action !== "unchanged" && file.action !== "skip") {
       await mkdir(dirname(file.destination), { recursive: true });
       await writeFile(file.destination, file.content, "utf8");
       if (file.executable) await chmod(file.destination, 0o755);
     }
   }
 
-  const written = changes.filter((file) => file.action !== "unchanged").length;
+  const written = changes.filter((file) => file.action !== "unchanged" && file.action !== "skip").length;
+  const unchanged = changes.filter((file) => file.action === "unchanged").length;
   console.log(
     dryRun
       ? `\n${muted(`${written} writes planned · no changes written`)}`
-      : `\n${green("Campaign ready.")} ${written} files written, ${changes.length - written} already current.`,
+      : `\n${green("Campaign ready.")} ${written} files written, ${unchanged} already current${agentsMdSkipped ? ", 1 left untouched" : ""}.`,
   );
+
+  if (agentsMdSkipped) {
+    console.log(
+      `\n${amber("AGENTS.md already exists and was left unchanged.")} Add this line so agents pick up the loop:\n  ${strong("@AGENTIC_LOOP.md")}`,
+    );
+  }
 }
 
 function requiredLabels(labels) {

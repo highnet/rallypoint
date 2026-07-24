@@ -87,10 +87,13 @@ sizes below.
   test or a direct shell check.
 - `view loop` writes nothing.
 - `add loop --dry-run` writes nothing.
-- `add loop` installs 11 checksummed files.
+- `add loop` installs 12 checksummed files.
 - A repeat install is idempotent.
-- A conflicting `AGENTS.md` stops the entire write unless the user explicitly
-  supplies `--force`.
+- A conflicting file other than `AGENTS.md` stops the entire write unless the
+  user explicitly supplies `--force`.
+- A conflicting `AGENTS.md` is the one exception: it is left untouched and the
+  rest of the install proceeds, with a suggestion to add an `@AGENTIC_LOOP.md`
+  reference line to it.
 
 ## Checkpoint matrix
 

@@ -40,7 +40,7 @@ async function missing(path) {
 
 try {
   const view = run(["view", "loop"]);
-  if (!view.includes("11 files · no changes written")) {
+  if (!view.includes("12 files · no changes written")) {
     throw new Error("view did not report the complete manifest");
   }
 
@@ -53,6 +53,9 @@ try {
   if (!install.includes("Campaign ready.")) {
     throw new Error("install did not finish");
   }
+  if (!(await readFile(resolve(fixture, "AGENTIC_LOOP.md"), "utf8")).includes("Rallypoint Agent Protocol")) {
+    throw new Error("AGENTIC_LOOP.md was not installed");
+  }
 
   const config = JSON.parse(
     await readFile(resolve(fixture, ".rallypoint/config.json"), "utf8"),
@@ -62,14 +65,31 @@ try {
   }
 
   const repeat = run(["add", "loop"]);
-  if (!repeat.includes("11 already current")) {
+  if (!repeat.includes("12 already current")) {
     throw new Error("repeat install was not idempotent");
   }
 
+  const originalConfig = await readFile(
+    resolve(root, "registry/rallypoint/.rallypoint/config.json"),
+    "utf8",
+  );
+  await writeFile(resolve(fixture, ".rallypoint/config.json"), "{}\n");
+  const hardConflict = run(["add", "loop"], 2);
+  if (!hardConflict.includes("stopped before writing")) {
+    throw new Error("a non-AGENTS.md conflict did not stop the installer");
+  }
+  await writeFile(resolve(fixture, ".rallypoint/config.json"), originalConfig);
+
   await writeFile(resolve(fixture, "AGENTS.md"), "user-owned instructions\n");
-  const conflict = run(["add", "loop"], 2);
-  if (!conflict.includes("stopped before writing")) {
-    throw new Error("conflict did not stop the installer");
+  const agentsConflict = run(["add", "loop"]);
+  if (!agentsConflict.includes("AGENTS.md already exists and was left unchanged")) {
+    throw new Error("AGENTS.md conflict did not surface the @AGENTIC_LOOP.md suggestion");
+  }
+  if (!agentsConflict.includes("Campaign ready.")) {
+    throw new Error("an AGENTS.md conflict incorrectly blocked the rest of the install");
+  }
+  if ((await readFile(resolve(fixture, "AGENTS.md"), "utf8")) !== "user-owned instructions\n") {
+    throw new Error("AGENTS.md was overwritten despite the conflict");
   }
 
   const initFixture = await mkdtemp(resolve(tmpdir(), "rallypoint-cli-init-"));
@@ -96,7 +116,7 @@ try {
   }
 
   console.log(
-    "CLI smoke test passed: inspect, dry-run, install, repeat, conflict, init preconditions.",
+    "CLI smoke test passed: inspect, dry-run, install, repeat, hard conflict, AGENTS.md soft conflict, init preconditions.",
   );
 } finally {
   await rm(fixture, { recursive: true, force: true });

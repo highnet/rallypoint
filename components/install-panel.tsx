@@ -39,6 +39,7 @@ const modes: Array<{
 
 const files = [
   "AGENTS.md",
+  "AGENTIC_LOOP.md",
   "docs/AGENT_LOOP.md",
   ".rallypoint/config.json",
   ".rallypoint/roles/planner.md",

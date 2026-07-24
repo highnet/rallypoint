@@ -1,11 +1,17 @@
 {
   "schemaVersion": 1,
   "name": "loop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, and janitors.",
   "files": [
     {
       "path": "AGENTS.md",
+      "executable": false,
+      "sha256": "e417c48778a469d88e2ae925afa36ff7a6c9bb10f4e7b6c980172f10df213780",
+      "content": "# AGENTS.md\n\nThis repository's agent protocol lives in `AGENTIC_LOOP.md`. Read it before doing anything else — it is Rallypoint's complete operating protocol for coordinating agents through GitHub.\n\n@AGENTIC_LOOP.md\n"
+    },
+    {
+      "path": "AGENTIC_LOOP.md",
       "executable": false,
       "sha256": "25709fbec9458e2d4e5dd7f855649fb109465604d135a4c78c27be8271f457da",
       "content": "# Rallypoint Agent Protocol\n\nThis repository coordinates humans and coding agents exclusively through GitHub issues, branches, pull requests, labels, and reviews.\n\n## Start every session\n\n1. Read `docs/AGENT_LOOP.md`.\n2. Select exactly one role from `.rallypoint/roles/`.\n3. Read that role prompt completely.\n4. Follow the repository's existing product, architecture, testing, and contribution documentation.\n\n## Hard rules\n\n- One issue, one branch, one pull request.\n- Workers claim exactly one `status:ready` issue before writing code.\n- Claims are made only through `node .rallypoint/scripts/claim.mjs`.\n- Branch from the configured integration branch as `agent/<issue>-<slug>`.\n- Never push directly to protected branches.\n- Never review or approve your own work.\n- Never invent scope. Record ambiguity on the issue.\n- No secrets, credentials, tokens, or local environment files in commits.\n- Keep the repository green. The worker owns failures introduced by its pull request.\n- Only the top-level agent mutates GitHub; subagents may research and verify inside the same claimed issue.\n\n## Delivery\n\nOpen a ready-for-review pull request targeting the configured integration branch. Include `Closes #<issue>` and the local validation results. A new push invalidates any previous reviewer verdict.\n"

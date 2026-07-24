@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,6 +21,9 @@ jobs:
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
+
+      - name: Update npm for OIDC trusted publishing support
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
@@ -41,12 +45,12 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Authenticates via OIDC trusted publishing (npm's Trusted Publisher
+      # setting for this repo + workflow filename) — no NPM_TOKEN secret.
       - name: Publish to npm
         if: steps.version-check.outputs.skip == 'false'
         working-directory: packages/cli
         run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Already published, skipping
         if: steps.version-check.outputs.skip == 'true'

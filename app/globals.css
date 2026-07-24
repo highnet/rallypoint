@@ -1500,6 +1500,14 @@ footer > p {
   position: relative;
 }
 
+.agent-violet { --role-accent: var(--violet); }
+.agent-red { --role-accent: var(--red); }
+.agent-blue { --role-accent: var(--blue); }
+.agent-amber { --role-accent: var(--amber); }
+.agent-green { --role-accent: var(--green); }
+.agent-slate { --role-accent: var(--slate); }
+.agent-rose { --role-accent: var(--rose); }
+
 .agent-hero .campaign-background {
   opacity: 0.76;
 }
@@ -1518,7 +1526,7 @@ footer > p {
 }
 
 .agent-index {
-  color: var(--quest);
+  color: color-mix(in oklch, var(--role-accent, var(--quest)) 78%, var(--felt-foreground) 22%);
   font-family: "Geist Mono", monospace;
   font-size: 0.76rem;
   font-weight: 800;
@@ -1538,7 +1546,7 @@ footer > p {
 }
 
 .agent-title {
-  color: var(--quest);
+  color: color-mix(in oklch, var(--role-accent, var(--quest)) 78%, var(--felt-foreground) 22%);
   font-family: var(--font-display);
   font-size: clamp(1.6rem, 3vw, 2.7rem);
   font-style: italic;
@@ -1560,6 +1568,27 @@ footer > p {
   gap: 1px;
   grid-template-columns: 1fr 1fr;
   padding: 0;
+  position: relative;
+}
+
+/* The spellbook gutter — a book-spine shadow marking the fold between pages. */
+.agent-contract::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, black 20%, transparent) 44%,
+    color-mix(in oklch, black 32%, transparent) 50%,
+    color-mix(in oklch, black 20%, transparent) 56%,
+    transparent
+  );
+  bottom: 0;
+  content: "";
+  left: calc(50% - 26px);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 52px;
+  z-index: 3;
 }
 
 .contract-column {
@@ -2084,6 +2113,10 @@ td:first-child {
 
   .agent-contract {
     grid-template-columns: 1fr;
+  }
+
+  .agent-contract::before {
+    display: none;
   }
 
   .handoff-sheet {

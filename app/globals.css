@@ -4890,32 +4890,40 @@ td:first-child {
   grid-column: span 6;
 }
 
-@media (max-width: 1100px) and (min-width: 621px) {
-  .role-sheet-orchestrator {
-    grid-column: span 6;
-    grid-template-columns: 52px minmax(0, 1fr);
-  }
+/*
+ * The Marshal now occupies half of the twelve-column party grid, so its
+ * internal layout must use the same compact plate geometry as the Janitor.
+ * Keeping the former full-width three-column folio here creates fixed
+ * 260px + 64px + 260px tracks inside a roughly 500px card and clips the copy.
+ */
+.role-sheet-orchestrator {
+  grid-template-columns: 58px minmax(0, 1fr);
+}
 
-  .role-sheet-orchestrator .role-sigil {
-    grid-column: 1;
-    grid-row: 1;
-  }
+.role-sheet-orchestrator .role-portrait {
+  aspect-ratio: 2 / 3;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  height: auto;
+  min-height: 0;
+}
 
-  .role-sheet-orchestrator .role-copy {
-    grid-column: 2;
-    grid-row: 1;
-  }
+.role-sheet-orchestrator .role-index,
+.role-sheet-orchestrator .role-sigil {
+  grid-column: 1;
+}
 
-  .role-sheet-orchestrator .role-portrait {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 260px;
-  }
+.role-sheet-orchestrator .role-identity,
+.role-sheet-orchestrator .role-duty {
+  grid-column: 2;
+}
 
-  .role-sheet-orchestrator .role-stat-block {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
+.role-sheet-orchestrator .role-habitat,
+.role-sheet-orchestrator .role-tools,
+.role-sheet-orchestrator .role-statline,
+.role-sheet-orchestrator .role-boundary,
+.role-sheet-orchestrator .role-handoff {
+  grid-column: 1 / -1;
 }
 
 html[data-audience="agent"],

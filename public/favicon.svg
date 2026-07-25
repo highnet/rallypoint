@@ -1,13 +1,20 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g stroke="#200f05" stroke-width="0.8" stroke-linejoin="round">
-<path d="M16 3 7 9 16 9Z" fill="#ffcf9c"/>
-<path d="M16 3 16 9 25 9Z" fill="#ffb27a"/>
-<path d="M7 9 5 19 16 24Z" fill="#e0630f"/>
-<path d="M7 9 16 24 25 9Z" fill="#f06410"/>
-<path d="M16 24 25 9 27 19Z" fill="#c94f0c"/>
-<path d="M16 29 5 19 16 24Z" fill="#a83c0a"/>
-<path d="M16 29 16 24 27 19Z" fill="#8e2600"/>
-</g>
-<path d="M16 3 25 9 27 19 16 29 5 19 7 9Z" stroke="#200f05" stroke-width="1.3" stroke-linejoin="round"/>
-<text x="16" y="20.5" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="8" fill="#fbe5bf">20</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+  <g stroke="#28150f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 3 12 13l22 4Z" fill="#f7d77a"/>
+    <path d="m34 3 23 7-23 7Z" fill="#e8ad34"/>
+    <path d="M12 13 3 37l13-6Z" fill="#c96632"/>
+    <path d="m12 13 4 18 18-14Z" fill="#e2a845"/>
+    <path d="m34 17 19 10 4-17Z" fill="#d87828"/>
+    <path d="m57 10-4 17 15 5Z" fill="#a93a2a"/>
+    <path d="m3 37 8 22 5-28Z" fill="#d39b43"/>
+    <path d="m11 59 13-5-8-23Z" fill="#f1d482"/>
+    <path d="m16 31 8 23 24-5Z" fill="#d9a646"/>
+    <path d="m16 31 32 18 5-22Z" fill="#f0c95e"/>
+    <path d="m53 27-5 22 20-17Z" fill="#c64a2a"/>
+    <path d="m68 32-20 17 11 4Z" fill="#8e2a27"/>
+    <path d="m11 59 24 10-11-15Z" fill="#d99d3a"/>
+    <path d="m24 54 11 15 13-20Z" fill="#c9752f"/>
+    <path d="m35 69 24-16-11-4Z" fill="#9f2f2b"/>
+  </g>
+  <path d="M34 3 57 10l11 22-9 21-24 16-24-10-8-22 9-24Z" fill="none" stroke="#28150f" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -9,7 +9,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
 import { buttonVariants } from "@/components/ui/button";
-import { agents, getAgent } from "@/lib/agents";
+import { agentFieldGuides, agents, getAgent } from "@/lib/agents";
 import { cn } from "@/lib/utils";
 
 type AgentPageProps = {
@@ -36,6 +36,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
 
   const index = agents.findIndex((item) => item.slug === agent.slug);
   const nextAgent = agents[(index + 1) % agents.length];
+  const fieldGuide = agentFieldGuides[agent.slug];
 
   return (
     <main className="agent-page">
@@ -46,7 +47,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
           <nav aria-label="Agent page navigation">
             <Link href="/#loop">The loop</Link>
             <Link href="/#party">All roles</Link>
-            <Link href="/docs">Playbook</Link>
+            <Link href="/docs">Docs</Link>
           </nav>
           <div className="header-actions">
             <ThemeToggle />
@@ -63,6 +64,36 @@ export default async function AgentPage({ params }: AgentPageProps) {
           <p className="agent-title">{agent.title}</p>
           <p className="agent-summary">{agent.summary}</p>
         </div>
+      </section>
+
+      <section className="agent-field-guide" aria-labelledby="field-guide-title">
+        <div className="field-guide-heading">
+          <p>Field identification</p>
+          <h2 id="field-guide-title">Know the role before you summon it.</h2>
+        </div>
+        <dl>
+          <div>
+            <dt>Habitat</dt>
+            <dd>{fieldGuide.habitat}</dd>
+            <dd className="field-guide-note">{fieldGuide.habitatDetail}</dd>
+          </div>
+          <div>
+            <dt>Quest capacity</dt>
+            <dd>{fieldGuide.capacity}</dd>
+          </div>
+          <div>
+            <dt>Authority</dt>
+            <dd>{fieldGuide.authority}</dd>
+          </div>
+          <div>
+            <dt>Required yield</dt>
+            <dd>{fieldGuide.yield}</dd>
+          </div>
+          <div>
+            <dt>Field kit</dt>
+            <dd>{fieldGuide.fieldKit}</dd>
+          </div>
+        </dl>
       </section>
 
       <section className="agent-contract">

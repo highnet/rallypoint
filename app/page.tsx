@@ -1,10 +1,26 @@
-import { ArrowDown, ArrowRight } from "lucide-react";
+/**
+ * THESIS: Rallypoint is a living hexcrawl atlas; it refuses the standard
+ * developer-tool hero with a decorative dashboard beside it.
+ * OWN-WORLD: candlelit carved oak, aged vellum, charcoal engraving, moss,
+ * oxblood, lapis, tarnished brass, ember routes, and authored creature plates.
+ * STORY: see the repository as a world, choose a role location, understand the
+ * handoff, then install the protocol into the repo.
+ * FIRST VIEWPORT: a pinned expedition folio occupies the left third while a
+ * dominant selectable atlas and its six inhabited locations fill the rest.
+ * FORM: approved Hexcrawl Atlas direction C, ranked first for immersion; the
+ * staging is an atlas pinned open on a ranger's campaign table.
+ */
+import {
+  ArrowDown,
+  ArrowRight,
+  GitBranch,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
 import { AudienceFork } from "@/components/audience-fork";
-import { CampaignBackground } from "@/components/campaign-background";
-import { GiltDivider } from "@/components/gilt-divider";
 import { InstallPanel } from "@/components/install-panel";
 import { LoopRibbon } from "@/components/loop-ribbon";
 import { MobileNav } from "@/components/mobile-nav";
@@ -22,14 +38,13 @@ export default function Home() {
   return (
     <main>
       <section className="hero" id="top">
-        <CampaignBackground />
         <header className="site-header">
           <Wordmark href="#top" />
           <nav aria-label="Primary navigation">
             <Link href="#loop">The loop</Link>
             <Link href="#party">Roles</Link>
             <Link href="#install">Install</Link>
-            <Link href="/docs">Playbook</Link>
+            <Link href="/docs">Docs</Link>
           </nav>
           <div className="header-actions">
             <ThemeToggle />
@@ -40,36 +55,38 @@ export default function Home() {
         <AudienceFork
           human={
             <div className="hero-grid">
-              <div className="hero-copy">
-            <div className="campaign-stamp">
-              <svg aria-hidden="true">
-                <use href="#charge-spark-mark" />
-              </svg>
-              GitHub-native agent orchestration
-            </div>
-            <h1>Your agents need a quest log.</h1>
-            <p className="hero-lede">
-              Rallypoint installs a disciplined loop of planners, workers,
-              reviewers, testers, and fixers into the repository you already
-              have.
-            </p>
-            <div className="hero-actions">
-              <a
-                className={cn(buttonVariants({ variant: "quest", size: "lg" }))}
-                href="#install"
-              >
-                Install Rallypoint
-                <ArrowRight />
-              </a>
-              <a
-                className={cn(buttonVariants({ variant: "ghost", size: "lg" }))}
-                href="#loop"
-              >
-                View the campaign
-                <ArrowDown />
-              </a>
-            </div>
-            <CommandCopy command={heroCommand} id="hero-command" />
+              <div className="hero-copy expedition-folio">
+                <span className="folio-thread" aria-hidden="true" />
+                <div className="campaign-stamp">
+                  <Sparkles aria-hidden="true" />
+                  Field codex · GitHub-native orchestration
+                </div>
+                <h1>Your agents need a quest log.</h1>
+                <p className="hero-lede">
+                  Rallypoint turns your repository into a living campaign:
+                  explicit roles, one quest at a time, independent review, and
+                  a trail every agent can follow.
+                </p>
+                <div className="hero-actions">
+                  <a
+                    className={cn(buttonVariants({ variant: "quest", size: "lg" }))}
+                    href="#install"
+                  >
+                    Install the loop
+                    <ArrowRight />
+                  </a>
+                  <a
+                    className={cn(buttonVariants({ variant: "ghost", size: "lg" }))}
+                    href="#loop"
+                  >
+                    Read the field rules
+                    <ArrowDown />
+                  </a>
+                </div>
+                <CommandCopy command={heroCommand} id="hero-command" />
+                <p className="folio-footnote">
+                  Additive. Conflict-safe. The repository remains the source of truth.
+                </p>
               </div>
               <TabletopLoop />
             </div>
@@ -89,15 +106,18 @@ export default function Home() {
             and pull requests are the gates every change must pass.
           </p>
           <div className="oath">
-            <svg aria-hidden="true">
-              <use href="#charge-ward-shield" />
-            </svg>
+            <ShieldCheck aria-hidden="true" />
             <p>
               No side-channel database. No agent reviews its own work. No
               worker carries more than one claimed issue.
             </p>
           </div>
         </div>
+        <div
+          aria-label="The six role handoff shown as an ember trail across the campaign"
+          className="protocol-art"
+          role="img"
+        />
         <p className="loop-ribbon-hint">
           Tap a step to see what it does and open the role that owns it.
         </p>
@@ -125,39 +145,50 @@ export default function Home() {
       </section>
 
       <section className="ownership-section" id="ownership">
-        <div className="section-heading">
-          <p className="section-note">No lock-in, no subscription</p>
-          <h2>You own what gets installed.</h2>
-        </div>
-        <div className="ownership-charter ledger-panel">
+        <div
+          aria-label="A fox archivist opening a repository charter vault filled with role folios, keys, and removable seals"
+          className="ownership-art"
+          role="img"
+        />
+        <div className="ownership-folio">
+          <div className="section-heading">
+            <p className="section-note">No lock-in, no subscription</p>
+            <h2>You own what gets installed.</h2>
+          </div>
           <OwnershipBand />
         </div>
       </section>
 
-      <GiltDivider />
-
       <section className="proof-section">
-        <div className="proof-mark" aria-hidden="true">
-          <svg>
-            <use href="#charge-way-mark" />
-          </svg>
+        <div
+          aria-label="The Codewright forge-bastion where a raven smith, badger mason, and owl verifier complete an ember-lit bridge"
+          className="proof-art"
+          role="img"
+        />
+        <div className="proof-folio">
+          <div className="proof-mark" aria-hidden="true">
+            <GitBranch />
+          </div>
+          <div>
+            <p>Proven in the wild</p>
+            <h2>Extracted from the loop that builds Codewright.</h2>
+          </div>
+          <p>
+            Atomic issue claims, strict role boundaries, one-issue branches,
+            independent review, fixer passes, and stale-state cleanup—distilled
+            into a portable repository protocol.
+          </p>
+          <Link
+            className={cn(
+              buttonVariants({ variant: "parchment", size: "lg" }),
+              "proof-cta",
+            )}
+            href="/docs"
+          >
+            Read the docs
+            <ArrowRight />
+          </Link>
         </div>
-        <div>
-          <p>Proven in the wild</p>
-          <h2>Extracted from the loop that builds Codewright.</h2>
-        </div>
-        <p>
-          Atomic issue claims, strict role boundaries, one-issue branches,
-          independent review, fixer passes, and stale-state cleanup—distilled
-          into a portable repository protocol.
-        </p>
-        <Link
-          className={cn(buttonVariants({ variant: "parchment", size: "lg" }))}
-          href="/docs"
-        >
-          Read the playbook
-          <ArrowRight />
-        </Link>
       </section>
 
       <footer>

@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
-import { Cinzel, Cinzel_Decorative, Fraunces } from "next/font/google";
+import {
+  Cinzel,
+  Cinzel_Decorative,
+  IM_Fell_English,
+} from "next/font/google";
 
 import { HeraldrySprite } from "@/components/heraldry-sprite";
 import { Providers } from "@/components/providers";
 
 import "./globals.css";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  style: ["normal", "italic"],
-  axes: ["opsz", "SOFT", "WONK"],
-});
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -25,6 +22,13 @@ const cinzelDecorative = Cinzel_Decorative({
   subsets: ["latin"],
   variable: "--font-cinzel-decorative",
   weight: ["700", "900"],
+});
+
+const imFellEnglish = IM_Fell_English({
+  subsets: ["latin"],
+  variable: "--font-im-fell-english",
+  style: ["normal", "italic"],
+  weight: "400",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rallypoint.tools";
@@ -67,7 +71,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${GeistSans.variable} ${GeistMono.variable} ${fraunces.variable} ${cinzel.variable} ${cinzelDecorative.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${cinzel.variable} ${cinzelDecorative.variable} ${imFellEnglish.variable}`}
+      data-scroll-behavior="smooth"
       lang="en"
       suppressHydrationWarning
     >

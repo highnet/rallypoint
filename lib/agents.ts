@@ -115,6 +115,75 @@ export const agents = [
 
 export type Agent = (typeof agents)[number];
 
+export const agentFieldGuides = {
+  planner: {
+    habitat: "Planner’s Star Tower",
+    habitatDetail: "Observatory, dependency charts, ready queue",
+    fieldKit: "Compass · issue map · acceptance ledger",
+    capacity: "No claim",
+    authority: "Queue",
+    yield: "Ready quest",
+  },
+  worker: {
+    habitat: "Worker’s Emberworks",
+    habitatDetail: "Forge floor, branch anvil, green-check bell",
+    fieldKit: "One claim token · hammer · focused diff",
+    capacity: "One quest",
+    authority: "Build",
+    yield: "Focused PR",
+  },
+  reviewer: {
+    habitat: "Reviewer’s Owl Scriptorium",
+    habitatDetail: "Archive stacks, verdict desk, merge gate",
+    fieldKit: "Contract · current revision · independent seal",
+    capacity: "No claim",
+    authority: "Verdict",
+    yield: "Approval or changes",
+  },
+  tester: {
+    habitat: "Tester’s Thornwood",
+    habitatDetail: "Broken paths, edge cases, reproducible tracks",
+    fieldKit: "Coverage lantern · measuring staff · failure specimen",
+    capacity: "Filed gap",
+    authority: "Coverage",
+    yield: "Behavioral test",
+  },
+  fixer: {
+    habitat: "Fixer’s Red Apothecary",
+    habitatDetail: "Repair bench, newest verdict, retest shelf",
+    fieldKit: "Requested changes · narrow instruments · same branch",
+    capacity: "Current PR",
+    authority: "Repair",
+    yield: "Corrected revision",
+  },
+  janitor: {
+    habitat: "Janitor’s Barrow of Keys",
+    habitatDetail: "Stale claims, closed quests, truthful queue",
+    fieldKit: "Activity trail · reservation keys · cleanup ledger",
+    capacity: "No claim",
+    authority: "Cleanup",
+    yield: "Truthful queue",
+  },
+  orchestrator: {
+    habitat: "Marshal’s Road Shrine",
+    habitatDetail: "Central rally camp where every route is visible",
+    fieldKit: "Shared queue · role roster · exact starting quest",
+    capacity: "No claim",
+    authority: "Dispatch",
+    yield: "Assigned session",
+  },
+} satisfies Record<
+  Agent["slug"],
+  {
+    habitat: string;
+    habitatDetail: string;
+    fieldKit: string;
+    capacity: string;
+    authority: string;
+    yield: string;
+  }
+>;
+
 export function getAgent(slug: string) {
   return agents.find((agent) => agent.slug === slug);
 }

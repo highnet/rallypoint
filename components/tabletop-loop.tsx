@@ -1,100 +1,189 @@
 "use client";
 
-import { ArrowRight, MousePointerClick } from "lucide-react";
+import { ArrowRight, MapPinned } from "lucide-react";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
-import { agentSlugForRole, loopStages } from "@/lib/loop-stages";
-import { useRallypointStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-export function TabletopLoop() {
-  const activeStage = useRallypointStore((state) => state.activeStage);
-  const setActiveStage = useRallypointStore((state) => state.setActiveStage);
-  const activeIndex = loopStages.findIndex((stage) => stage.id === activeStage);
-  const active = loopStages[activeIndex] ?? loopStages[0];
-  const routeStyle = {
-    "--route-offset": `${100 - activeIndex * 20}`,
-  } as CSSProperties;
+const atlasLocations = [
+  {
+    slug: "planner",
+    role: "Planner",
+    name: "Star Tower",
+    motto: "Chart the unknown.",
+    detail:
+      "Astrolabes turn above the observatory while the cartographer plots ready quests and their dependencies.",
+    x: 30,
+    y: 19,
+  },
+  {
+    slug: "worker",
+    role: "Worker",
+    name: "Emberworks",
+    motto: "Shape one quest.",
+    detail:
+      "Forges, cranes, and molten channels turn a claimed issue into one focused, verifiable pull request.",
+    x: 67,
+    y: 19,
+  },
+  {
+    slug: "reviewer",
+    role: "Reviewer",
+    name: "Owl Scriptorium",
+    motto: "Judge the evidence.",
+    detail:
+      "Lanterned archives hold the contract, the diff, and the independent verdict that guards the merge.",
+    x: 70,
+    y: 49,
+  },
+  {
+    slug: "tester",
+    role: "Tester",
+    name: "Thornwood",
+    motto: "Test the edges.",
+    detail:
+      "Broken bridges and hostile paths reveal the weakest meaningful behavior before it escapes into the wild.",
+    x: 65,
+    y: 77,
+  },
+  {
+    slug: "fixer",
+    role: "Fixer",
+    name: "Red Apothecary",
+    motto: "Mend, don’t expand.",
+    detail:
+      "Glasshouses and careful instruments restore a reviewed branch without broadening the original quest.",
+    x: 29,
+    y: 73,
+  },
+  {
+    slug: "janitor",
+    role: "Janitor",
+    name: "Barrow of Keys",
+    motto: "Leave a truthful trail.",
+    detail:
+      "The keeper clears abandoned claims and stale reservations so the campaign board reflects the living work.",
+    x: 19,
+    y: 47,
+  },
+] as const;
 
-  const legendContent = (
-    <>
-      <span className="legend-title">{active.label}</span>
-      <span>{active.description}</span>
-      <Link className="legend-link" href={`/agents/${agentSlugForRole(active.role)}`}>
-        View {active.role} role
-        <ArrowRight aria-hidden="true" />
-      </Link>
-    </>
-  );
+export function TabletopLoop() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const active = atlasLocations[activeIndex];
+  const routeStyle = {
+    "--route-offset": `${80 - activeIndex * 16}`,
+  } as CSSProperties;
 
   return (
     <div className="campaign-table-wrap">
-      <p className="map-hint">
-        <MousePointerClick aria-hidden="true" />
-        Tap a stage to preview it, then open its role
-      </p>
-      <div className="campaign-table" aria-label="The five-stage Rallypoint agent loop">
-        <div className="felt-noise" aria-hidden="true" />
+      <div className="atlas-heading">
+        <p>
+          <MapPinned aria-hidden="true" />
+          The Cindermoor Reaches
+        </p>
+        <span>Select a stronghold to inspect its oath</span>
+      </div>
+
+      <div className="campaign-table" aria-label="The six inhabited role locations of Rallypoint">
+        <div className="atlas-art" aria-hidden="true" />
         <svg
           aria-hidden="true"
           className="route-map"
           preserveAspectRatio="none"
-          viewBox="0 0 1000 690"
+          viewBox="0 0 1000 660"
         >
           <path
             className="route-shadow"
-            d="M210 190 C390 75 570 80 700 135 C890 215 925 410 790 535 C650 665 350 640 205 520 C90 425 82 280 210 190 Z"
+            d="M300 130 C470 55 610 55 680 125 C760 205 775 275 700 325 C760 405 750 505 650 540 C485 610 345 570 280 500 C190 430 145 350 185 285 C205 220 240 170 300 130 Z"
           />
           <path
             className="route-track"
-            d="M210 190 C390 75 570 80 700 135 C890 215 925 410 790 535 C650 665 350 640 205 520 C90 425 82 280 210 190 Z"
+            d="M300 130 C470 55 610 55 680 125 C760 205 775 275 700 325 C760 405 750 505 650 540 C485 610 345 570 280 500 C190 430 145 350 185 285 C205 220 240 170 300 130 Z"
           />
           <path
             className="route-line"
-            d="M210 190 C390 75 570 80 700 135 C890 215 925 410 790 535 C650 665 350 640 205 520 C90 425 82 280 210 190 Z"
+            d="M300 130 C470 55 610 55 680 125 C760 205 775 275 700 325 C760 405 750 505 650 540 C485 610 345 570 280 500 C190 430 145 350 185 285 C205 220 240 170 300 130 Z"
           />
           <path
             className="route-progress"
-            d="M210 190 C390 75 570 80 700 135 C890 215 925 410 790 535 C650 665 350 640 205 520 C90 425 82 280 210 190 Z"
+            d="M300 130 C470 55 610 55 680 125 C760 205 775 275 700 325 C760 405 750 505 650 540 C485 610 345 570 280 500 C190 430 145 350 185 285 C205 220 240 170 300 130 Z"
             pathLength="100"
             style={routeStyle}
           />
         </svg>
 
-        {loopStages.map((stage) => {
-          const Icon = stage.icon;
-          const isActive = activeStage === stage.id;
+        {atlasLocations.map((location, index) => {
+          const isActive = index === activeIndex;
 
           return (
             <button
+              aria-label={`${location.role}: ${location.name}. ${location.motto}`}
               aria-pressed={isActive}
-              className={cn("map-stage", isActive && "is-active")}
-              key={stage.id}
-              onClick={() => setActiveStage(stage.id)}
-              onFocus={() => setActiveStage(stage.id)}
-              onMouseEnter={() => setActiveStage(stage.id)}
-              style={{ left: `${stage.x}%`, top: `${stage.y}%` }}
+              className={cn("map-stage", `atlas-location-${index + 1}`, isActive && "is-active")}
+              key={location.slug}
+              onClick={() => setActiveIndex(index)}
+              onFocus={() => setActiveIndex(index)}
+              onMouseEnter={() => setActiveIndex(index)}
+              style={{ left: `${location.x}%`, top: `${location.y}%` }}
               type="button"
             >
-              <span className={cn("role-token", stage.token)} aria-hidden="true" />
+              <span className="atlas-pin" aria-hidden="true">
+                {index + 1}
+              </span>
               <span className="stage-copy">
-                <span className="stage-heading">
-                  <Icon className="stage-icon" />
-                  {stage.label}
-                </span>
-                <span className="stage-role">{stage.role}</span>
+                <span className="stage-role">{location.role}</span>
+                <span className="stage-heading">{location.name}</span>
+                <span className="stage-motto">{location.motto}</span>
               </span>
             </button>
           );
         })}
 
-        <div className="map-legend map-legend-overlay" aria-live="polite">
-          {legendContent}
+        <div className="atlas-die" aria-hidden="true">
+          <svg className="atlas-die-svg" viewBox="0 0 100 112" role="presentation">
+            <polygon
+              className="atlas-d20-shell"
+              points="50,2 85,20 98,58 78,94 50,110 22,94 2,58 15,20"
+            />
+            <g className="atlas-d20-faces">
+              <polygon className="atlas-d20-face face-1" points="50,2 15,20 50,28" />
+              <polygon className="atlas-d20-face face-2" points="50,2 50,28 85,20" />
+              <polygon className="atlas-d20-face face-3" points="15,20 2,58 50,28" />
+              <polygon className="atlas-d20-face face-4" points="2,58 22,70 50,28" />
+              <polygon className="atlas-d20-face face-5" points="85,20 50,28 98,58" />
+              <polygon className="atlas-d20-face face-6" points="98,58 50,28 78,70" />
+              <polygon className="atlas-d20-face face-7" points="50,28 78,70 22,70" />
+              <polygon className="atlas-d20-face face-8" points="2,58 22,94 22,70" />
+              <polygon className="atlas-d20-face face-9" points="22,94 50,110 22,70" />
+              <polygon className="atlas-d20-face face-10" points="50,110 50,90 22,70" />
+              <polygon className="atlas-d20-face face-11" points="22,70 50,90 78,70" />
+              <polygon className="atlas-d20-face face-12" points="50,90 50,110 78,70" />
+              <polygon className="atlas-d20-face face-13" points="50,110 78,94 78,70" />
+              <polygon className="atlas-d20-face face-14" points="78,94 98,58 78,70" />
+            </g>
+            <polygon
+              className="atlas-d20-outline"
+              points="50,2 85,20 98,58 78,94 50,110 22,94 2,58 15,20"
+            />
+            <text className="atlas-d20-number" x="50" y="62" textAnchor="middle">
+              20
+            </text>
+          </svg>
         </div>
+
       </div>
-      <div className="map-legend map-legend-static" aria-live="polite">
-        {legendContent}
+      <div className="map-legend atlas-field-note" aria-live="polite">
+        <span className="legend-index">Field note {activeIndex + 1}/6</span>
+        <span className="legend-title">
+          {active.role} · {active.name}
+        </span>
+        <span>{active.detail}</span>
+        <Link className="legend-link" href={`/agents/${active.slug}`}>
+          Open the {active.role} contract
+          <ArrowRight aria-hidden="true" />
+        </Link>
       </div>
     </div>
   );

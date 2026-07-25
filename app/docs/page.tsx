@@ -1,8 +1,13 @@
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  CircleDot,
+  GitBranch,
+  MessageSquare,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
-import { DocsQuickNav } from "@/components/docs-quick-nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
@@ -92,15 +97,17 @@ export default function DocsPage() {
         </div>
       </header>
 
-      <DocsQuickNav />
-
       <article className="docs-shell">
         <div className="docs-hero">
+          <div className="docs-hero-art" aria-hidden="true">
+            <span className="docs-hero-map" />
+            <span className="docs-hero-seal">RP</span>
+          </div>
           <Link className="back-link" href="/">
             <ArrowLeft />
             Back to the campaign table
           </Link>
-          <p className="docs-kicker">The Rallypoint Playbook</p>
+          <p className="docs-kicker">Rallypoint Docs</p>
           <h1>A repository protocol agents can actually follow.</h1>
           <p>
             Rallypoint does not run your models. It gives every coding agent a
@@ -109,32 +116,36 @@ export default function DocsPage() {
           </p>
         </div>
 
-        <section className="docs-section" id="principles">
+        <section className="docs-section docs-principles" id="principles">
           <div className="docs-section-title">
-            <svg aria-hidden="true">
-              <use href="#charge-ward-shield" />
-            </svg>
+            <ShieldCheck />
             <h2>The party oath</h2>
           </div>
-          <div className="oath-charter ledger-panel">
-            <ol className="rule-list oath-list">
-              {rules.map((rule, index) => (
-                <li key={rule}>
-                  <span>{index + 1}</span>
-                  <p>{rule}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
+          <div
+            aria-label="Seven adventurers taking the party oath around a carved campaign table"
+            className="docs-principles-art"
+            role="img"
+          />
+          <ol className="rule-list">
+            {rules.map((rule, index) => (
+              <li key={rule}>
+                <span>{index + 1}</span>
+                <p>{rule}</p>
+              </li>
+            ))}
+          </ol>
         </section>
 
-        <section className="docs-section" id="roles">
+        <section className="docs-section docs-roles" id="roles">
           <div className="docs-section-title">
-            <svg aria-hidden="true">
-              <use href="#charge-circle-mark" />
-            </svg>
+            <CircleDot />
             <h2>Role boundaries</h2>
           </div>
+          <div
+            aria-label="The role boundary fortress with seven separate work stations connected by guarded handoff paths"
+            className="docs-roles-art"
+            role="img"
+          />
           <div className="docs-table-wrap">
             <table>
               <thead>
@@ -147,46 +158,58 @@ export default function DocsPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>Planner</td>
-                  <td>No</td>
-                  <td>No</td>
-                  <td>Grooms a ready backlog.</td>
+                  <td data-label="Role">Planner</td>
+                  <td data-label="Claims">No</td>
+                  <td data-label="Reviews">No</td>
+                  <td data-label="Purpose">Grooms a ready backlog.</td>
                 </tr>
                 <tr>
-                  <td>Worker</td>
-                  <td>One</td>
-                  <td>Never own work</td>
-                  <td>Ships one issue as one pull request.</td>
+                  <td data-label="Role">Worker</td>
+                  <td data-label="Claims">One</td>
+                  <td data-label="Reviews">Never own work</td>
+                  <td data-label="Purpose">
+                    Ships one issue as one pull request.
+                  </td>
                 </tr>
                 <tr>
-                  <td>Reviewer</td>
-                  <td>No</td>
-                  <td>Yes</td>
-                  <td>Grants or withholds the verdict.</td>
+                  <td data-label="Role">Reviewer</td>
+                  <td data-label="Claims">No</td>
+                  <td data-label="Reviews">Yes</td>
+                  <td data-label="Purpose">
+                    Grants or withholds the verdict.
+                  </td>
                 </tr>
                 <tr>
-                  <td>Tester</td>
-                  <td>Filed gap only</td>
-                  <td>No</td>
-                  <td>Finds and closes coverage gaps.</td>
+                  <td data-label="Role">Tester</td>
+                  <td data-label="Claims">Filed gap only</td>
+                  <td data-label="Reviews">No</td>
+                  <td data-label="Purpose">
+                    Finds and closes coverage gaps.
+                  </td>
                 </tr>
                 <tr>
-                  <td>Fixer</td>
-                  <td>No</td>
-                  <td>No</td>
-                  <td>Addresses review feedback in place.</td>
+                  <td data-label="Role">Fixer</td>
+                  <td data-label="Claims">No</td>
+                  <td data-label="Reviews">No</td>
+                  <td data-label="Purpose">
+                    Addresses review feedback in place.
+                  </td>
                 </tr>
                 <tr>
-                  <td>Janitor</td>
-                  <td>No</td>
-                  <td>No</td>
-                  <td>Releases stale claims and reservations.</td>
+                  <td data-label="Role">Janitor</td>
+                  <td data-label="Claims">No</td>
+                  <td data-label="Reviews">No</td>
+                  <td data-label="Purpose">
+                    Releases stale claims and reservations.
+                  </td>
                 </tr>
                 <tr>
-                  <td>Orchestrator</td>
-                  <td>No</td>
-                  <td>No</td>
-                  <td>Reads state and dispatches the next role.</td>
+                  <td data-label="Role">Orchestrator</td>
+                  <td data-label="Claims">No</td>
+                  <td data-label="Reviews">No</td>
+                  <td data-label="Purpose">
+                    Reads state and dispatches the next role.
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -195,11 +218,14 @@ export default function DocsPage() {
 
         <section className="docs-section docs-install" id="install">
           <div className="docs-section-title">
-            <svg aria-hidden="true">
-              <use href="#charge-way-mark" />
-            </svg>
+            <GitBranch />
             <h2>Install the campaign pack</h2>
           </div>
+          <div
+            aria-label="A campaign quartermaster's field kit containing the complete repository pack"
+            className="docs-install-art"
+            role="img"
+          />
           <p>
             Rallypoint’s CLI reads its own signed campaign manifest and writes
             each file to an explicit repository-root path. It stops on
@@ -220,11 +246,14 @@ export default function DocsPage() {
 
         <section className="docs-section docs-prompting" id="prompting">
           <div className="docs-section-title">
-            <svg aria-hidden="true">
-              <use href="#charge-parley-mark" />
-            </svg>
+            <MessageSquare />
             <h2>Prompt the party</h2>
           </div>
+          <div
+            aria-label="The Owl Scriptorium coordinating seven sealed role messages"
+            className="docs-correspondence-art"
+            role="img"
+          />
           <p>
             A role is one file, so at minimum, prompting an agent to become
             that role means pointing a fresh session at{" "}
@@ -239,7 +268,7 @@ export default function DocsPage() {
             the next role and target, so you know exactly what to prompt a
             fresh session with.
           </p>
-          <div className="docs-table-wrap">
+          <div className="docs-table-wrap prompt-table-wrap">
             <table>
               <thead>
                 <tr>
@@ -250,8 +279,8 @@ export default function DocsPage() {
               <tbody>
                 {rolePrompts.map(({ role, prompt }) => (
                   <tr key={role}>
-                    <td>{role}</td>
-                    <td>{prompt}</td>
+                    <td data-label="Role">{role}</td>
+                    <td data-label="Prompt">{prompt}</td>
                   </tr>
                 ))}
               </tbody>
@@ -273,8 +302,7 @@ export default function DocsPage() {
           </p>
           <ul className="prompt-examples">
             {humanPrompts.map(({ label, prompt }) => (
-              <li className="prompt-example ledger-panel" key={label}>
-                <span aria-hidden="true" className="prompt-waypoint" />
+              <li className="prompt-example" key={label}>
                 <p className="prompt-label">{label}</p>
                 <p className="prompt-text">“{prompt}”</p>
               </li>

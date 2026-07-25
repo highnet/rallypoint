@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { CommandCopy } from "@/components/command-copy";
 import { agents } from "@/lib/agents";
@@ -15,6 +15,17 @@ type AudienceForkProps = {
 export function AudienceFork({ human }: AudienceForkProps) {
   const audience = useRallypointStore((state) => state.audience);
   const setAudience = useRallypointStore((state) => state.setAudience);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.audience = audience;
+
+    return () => {
+      if (root.dataset.audience === audience) {
+        delete root.dataset.audience;
+      }
+    };
+  }, [audience]);
 
   return (
     <>

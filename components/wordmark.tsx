@@ -40,23 +40,35 @@ export function Wordmark({ className, href = "/" }: WordmarkProps) {
         title="Roll for initiative"
         type="button"
       >
-        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-          <g className="wordmark-die-facets">
-            <path d="M16 3 7 9 16 9Z" />
-            <path d="M16 3 16 9 25 9Z" />
-            <path d="M7 9 5 19 16 24Z" />
-            <path d="M7 9 16 24 25 9Z" className="wordmark-die-front" />
-            <path d="M16 24 25 9 27 19Z" />
-            <path d="M16 29 5 19 16 24Z" />
-            <path d="M16 29 16 24 27 19Z" />
+        <svg aria-hidden="true" viewBox="0 0 72 72">
+          <path
+            className="wordmark-die-focus"
+            d="M36 3 58 10l11 21-9 23-24 15-24-10-9-22 10-24Z"
+          />
+          <g className="wordmark-die-faces">
+            <path className="die-face die-face-1" d="M36 3 13 13l23 5Z" />
+            <path className="die-face die-face-2" d="M36 3 36 18 58 10Z" />
+            <path className="die-face die-face-3" d="M13 13 3 37l14-7Z" />
+            <path className="die-face die-face-4" d="M13 13 17 30 36 18Z" />
+            <path className="die-face die-face-5" d="M3 37 12 59 24 52Z" />
+            <path className="die-face die-face-6" d="M3 37 24 52 17 30Z" />
+            <path className="die-face die-face-7" d="M12 59 36 69 24 52Z" />
+            <path className="die-face die-face-8" d="M36 69 48 49 24 52Z" />
+            <path className="die-face die-face-9" d="M36 69 60 54 48 49Z" />
+            <path className="die-face die-face-10" d="M60 54 69 31 54 29Z" />
+            <path className="die-face die-face-11" d="M60 54 54 29 48 49Z" />
+            <path className="die-face die-face-12" d="M69 31 58 10 54 29Z" />
+            <path className="die-face die-face-13" d="M58 10 36 18 54 29Z" />
+            <path className="die-face die-face-14" d="M36 18 17 30 36 35Z" />
+            <path className="die-face die-face-main" d="M17 30 24 52 36 35Z" />
+            <path className="die-face die-face-5" d="M24 52 48 49 36 35Z" />
+            <path className="die-face die-face-10" d="M48 49 54 29 36 35Z" />
+            <path className="die-face die-face-2" d="M54 29 36 18 36 35Z" />
           </g>
           <path
             className="wordmark-die-outline"
-            d="M16 3 25 9 27 19 16 29 5 19 7 9Z"
+            d="M36 3 58 10l11 21-9 23-24 15-24-10-9-22 10-24Z"
           />
-          <text x="16" y="20.5" textAnchor="middle">
-            {roll}
-          </text>
         </svg>
       </button>
       <Link href={href}>Rallypoint</Link>

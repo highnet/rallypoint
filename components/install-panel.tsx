@@ -59,7 +59,12 @@ export function InstallPanel() {
 
   return (
     <div className="install-grid">
-      <div className="install-console ledger-panel">
+      <div
+        aria-label="The Rallypoint campaign files packed as an adventurer’s field kit"
+        className="install-field-art"
+        role="img"
+      />
+      <div className="install-console">
         <div className="mode-tabs" role="tablist" aria-label="Install methods">
           {modes.map((mode) => {
             const Icon = mode.icon;
@@ -90,7 +95,10 @@ export function InstallPanel() {
 
       <div className="file-scroll" aria-label="Files installed by Rallypoint">
         <div className="scroll-roller scroll-roller-top" aria-hidden="true" />
-        <p className="scroll-title">The campaign pack</p>
+        <div className="scroll-heading">
+          <p className="scroll-kicker">Repository field manifest</p>
+          <p className="scroll-title">The campaign pack</p>
+        </div>
         <ul>
           {files.map((file) => (
             <li key={file}>
@@ -99,6 +107,11 @@ export function InstallPanel() {
             </li>
           ))}
         </ul>
+        <p className="scroll-colophon">
+          <span>{files.length} files</span>
+          <span>Conflict-safe manifest</span>
+        </p>
+        <span aria-hidden="true" className="scroll-seal">RP</span>
         <div className="scroll-roller scroll-roller-bottom" aria-hidden="true" />
       </div>
     </div>

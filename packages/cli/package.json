@@ -1,6 +1,6 @@
 {
   "name": "rallypoint",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Install Rallypoint agent coordination protocols into any repository.",
   "type": "module",
   "bin": {

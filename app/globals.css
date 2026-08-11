@@ -4885,39 +4885,6 @@ td:first-child {
   stroke-width: 2px;
 }
 
-.role-sheet-janitor,
-.role-sheet-orchestrator {
-  grid-column: span 6;
-}
-
-@media (max-width: 1100px) and (min-width: 621px) {
-  .role-sheet-orchestrator {
-    grid-column: span 6;
-    grid-template-columns: 52px minmax(0, 1fr);
-  }
-
-  .role-sheet-orchestrator .role-sigil {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .role-sheet-orchestrator .role-copy {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .role-sheet-orchestrator .role-portrait {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 260px;
-  }
-
-  .role-sheet-orchestrator .role-stat-block {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-}
-
 html[data-audience="agent"],
 html[data-audience="agent"] body {
   background: #f4efe5;

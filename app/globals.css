@@ -893,6 +893,13 @@ button.wordmark-die {
   clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0 38%);
 }
 
+/* The merger's keystone: the wedge that holds a crossing together. */
+.token-keystone {
+  background: var(--brass);
+  box-shadow: inset -8px -9px 0 color-mix(in oklch, black 22%, transparent);
+  clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%);
+}
+
 .stage-copy {
   background: color-mix(in oklch, var(--parchment) 94%, transparent);
   border: 1px solid color-mix(in oklch, var(--parchment-foreground) 24%, transparent);
@@ -1326,6 +1333,7 @@ button.wordmark-die {
 .role-green { background: var(--green); --ink: var(--parchment-emphasis); }
 .role-slate { background: var(--slate); --ink: var(--parchment-emphasis); }
 .role-rose { background: var(--rose); --ink: var(--parchment-emphasis); }
+.role-brass { background: var(--brass); --ink: var(--parchment-emphasis); }
 
 .dark .role-red,
 .dark .role-violet,
@@ -4187,12 +4195,13 @@ td:first-child {
   grid-column: span 4;
 }
 
-.role-sheet-janitor {
-  grid-column: span 5;
+.role-sheet-janitor,
+.role-sheet-merger {
+  grid-column: span 6;
 }
 
 .role-sheet-orchestrator {
-  grid-column: span 7;
+  grid-column: span 12;
 }
 
 .role-portrait {
@@ -4341,7 +4350,8 @@ td:first-child {
   .role-sheet-reviewer,
   .role-sheet-tester,
   .role-sheet-fixer,
-  .role-sheet-janitor {
+  .role-sheet-janitor,
+  .role-sheet-merger {
     grid-column: span 6;
   }
 

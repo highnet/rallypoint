@@ -5,7 +5,7 @@
     {
       "name": "loop",
       "version": "0.4.0",
-      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, mergers, and an orchestrator that dispatches them.",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, and an orchestrator that dispatches them.",
       "fileCount": 52
     }
   ]

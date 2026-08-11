@@ -120,6 +120,23 @@ export function HeraldrySprite() {
         <circle cx="24" cy="24" r="4" />
       </symbol>
 
+      {/* Merger — ford-mark: two banks, the crossing between them, one way over */}
+      <symbol
+        id="charge-ford-mark"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 14 H16 M32 14 H44" />
+        <path d="M4 34 H16 M32 34 H44" />
+        <path d="M16 14 V34 M32 14 V34" />
+        <path d="M20 24 H28" />
+        <path d="M24 8 V18 M20 12 L24 8 L28 12" />
+      </symbol>
+
       {/* Orchestrator — rally-point: converging roads meeting at the marshal */}
       <symbol
         id="charge-rally-point"

@@ -5,7 +5,7 @@
     {
       "name": "loop",
       "version": "0.4.0",
-      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, mergers, and an orchestrator that dispatches them.",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, and an orchestrator that dispatches them.",
       "files": [
         {
           "source": "LICENSE",
@@ -28,6 +28,22 @@
           "target": ".rallypoint/config.json"
         },
         {
+          "source": ".rallypoint/roles/planner.md",
+          "target": ".rallypoint/roles/planner.md"
+        },
+        {
+          "source": ".rallypoint/roles/worker.md",
+          "target": ".rallypoint/roles/worker.md"
+        },
+        {
+          "source": ".rallypoint/roles/reviewer.md",
+          "target": ".rallypoint/roles/reviewer.md"
+        },
+        {
+          "source": ".rallypoint/roles/tester.md",
+          "target": ".rallypoint/roles/tester.md"
+        },
+        {
           "source": ".rallypoint/roles/fixer.md",
           "target": ".rallypoint/roles/fixer.md"
         },
@@ -42,22 +58,6 @@
         {
           "source": ".rallypoint/roles/orchestrator.md",
           "target": ".rallypoint/roles/orchestrator.md"
-        },
-        {
-          "source": ".rallypoint/roles/planner.md",
-          "target": ".rallypoint/roles/planner.md"
-        },
-        {
-          "source": ".rallypoint/roles/reviewer.md",
-          "target": ".rallypoint/roles/reviewer.md"
-        },
-        {
-          "source": ".rallypoint/roles/tester.md",
-          "target": ".rallypoint/roles/tester.md"
-        },
-        {
-          "source": ".rallypoint/roles/worker.md",
-          "target": ".rallypoint/roles/worker.md"
         },
         {
           "source": ".rallypoint/scripts/carry-forward.mjs",
@@ -106,113 +106,91 @@
         },
         {
           "source": ".rallypoint/scripts/lib/api.mjs",
-          "target": ".rallypoint/scripts/lib/api.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/api.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/beacon-push.mjs",
-          "target": ".rallypoint/scripts/lib/beacon-push.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/beacon-push.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/blocked-by.mjs",
-          "target": ".rallypoint/scripts/lib/blocked-by.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/blocked-by.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/claim.mjs",
-          "target": ".rallypoint/scripts/lib/claim.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/claim.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/claimable.mjs",
-          "target": ".rallypoint/scripts/lib/claimable.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/claimable.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/cleanup.mjs",
-          "target": ".rallypoint/scripts/lib/cleanup.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/cleanup.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/clear-status-labels.mjs",
-          "target": ".rallypoint/scripts/lib/clear-status-labels.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/clear-status-labels.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/closing-references.mjs",
-          "target": ".rallypoint/scripts/lib/closing-references.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/closing-references.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/config.mjs",
-          "target": ".rallypoint/scripts/lib/config.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/config.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/delete-merged-branch.mjs",
-          "target": ".rallypoint/scripts/lib/delete-merged-branch.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/delete-merged-branch.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/freshness.mjs",
-          "target": ".rallypoint/scripts/lib/freshness.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/freshness.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/gh.mjs",
-          "target": ".rallypoint/scripts/lib/gh.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/gh.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/git.mjs",
-          "target": ".rallypoint/scripts/lib/git.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/git.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/lease.mjs",
-          "target": ".rallypoint/scripts/lib/lease.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/lease.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/local-work.mjs",
-          "target": ".rallypoint/scripts/lib/local-work.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/local-work.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/preflight.mjs",
-          "target": ".rallypoint/scripts/lib/preflight.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/preflight.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/prerequisites.mjs",
-          "target": ".rallypoint/scripts/lib/prerequisites.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/prerequisites.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/reconcile.mjs",
-          "target": ".rallypoint/scripts/lib/reconcile.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/reconcile.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/release-claim.mjs",
-          "target": ".rallypoint/scripts/lib/release-claim.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/release-claim.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/report.mjs",
-          "target": ".rallypoint/scripts/lib/report.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/report.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/request.mjs",
-          "target": ".rallypoint/scripts/lib/request.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/request.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/review-exit-codes.mjs",
-          "target": ".rallypoint/scripts/lib/review-exit-codes.mjs",
-          "executable": true
+          "target": ".rallypoint/scripts/lib/review-exit-codes.mjs"
         },
         {
           "source": ".rallypoint/scripts/preflight.mjs",

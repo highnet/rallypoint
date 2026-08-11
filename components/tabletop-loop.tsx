@@ -54,8 +54,18 @@ const atlasLocations = [
     motto: "Mend, don’t expand.",
     detail:
       "Glasshouses and careful instruments restore a reviewed branch without broadening the original quest.",
-    x: 29,
-    y: 73,
+    x: 38,
+    y: 80,
+  },
+  {
+    slug: "merger",
+    role: "Merger",
+    name: "Brass Ford",
+    motto: "Read the water first.",
+    detail:
+      "The one crossing on the map. The ferryman reads the verdict, then the checks themselves, before carrying anything over.",
+    x: 18,
+    y: 66,
   },
   {
     slug: "janitor",
@@ -64,16 +74,22 @@ const atlasLocations = [
     motto: "Leave a truthful trail.",
     detail:
       "The keeper clears abandoned claims and stale reservations so the campaign board reflects the living work.",
-    x: 19,
-    y: 47,
+    x: 17,
+    y: 39,
   },
 ] as const;
 
 export function TabletopLoop() {
   const [activeIndex, setActiveIndex] = useState(0);
   const active = atlasLocations[activeIndex];
+  // The ember route advances from 80 to 0 across the whole ring, so the step is
+  // derived from the number of locations rather than fixed at 16. Hard-coding
+  // the step meant a seventh location ran the offset negative and the route
+  // stopped tracking the selection at all.
   const routeStyle = {
-    "--route-offset": `${80 - activeIndex * 16}`,
+    "--route-offset": `${
+      80 - (activeIndex * 80) / Math.max(atlasLocations.length - 1, 1)
+    }`,
   } as CSSProperties;
 
   return (

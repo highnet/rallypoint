@@ -1,6 +1,7 @@
 export const agents = [
   {
     slug: "planner",
+    portrait: "/world/roles/planner.jpg",
     name: "Planner",
     title: "The cartographer",
     summary: "Keeps a dependency-aware queue of small, claimable quests.",
@@ -17,6 +18,7 @@ export const agents = [
   },
   {
     slug: "worker",
+    portrait: "/world/roles/worker.jpg",
     name: "Worker",
     title: "The builder",
     summary: "Claims one quest and ships one focused pull request.",
@@ -33,6 +35,7 @@ export const agents = [
   },
   {
     slug: "reviewer",
+    portrait: "/world/roles/reviewer.jpg",
     name: "Reviewer",
     title: "The gatekeeper",
     summary: "Judges another agent’s diff and alone may grant approval.",
@@ -49,6 +52,7 @@ export const agents = [
   },
   {
     slug: "tester",
+    portrait: "/world/roles/tester.jpg",
     name: "Tester",
     title: "The scout",
     summary: "Finds the weakest meaningful behavior and closes its coverage gap.",
@@ -65,6 +69,7 @@ export const agents = [
   },
   {
     slug: "fixer",
+    portrait: "/world/roles/fixer.jpg",
     name: "Fixer",
     title: "The mender",
     summary: "Returns a reviewed pull request to a mergeable state.",
@@ -81,6 +86,7 @@ export const agents = [
   },
   {
     slug: "janitor",
+    portrait: "/world/roles/janitor.jpg",
     name: "Janitor",
     title: "The keeper",
     summary: "Releases stale coordination state without touching product work.",
@@ -96,7 +102,29 @@ export const agents = [
     handoff: "A truthful board with stale reservations released and no product diff.",
   },
   {
+    slug: "merger",
+    // PLACEHOLDER. Every other plate is an authored painting; this is a
+    // stand-in drawn in the same ink-on-vellum idiom so the roster is not
+    // missing a tile. Drop the painting at public/world/roles/merger.jpg and
+    // change this one line.
+    portrait: "/world/roles/merger.svg",
+    name: "Merger",
+    title: "The ferryman",
+    summary: "Carries approved work across, and never on the verdict alone.",
+    color: "brass",
+    token: "keystone",
+    charge: "ford-mark",
+    does: [
+      "Reads the recorded verdict, then checks CI itself — approved is not mergeable.",
+      "Confirms the head has not moved since the verdict and the run it read.",
+      "Merges, deletes the remote branch, and reconciles the claim it left behind.",
+    ],
+    never: ["Claims work", "Reviews or approves", "Merges on a stale or unread check"],
+    handoff: "Merged work, a closed or deliberately open issue, and no reservation left standing.",
+  },
+  {
     slug: "orchestrator",
+    portrait: "/world/roles/orchestrator.jpg",
     name: "Orchestrator",
     title: "The marshal",
     summary: "Reads the shared board and recommends which roles run next.",
@@ -164,13 +192,21 @@ export const agentFieldGuides = {
     authority: "Cleanup",
     yield: "Truthful queue",
   },
+  merger: {
+    habitat: "Merger’s Brass Ford",
+    habitatDetail: "The one crossing, rollup boards, tally of what landed",
+    fieldKit: "Verdict seal · check rollup · head-SHA glass",
+    capacity: "No claim",
+    authority: "Crossing",
+    yield: "Landed work",
+  },
   orchestrator: {
     habitat: "Marshal’s Road Shrine",
     habitatDetail: "Central rally camp where every route is visible",
-    fieldKit: "Shared queue · role roster · exact starting quest",
+    fieldKit: "Shared board · role roster · sized recommendation",
     capacity: "No claim",
-    authority: "Dispatch",
-    yield: "Assigned session",
+    authority: "Counsel",
+    yield: "Sized recommendation",
   },
 } satisfies Record<
   Agent["slug"],

@@ -16,6 +16,15 @@ const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const cli = resolve(root, "packages/cli/bin/rallypoint.mjs");
 const fixture = await mkdtemp(resolve(tmpdir(), "rallypoint-cli-"));
 
+// Read from the manifest rather than restating it. A hardcoded count asserts
+// that `view` agrees with a number in this file, which is not the property
+// worth testing and goes stale every time the item gains a file.
+const manifest = JSON.parse(
+  await readFile(resolve(root, "registry/manifest.json"), "utf8"),
+);
+const loopFileCount = manifest.items.find((item) => item.name === "loop").files
+  .length;
+
 function run(args, expectedStatus = 0) {
   const result = spawnSync(process.execPath, [cli, ...args], {
     cwd: fixture,
@@ -40,8 +49,10 @@ async function missing(path) {
 
 try {
   const view = run(["view", "loop"]);
-  if (!view.includes("14 files · no changes written")) {
-    throw new Error("view did not report the complete manifest");
+  if (!view.includes(`${loopFileCount} files · no changes written`)) {
+    throw new Error(
+      `view did not report the complete manifest (expected ${loopFileCount} files)`,
+    );
   }
 
   run(["add", "loop", "--dry-run"]);
@@ -65,8 +76,10 @@ try {
   }
 
   const repeat = run(["add", "loop"]);
-  if (!repeat.includes("14 already current")) {
-    throw new Error("repeat install was not idempotent");
+  if (!repeat.includes(`${loopFileCount} already current`)) {
+    throw new Error(
+      `repeat install was not idempotent (expected ${loopFileCount} already current)`,
+    );
   }
 
   const originalConfig = await readFile(

@@ -3,6 +3,10 @@ name: Publish CLI to npm
 on:
   push:
     branches: [main]
+  # Manual escape hatch: release-please only reports release_created on the run
+  # that cuts the release, so a publish that fails for an environmental reason
+  # cannot be recovered by a re-run. Dispatch from main to publish it by hand.
+  workflow_dispatch:
 
 jobs:
   release-please:
@@ -22,7 +26,7 @@ jobs:
 
   publish:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,9 +38,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: "https://registry.npmjs.org"
 
+      # npm@latest dropped Node 20 (it now requires ^22.22.2 || ^24.15.0 ||
+      # >=26.0.0), which broke this step on the 0.4.0 release. Node 24 already
+      # ships an npm new enough for OIDC, so this is now belt and braces.
       - name: Update npm for OIDC trusted publishing support
         run: npm install -g npm@latest
 

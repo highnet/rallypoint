@@ -41,7 +41,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
   return (
     <main className="agent-page">
       <section className={`agent-hero agent-${agent.color}`}>
-        <CampaignBackground focus={index} variant="agent" />
+        <CampaignBackground role={agent.slug} variant="agent" />
         <header className="site-header">
           <Wordmark />
           <nav aria-label="Agent page navigation">

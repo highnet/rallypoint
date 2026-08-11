@@ -4,23 +4,234 @@
   "items": [
     {
       "name": "loop",
-      "version": "0.3.0",
-      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, janitors, and an orchestrator that dispatches them.",
+      "version": "0.4.0",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, and an orchestrator that dispatches them.",
       "files": [
-        { "source": "LICENSE", "target": ".rallypoint/LICENSE" },
-        { "source": "AGENTS.md", "target": "AGENTS.md" },
-        { "source": "AGENTIC_LOOP.md", "target": "AGENTIC_LOOP.md" },
-        { "source": "docs/AGENT_LOOP.md", "target": "docs/AGENT_LOOP.md" },
-        { "source": ".rallypoint/config.json", "target": ".rallypoint/config.json" },
-        { "source": ".rallypoint/roles/planner.md", "target": ".rallypoint/roles/planner.md" },
-        { "source": ".rallypoint/roles/worker.md", "target": ".rallypoint/roles/worker.md" },
-        { "source": ".rallypoint/roles/reviewer.md", "target": ".rallypoint/roles/reviewer.md" },
-        { "source": ".rallypoint/roles/tester.md", "target": ".rallypoint/roles/tester.md" },
-        { "source": ".rallypoint/roles/fixer.md", "target": ".rallypoint/roles/fixer.md" },
-        { "source": ".rallypoint/roles/janitor.md", "target": ".rallypoint/roles/janitor.md" },
-        { "source": ".rallypoint/roles/orchestrator.md", "target": ".rallypoint/roles/orchestrator.md" },
-        { "source": ".rallypoint/scripts/claim.mjs", "target": ".rallypoint/scripts/claim.mjs", "executable": true },
-        { "source": ".rallypoint/scripts/cleanup.mjs", "target": ".rallypoint/scripts/cleanup.mjs", "executable": true }
+        {
+          "source": "LICENSE",
+          "target": ".rallypoint/LICENSE"
+        },
+        {
+          "source": "AGENTS.md",
+          "target": "AGENTS.md"
+        },
+        {
+          "source": "AGENTIC_LOOP.md",
+          "target": "AGENTIC_LOOP.md"
+        },
+        {
+          "source": "docs/AGENT_LOOP.md",
+          "target": "docs/AGENT_LOOP.md"
+        },
+        {
+          "source": ".rallypoint/config.json",
+          "target": ".rallypoint/config.json"
+        },
+        {
+          "source": ".rallypoint/roles/planner.md",
+          "target": ".rallypoint/roles/planner.md"
+        },
+        {
+          "source": ".rallypoint/roles/worker.md",
+          "target": ".rallypoint/roles/worker.md"
+        },
+        {
+          "source": ".rallypoint/roles/reviewer.md",
+          "target": ".rallypoint/roles/reviewer.md"
+        },
+        {
+          "source": ".rallypoint/roles/tester.md",
+          "target": ".rallypoint/roles/tester.md"
+        },
+        {
+          "source": ".rallypoint/roles/fixer.md",
+          "target": ".rallypoint/roles/fixer.md"
+        },
+        {
+          "source": ".rallypoint/roles/janitor.md",
+          "target": ".rallypoint/roles/janitor.md"
+        },
+        {
+          "source": ".rallypoint/roles/merger.md",
+          "target": ".rallypoint/roles/merger.md"
+        },
+        {
+          "source": ".rallypoint/roles/orchestrator.md",
+          "target": ".rallypoint/roles/orchestrator.md"
+        },
+        {
+          "source": ".rallypoint/scripts/carry-forward.mjs",
+          "target": ".rallypoint/scripts/carry-forward.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/claim.mjs",
+          "target": ".rallypoint/scripts/claim.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/cleanup.mjs",
+          "target": ".rallypoint/scripts/cleanup.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/clear-status-labels.mjs",
+          "target": ".rallypoint/scripts/clear-status-labels.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/close-referenced-issues.mjs",
+          "target": ".rallypoint/scripts/close-referenced-issues.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/delete-merged-branch.mjs",
+          "target": ".rallypoint/scripts/delete-merged-branch.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/freshness.mjs",
+          "target": ".rallypoint/scripts/freshness.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/janitor-pass.mjs",
+          "target": ".rallypoint/scripts/janitor-pass.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/lease.mjs",
+          "target": ".rallypoint/scripts/lease.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/lib/api.mjs",
+          "target": ".rallypoint/scripts/lib/api.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/beacon-push.mjs",
+          "target": ".rallypoint/scripts/lib/beacon-push.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/blocked-by.mjs",
+          "target": ".rallypoint/scripts/lib/blocked-by.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/claim.mjs",
+          "target": ".rallypoint/scripts/lib/claim.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/claimable.mjs",
+          "target": ".rallypoint/scripts/lib/claimable.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/cleanup.mjs",
+          "target": ".rallypoint/scripts/lib/cleanup.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/clear-status-labels.mjs",
+          "target": ".rallypoint/scripts/lib/clear-status-labels.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/closing-references.mjs",
+          "target": ".rallypoint/scripts/lib/closing-references.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/config.mjs",
+          "target": ".rallypoint/scripts/lib/config.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/delete-merged-branch.mjs",
+          "target": ".rallypoint/scripts/lib/delete-merged-branch.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/freshness.mjs",
+          "target": ".rallypoint/scripts/lib/freshness.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/gh.mjs",
+          "target": ".rallypoint/scripts/lib/gh.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/git.mjs",
+          "target": ".rallypoint/scripts/lib/git.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/lease.mjs",
+          "target": ".rallypoint/scripts/lib/lease.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/local-work.mjs",
+          "target": ".rallypoint/scripts/lib/local-work.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/preflight.mjs",
+          "target": ".rallypoint/scripts/lib/preflight.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/prerequisites.mjs",
+          "target": ".rallypoint/scripts/lib/prerequisites.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/reconcile.mjs",
+          "target": ".rallypoint/scripts/lib/reconcile.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/release-claim.mjs",
+          "target": ".rallypoint/scripts/lib/release-claim.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/report.mjs",
+          "target": ".rallypoint/scripts/lib/report.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/request.mjs",
+          "target": ".rallypoint/scripts/lib/request.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/review-exit-codes.mjs",
+          "target": ".rallypoint/scripts/lib/review-exit-codes.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/preflight.mjs",
+          "target": ".rallypoint/scripts/preflight.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/provenance.mjs",
+          "target": ".rallypoint/scripts/provenance.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/reconcile.mjs",
+          "target": ".rallypoint/scripts/reconcile.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/release-claim.mjs",
+          "target": ".rallypoint/scripts/release-claim.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/report.mjs",
+          "target": ".rallypoint/scripts/report.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/review.mjs",
+          "target": ".rallypoint/scripts/review.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/unblock-cleared.mjs",
+          "target": ".rallypoint/scripts/unblock-cleared.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/verdicts.mjs",
+          "target": ".rallypoint/scripts/verdicts.mjs",
+          "executable": true
+        }
       ]
     }
   ]

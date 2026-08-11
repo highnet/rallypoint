@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 
 import { agentFieldGuides, agents } from "@/lib/agents";
 
-const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
 export function RoleParty() {
   return (
@@ -23,7 +23,7 @@ export function RoleParty() {
               className="role-portrait"
               style={
                 {
-                  backgroundImage: `url(/world/roles/${agent.slug}.jpg)`,
+                  backgroundImage: `url(${agent.portrait})`,
                 } as CSSProperties
               }
             />

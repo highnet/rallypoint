@@ -1,7 +1,15 @@
 import type { CSSProperties } from "react";
 
+import { agents, type Agent } from "@/lib/agents";
+
 type CampaignBackgroundProps = {
-  focus?: number;
+  /**
+   * Which role inhabits this view. Taken as a slug rather than an index into
+   * the roster: this used to hold its own copy of the role order and pick the
+   * portrait by position, so adding a role silently shifted every plate onto
+   * the wrong creature.
+   */
+  role?: Agent["slug"];
   variant?: "hero" | "agent";
 };
 
@@ -11,41 +19,36 @@ type CampaignBackgroundProps = {
  * supplies the role's inhabitant. Both remain decorative behind semantic copy.
  */
 export function CampaignBackground({
-  focus = 0,
+  role = "planner",
   variant = "hero",
 }: CampaignBackgroundProps) {
-  const portraitNames = [
-    "planner",
-    "worker",
-    "reviewer",
-    "tester",
-    "fixer",
-    "janitor",
-    "orchestrator",
-  ];
-  const portraitName = portraitNames[Math.min(focus, 6)];
+  // The marshal keeps its own camp. Keyed on the role itself rather than on a
+  // position in the roster, for the same reason the portrait is.
+  const isMarshal = role === "orchestrator";
+  const portrait =
+    agents.find((agent) => agent.slug === role)?.portrait ??
+    "/world/roles/planner.jpg";
 
   return (
     <div
       aria-hidden="true"
       className={`campaign-background campaign-background-${variant} ${
-        focus > 5 ? "campaign-background-marshal" : ""
+        isMarshal ? "campaign-background-marshal" : ""
       }`}
     >
       <span
         className="campaign-landscape"
         style={{
-          backgroundImage:
-            focus > 5
-              ? "url(/world/marshal-rally-camp.jpg)"
-              : "url(/world/cindermoor-atlas.jpg)",
+          backgroundImage: isMarshal
+            ? "url(/world/marshal-rally-camp.jpg)"
+            : "url(/world/cindermoor-atlas.jpg)",
         }}
       />
       <span
         className="campaign-creature"
         style={
           {
-            backgroundImage: `url(/world/roles/${portraitName}.jpg)`,
+            backgroundImage: `url(${portrait})`,
           } as CSSProperties
         }
       />

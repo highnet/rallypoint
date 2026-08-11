@@ -8,30 +8,29 @@
 // `lib/claim.mjs`, `lib/release-claim.mjs`, `close-referenced-issues.mjs`,
 // `janitor-pass.mjs`, `lib/report.mjs` — either filters the issue out or
 // refuses to remove a hold label over it, and no code path anywhere removed
-// the label when a dependency closed. Every removal in this repository's
-// history was a human noticing by hand, and the cost is measured: #1249, #1421
-// and #1424 each named #1420 as their only blocker, #1420 closed on 2026-08-08,
-// and all three stayed invisible to `claim.mjs` until an operator went looking
-// the next day. #1422 and #1423 inherited the stall transitively. An epic arc
-// gated on `status:blocked` had no mechanism to advance past its own first
-// merge, and nothing reported the stall — a blocked issue whose blocker closed
+// the label when a dependency closed, so every removal was a human noticing by
+// hand. The cost compounds: three issues naming one blocker stay invisible to
+// `claim.mjs` after that blocker closes, until somebody goes looking, and
+// anything gated behind those three inherits the stall transitively. An epic
+// arc gated on `status:blocked` has no mechanism to advance past its own first
+// merge, and nothing reports the stall — a blocked issue whose blocker closed
 // is indistinguishable on every board from one whose blocker is still open.
 //
 // Two rules carry the whole design, and both fail closed:
 //
 // - **An issue with no `Blocked-By:` trailer is never auto-unblocked.** The
 //   absence of a declaration is not evidence that nothing blocks it. Blockers
-//   were declared in prose for years and frequently without a number at all —
-//   #1421's complete declaration named no issue anywhere in its body — so a
-//   sweep that guessed would guess wrong on most of the board.
+//   are routinely declared in prose, and frequently without a number at all —
+//   a complete-looking declaration may name no issue anywhere in the body — so
+//   a sweep that guessed would guess wrong on most of the board.
 // - **A partially-cleared trailer changes nothing.** All or nothing, so an
 //   issue behind two dependencies is not queued the moment the first lands.
 //
-// `needs:human` vetoes the flip outright, unchanged from #877 and #935. That
-// precedent is not weakened here: a worker that stood down and recorded
+// `needs:human` vetoes the flip outright, and that long-standing precedent is not
+// weakened here: a worker that stood down and recorded
 // `needs:human` recorded a judgement no automated writer may overrule, and
-// putting such an issue back in the claimable pool is precisely the loop #715
-// went round four times. The veto still posts its comment, because an operator
+// putting such an issue back in the claimable pool is precisely the loop this
+// protocol has gone round before. The veto still posts its comment, because an operator
 // wanting to know the trailer cleared is exactly who the veto is holding the
 // issue for.
 
@@ -64,9 +63,9 @@ export const BLOCKED_BY_MARKER = "<!-- rallypoint:blocked-by -->";
  * The anchor carries two of the exclusions on its own, and both are properties
  * of the line's own leading characters rather than of anything around it:
  *
- * - **Inline** — `` `Blocked-By: #1420` `` — a backtick is not leading
+ * - **Inline** — `` `Blocked-By: #42` `` — a backtick is not leading
  *   whitespace, so the anchor never reaches the keyword.
- * - **Indented** — `    Blocked-By: #1420` — excluded by the `{0,3}` bound,
+ * - **Indented** — `    Blocked-By: #42` — excluded by the `{0,3}` bound,
  *   which is not an arbitrary line: it is CommonMark's own indented-code rule,
  *   where four or more spaces of indentation opens a code block. Three still
  *   parse, because three render as prose. A **tab** is excluded outright rather
@@ -94,7 +93,7 @@ const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 /**
  * Whether `line` closes a fence opened by `marker`: the same character, at
  * least as many of them, and nothing after it but spaces and tabs. A fence line
- * with trailing content — ` ```Blocked-By: #1420 ` — is content of the open
+ * with trailing content — ` ```Blocked-By: #42 ` — is content of the open
  * block, not a closing fence, so this returns false and the line stays code.
  *
  * @param {string} line
@@ -253,9 +252,9 @@ const codeSpans = (text) => {
  * The lines of `body` a reader of the rendered issue can actually see as prose,
  * paired with their 1-based line numbers.
  *
- * **This is the whole of the fix for a defect class that recurred three times**
- * (#1451, rounds one through three), and the reason it cannot recur is the
- * shape of the function rather than the cases it happens to enumerate. The
+ * **This is the whole of the fix for a defect class that recurred three
+ * times**, and the reason it cannot recur is the shape of the function rather
+ * than the cases it happens to enumerate. The
  * previous approach rewrote the body — `withoutCode` **deletes** fenced regions
  * — and then anchored a pattern to `^` in the result. A deletion joins the text
  * either side of it, so it can manufacture a line start the source never had,
@@ -768,7 +767,7 @@ const describeBlocker = ({ blocker, state }) => {
  * next reader's question is always "which dependency, and how do you know".
  *
  * The vetoed wording says plainly that the issue is **not** back in the pool.
- * The old `close-referenced-issues.mjs` bug #935 fixed was a comment asserting a
+ * An older `close-referenced-issues.mjs` bug was a comment asserting a
  * requeue that had not happened; a comment here that read as a requeue would be
  * the same defect in a new place.
  *
@@ -831,7 +830,7 @@ export const alreadyCommented = (comments) =>
  * The label edit goes first and the comment second, deliberately. A failure
  * between them leaves an issue that is genuinely queued with no comment saying
  * why, which a reader can still act on; the reverse leaves a comment asserting a
- * requeue that did not happen, which is #935's defect exactly.
+ * requeue that did not happen, which is that defect exactly.
  *
  * @param {{
  *   gh: (...args: string[]) => string,

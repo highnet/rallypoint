@@ -4,37 +4,29 @@
 //
 // Every other liveness signal in this protocol is read from GitHub: the claim
 // comment's age, an open pull request, the last push on `agent/<issue>-*`. All
-// three are blind to the state that actually dominates a session's lifetime
-// here — commits sitting in a local worktree that has not pushed yet. Workers
-// on this repository run `pnpm run check` in `pre-push`, which on a loaded
-// machine takes many minutes, so "claimed a while ago, nothing on the remote"
-// is the *normal* signature of a healthy worker mid-session, not of an
-// abandoned claim.
+// three are blind to the state that dominates a session's lifetime — commits
+// sitting in a local worktree that has not pushed yet. Where pushing is
+// expensive, because `pre-push` runs a full gate, "claimed a while ago, nothing
+// on the remote" is the *normal* signature of a healthy worker mid-session
+// rather than of an abandoned claim.
 //
-// #1308 is the measurement. A janitor pass at 2026-08-08T06:48Z found 3 of 3
-// `janitorCandidate` claims were live work, and `release-claim.mjs`'s own dry
-// run agreed with the report on all three:
+// This was measured before it was fixed: a janitor pass found that all three
+// claims it had nominated for release were live work with unpushed commits
+// minutes old, and every one of them went on to push and open a pull request.
 //
-// | Issue | Worktree                                  | Unpushed commits |
-// | ----- | ----------------------------------------- | ---------------- |
-// | #767  | `.claude/worktrees/agent-aa765a2808033c44a` | 8 (newest 06:47) |
-// | #1282 | `.claude/worktrees/agent-ab63852b81280f090` | 2 (newest 06:48) |
-// | #1275 | `.claude/worktrees/agent-abce6cb31d38f894f` | 1 (newest 06:48) |
-//
-// All three later pushed and opened pull requests.
-// Unpushed commits are the one artefact in this repository with no second
-// copy, so releasing a claim on top of them is the most expensive mistake the
-// janitor can make.
+// Unpushed commits are the one artefact in a repository with no second copy, so
+// releasing a claim on top of them is the most expensive mistake the janitor
+// can make.
 //
 // ## What this covers, and what it does not
 //
 // **This binds on one machine only.** `git worktree list` enumerates the
 // worktrees of *this* checkout's repository, so the guard fires exactly when
-// the janitor and the worker share a box. That is the case that occurred and
-// the case this repository runs in today — orchestrator, janitor, and every
-// worker are dispatched onto one host. A janitor on a different host reads no
+// the janitor and the worker share a box — the common case when an orchestrator
+// dispatches every role onto one host. A janitor on a different host reads no
 // worktrees at all, gets a successful empty answer, and is left with the same
 // GitHub-only evidence it had before; nothing here makes that observer safer.
+// `beacon-push.mjs` is the half of the answer that does reach another host.
 // `docs/AGENT_LOOP.md` and `.rallypoint/roles/janitor.md` state the same limit
 // where a janitor will read it.
 //

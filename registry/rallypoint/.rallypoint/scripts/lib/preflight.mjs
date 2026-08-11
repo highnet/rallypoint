@@ -26,7 +26,6 @@ import {
   closureDrift,
   closureDriftMessage,
 } from "./closing-references.mjs";
-import { lastGatedPush, lastUngatedPush } from "./early-push.mjs";
 
 export const EXIT = {
   ok: 0,
@@ -44,18 +43,13 @@ export const EXIT = {
   // `unidentifiable` message would send the reader to fix a branch name that
   // is very likely already correct.
   detached: 4,
-  // The branch tip reached the remote through `wip-push.mjs`, which skips
-  // `pre-push` deliberately. Distinct from every code above because
-  // nothing about the branch, body, or base is wrong: the pull request would
-  // be perfectly reviewable, off a revision `pnpm run check` has never seen.
-  ungated: 5,
   // GitHub's closing-keyword parser would close an issue the pull request does
   // not declare. Distinct from every code above because nothing about the
   // branch, base, or authorship resolution is wrong — the pull request would be
   // perfectly reviewable, and would silently close an issue nobody asked it to.
   // Its own exit code so a caller can tell "unreviewable" from "reviewable and
   // destructive", which want different remedies from different people.
-  closureDrift: 6,
+  closureDrift: 5,
 };
 
 // What `git rev-parse --abbrev-ref HEAD` prints when HEAD is detached. It is
@@ -382,64 +376,7 @@ export const preflight = ({
     return EXIT.ok;
   }
 
-  // The bound on `wip-push.mjs`. That command exists so a worker can
-  // keep its commits on the remote without paying `pre-push`'s 5-25 minutes
-  // every time, which is what makes early pushing cheap enough to actually
-  // happen — and the cost is that the revisions it publishes are ungated. This
-  // is where that cost stops: the marker ref records the SHA it last published,
-  // and while that is still the tip with no gate verdict recorded against it,
-  // the revision a reviewer would be handed is one `pnpm run check` has never
-  // judged.
-  //
-  // Read here rather than in `wip-push.mjs` because this command is the one a
-  // worker runs immediately before opening a pull request, and it is already
-  // mandatory. Clearing it needs no flag and no pragma — only the gate, which
-  // records itself on a second ref as it passes.
-  //
-  // That second ref is the whole of #1350. This used to compare the marker
-  // against the tip alone, on the premise that an ordinary `git push` fires the
-  // hook *and* moves the tip past the marker. The hook firing and the tip
-  // moving are separate events: when a worker's final commit is the one the
-  // working push already published, `git push` has nothing to send, so
-  // `pre-push` runs and `pnpm run check` gates that exact revision while the
-  // tip stays put. The refusal then asserted the gate had never judged a
-  // revision it had just judged, and the only protocol-clean escape was to
-  // amend and force-push — the 15-25 minute gate paid twice for no gain. So the
-  // gate's verdict is read from where the gate itself records it — the last
-  // step of `pnpm run check` — rather than inferred from a ref that moves for
-  // its own reasons.
-  const ungated = lastUngatedPush(git, branch);
-
-  if (ungated !== null) {
-    let head = null;
-    try {
-      head = git("rev-parse", "HEAD");
-    } catch {
-      // Left null. HEAD was readable moments ago for the detached-branch
-      // check, so this is close to impossible; not refusing on it keeps the
-      // failure mode "one weaker refusal" rather than "a blocked worker".
-    }
-
-    // Positive evidence clears this, never missing evidence: an unreadable or
-    // absent gated marker refuses, which costs a worker one run of the gate,
-    // where a wrongly-granted pass hands a reviewer a revision nothing judged.
-    // So `--no-verify` — which skips the hook, so nothing is recorded — leaves
-    // the refusal exactly where it was.
-    if (head !== null && head === ungated && lastGatedPush(git, branch) !== head) {
-      stderr(
-        `The tip of \`${branch}\` (${head.slice(0, 8)}) reached the remote ` +
-          "through `pnpm run rallypoint:wip`, which skips `pre-push` on " +
-          "purpose, and no run of `pnpm run check` has recorded a verdict on " +
-          "this revision. Push it with an ordinary `git push` — the hook runs " +
-          "the gate and records it, and does so even if the push itself has " +
-          "nothing left to send — then run this again. Nothing about the " +
-          "branch, body, or base is wrong.",
-      );
-      return EXIT.ungated;
-    }
-  }
-
-  // #1225 added a second authorless shape to `record` — a pull request whose
+  // `record` has a second authorless shape — a pull request whose
   // *author* is the Dependabot bot — and deliberately does not add one here.
   // This command judges a branch a session is about to open a pull request
   // from, and that session is never Dependabot: the bot opens its own pull
@@ -449,10 +386,10 @@ export const preflight = ({
   // gives. A `dependabot/`-prefixed branch checked out by a session therefore
   // falls through to `unidentifiable` here and to `EXIT.unidentifiable` there
   // — the two agree, which is the point. Recognising the prefix here would be
-  // the one thing #1225 rules out: a confident pass for a pull request
+  // the one thing the Dependabot path rules out: a confident pass for a pull request
   // `record` would refuse.
   //
-  // #1106: several closing keywords is no longer a refusal in `record`, so it
+  // Several closing keywords is no longer a refusal in `record`, so it
   // must not be one here either — a preflight stricter than the thing it
   // predicts issues confident refusals for pull requests that would in fact
   // record fine, which is the same wasted pass in the other direction.

@@ -15,7 +15,7 @@ import { gh, loadConfig } from "./lib/gh.mjs";
 import { git } from "./lib/git.mjs";
 import { releaseClaim } from "./lib/release-claim.mjs";
 
-// `git` is what makes the #1308 guard bind: unpushed commits in a sibling
+// `git` is what makes the local-work guard bind: unpushed commits in a sibling
 // worktree are the only evidence that a session is alive before it pushes, and
 // nothing reachable through `gh` can see them. It is injected rather than
 // imported by the library for the reason `lib/git.mjs` gives — no test should

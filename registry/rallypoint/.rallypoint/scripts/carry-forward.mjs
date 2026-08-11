@@ -283,7 +283,7 @@ export const resolveCarryForward = ({ reviews, head, integrationRef, git, cwd })
     verdict: candidate.verdict,
     reviewer: candidate.reviewer,
     sourceSha: candidate.sha,
-    // #859: threaded through so a caller's independence check (`review.mjs`'s
+    // Threaded through so a caller's independence check (`review.mjs`'s
     // carry-forward branch) can catch a carried verdict that was recorded by
     // a subagent of the branch's author, the same as it already catches the
     // reviewer id matching directly.

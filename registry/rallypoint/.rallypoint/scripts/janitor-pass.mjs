@@ -335,13 +335,9 @@ export const janitorPass = ({
     );
   }
 
-  // 6. The priority rubric's board-wide invariant. Exit 2 is drift for the
-  //    janitor to repair, while exit 3 means the board could not be read. Both
-  //    leave the pass incomplete so neither can be mistaken for a clean audit.
-  step("Open issue priorities", "priority-invariant.mjs", []);
-
-  // 7. Session leases whose target is gone or whose TTL has passed. The step
-  //    that was skipped on 2026-08-03.
+  // 6. Session leases whose target is gone or whose TTL has passed. Last
+  //    because it is the step most easily forgotten when a pass is run as
+  //    separate commands by hand, which is the whole reason this file exists.
   step("Session leases", "lease.mjs", ["--sweep", ...dry]);
 
   const code = passExit({ steps });

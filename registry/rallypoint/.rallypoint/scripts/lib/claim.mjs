@@ -107,7 +107,7 @@ const UNPRIORITISED = 10;
 const PRIORITY_LABEL = /^prio:p([0-9])$/;
 
 /**
- * The numeric level from an issue's `prio:p<n>` label, per `docs/PRIORITIES.md`.
+ * The numeric level from an issue's `prio:p<n>` label.
  *
  * Parsed rather than enumerated, so adding a level to the scheme is a label and
  * a documentation change and not also a change here. It used to test for
@@ -158,7 +158,7 @@ export const explainUnavailable = ({ issue, number, config }) =>
  *
  * Every exclusion is now a *negative* label test, which is why this filters in
  * JavaScript rather than in the `gh issue list` query: that query can only
- * express labels an issue must **have**. Before #1510 the positive
+ * express labels an issue must **have**. Before the readiness label was removed the positive
  * `task` + `status:ready` pair carried most of the work and only `needs:human`
  * was filtered here; now the hold set — `status:claimed`, `status:blocked`,
  * `status:deferred`, `needs:human` — is the whole of the rule, so all of it
@@ -203,7 +203,7 @@ export const selectCandidates = ({ issues, requestedIssue, config }) =>
  * existing filters, so a second session is handed work that is already in
  * flight and only finds out when somebody next runs the report.
  *
- * A listing that could not be established fires nothing. The #236 / #311 rule
+ * A listing that could not be established fires nothing. The same rule
  * cuts both ways: an error, a non-array body, or a response that filled its
  * page is no more evidence of a pull request's *presence* than of its absence,
  * so an unreadable listing leaves every candidate claimable and the claim rests
@@ -435,7 +435,7 @@ export const claim = ({
       ].join("\n");
       gh("issue", "comment", String(issue.number), "--body", body);
     } catch (error) {
-      // Order matters here, and it is the subject of #140.
+      // Order matters here.
       //
       // If the issue edit already landed, the issue is claimed and assigned.
       // Deleting the reservation first would leave it in exactly the worst
@@ -446,7 +446,7 @@ export const claim = ({
       //
       // Restoring is now purely subtractive — removing `status:claimed` and the
       // assignee is the whole of it, because claimability is derived from their
-      // absence. Before #1510 this also had to re-add `status:ready`, a second
+      // absence. Before the readiness label was removed this also had to re-add `status:ready`, a second
       // write that could itself fail and leave the issue claimable by nobody.
       if (issueMutated) {
         try {

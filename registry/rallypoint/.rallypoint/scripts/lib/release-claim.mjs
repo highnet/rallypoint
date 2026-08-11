@@ -4,7 +4,7 @@
 // order from `lib/claim.mjs`'s rollback. That is deliberate, and the difference
 // is the whole reason this module exists.
 //
-// It has a second caller since #925: the holder of a claim releasing its own
+// It has a second caller: the holder of a claim releasing its own
 // reservation, e.g. a worker standing down onto `status:blocked` because the
 // work turned out to need an operator decision. `assessForRelease` is where
 // that path splits off — when the claim comment's recorded agent id matches
@@ -172,7 +172,7 @@ export const listing = (query, subject, page = PAGE) => {
  *
  * A 403 on a ref *delete* says nothing about whether the ref exists — a
  * branch-scoped credential answers 403 either way, and reading one as proof of
- * existence is how #236's stale warnings were written. Existence is established
+ * existence is how stale warnings get written. Existence is established
  * by listing, never inferred from a mutation's failure.
  *
  * @param {(...args: string[]) => string} gh
@@ -513,7 +513,7 @@ export const assess = ({
   // GitHub bumps `updatedAt` for review comments and pushes alike, so a quiet
   // branch under an open pull request is awaiting review rather than abandoned.
   // Releasing it is the collision the reservation exists to prevent — it is
-  // what happened to #34, #76, and #214.
+  // the collision this module has caused more than once.
   const live = pullRequests.items.filter(
     (pull) =>
       branchIssue(pull.headRefName, branchPrefix) === issue ||
@@ -533,7 +533,7 @@ export const assess = ({
   // holding commits the remote does not have is not a guess about liveness: the
   // commits are there, they exist nowhere else, and whether the session that
   // wrote them is still breathing does not change what releasing the claim
-  // would cost. #1308 measured 3 of 3 janitor candidates in exactly this state.
+  // would cost. Janitor candidates are found in exactly this state routinely.
   //
   // Checked after the open-pull-request rule purely so the more informative
   // reason wins when both apply, and before the branch loop so it cannot be
@@ -575,8 +575,8 @@ export const assess = ({
     // A push inside the window is only proof of life while the branch still
     // has a pull request in flight. Once every pull request for it has merged
     // or closed, that push is the last thing an ended session did, not a sign
-    // of a running one — the state #721 sat in, where the proof was asserted
-    // 18 minutes after the merge that ended the session.
+    // of a running one — an issue can sit in that state with the proof asserted
+    // minutes after the merge that ended the session.
     if (!branchPullRequestState.ok) {
       return { kind: "unknown", reason: branchPullRequestState.reason };
     }
@@ -617,7 +617,7 @@ export const assess = ({
     // pushed. The surviving branch's last commit is then inside the window and
     // predates its own merge, so it would land in `settledEvidence` and — via
     // the `notStale` yield below — release a claim minutes old. That is the
-    // #34/#76/#214 collision, reached through the population defect 2's own fix
+    // same collision as above, reached through the population defect 2's own fix
     // creates: `Refs`-not-`Closes` issues that stay open and get re-claimed
     // with a merged pull request already on their deterministic branch name.
     //
@@ -679,8 +679,8 @@ export const assess = ({
   // A settled pull request is positive proof that it is not, so it outranks
   // the guess: without this, a session that claims, pushes, merges, and ends
   // inside the window stays claimed for the remainder of it — which is exactly
-  // what #721 did, and fixing only the branch check above would not have moved
-  // it, because its claim was 47 minutes old against a 3h threshold.
+  // the shape this rule exists for; fixing only the branch check above would
+  // not have moved it, because such a claim is often well inside the threshold.
   if (claimedAt > threshold && settledEvidence.length === 0) {
     return {
       kind: "notStale",
@@ -748,7 +748,7 @@ export const assess = ({
  * comment has to say so — a reader auditing this comment would otherwise
  * reasonably conclude it is claimable again.
  *
- * Since #1510 the release is purely subtractive: it removes `status:claimed`
+ * Since the readiness label was removed, the release is purely subtractive: it removes `status:claimed`
  * and the assignee and adds nothing, because claimability is derived from the
  * absence of a hold label rather than declared by `status:ready`. So this is
  * now a statement about what the *remaining* labels mean, not about a
@@ -811,9 +811,8 @@ export const explanation = ({
  * The assignee is a different matter and this comment used to get it wrong,
  * asserting that none was cleared. An assignee is set at claim time
  * and means nothing once the reservation is gone, while `lib/claim.mjs`
- * filters out every assigned issue — so leaving it set is what turned #329
- * into an issue that read as claimable on every board and was refusable by
- * `claim.mjs` for six weeks.
+ * filters out every assigned issue — so leaving it set turns the issue into one
+ * that reads as claimable on every board while `claim.mjs` refuses it.
  *
  * @param {{
  *   agentId: string,
@@ -1086,7 +1085,7 @@ export const assessForRelease = ({
     pullRequests: openPullRequests(gh),
     // A caller that supplied no `git` runner gets `unknown`, not an empty
     // answer. Defaulting the other way would let a caller silently lose the
-    // #1308 guard by omission, which is the failure mode this module has
+    // local-work guard by omission, which is the failure mode this module has
     // shipped four times already in other forms.
     localWork: git
       ? localIssueWork({
@@ -1348,14 +1347,14 @@ export const releaseClaim = ({
 
   // A claim release is defined only for a claimed issue. An open issue that
   // does not carry `status:claimed` while its reservation is still live —
-  // `status:blocked` is the common one, but since #1510 an issue carrying no
+  // `status:blocked` is the common one, but since the readiness label was removed an issue carrying no
   // label at all is equally this case — has already moved past `claim.mjs`'s
   // label state machine, so there is no `status:claimed` removal to make; only
   // the stray reservation itself is an orphan (report.mjs's `unclaimable`
-  // classification, #329). That is releasable on its own, subject to the same
+  // classification). That is releasable on its own, subject to the same
   // activity proof as a normal release.
   //
-  // Before #1510 a `status:ready` issue was carved out of this as the
+  // Before the readiness label was removed a `status:ready` issue was carved out of this as the
   // "stranded" state and refused, so that `status:claimed` could be restored by
   // hand and the release stay auditable. There is no such label to carve on
   // now, and the orphan path's own explanatory comment carries the audit trail
@@ -1447,7 +1446,7 @@ export const releaseClaim = ({
   const refPath = `refs/heads/${refName}`;
 
   // Whether the issue stays out of the claimable pool after this release, which
-  // since #1510 is a fact to *report* rather than a decision to make.
+  // since the readiness label was removed is a fact to *report* rather than a decision to make.
   // `needs:human` is one of the hold labels `lib/claimable.mjs` filters on, so
   // an issue carrying it is held out by that label alone — this release adds
   // nothing and withholds nothing. The comment still says so, because a reader

@@ -211,7 +211,7 @@ export const resolveApproval = ({ reviews, head, worker }) => {
     };
   }
 
-  // #859: a subagent dispatched by the authoring session is not an
+  // a subagent dispatched by the authoring session is not an
   // independent reviewer even though its own agent id differs from the
   // author's. `dispatched-by` is self-declared the same way `reviewer` is
   // (see the note in `parseVerdicts`), so this is a second line of defence
@@ -271,7 +271,7 @@ export const resolvePromotionApproval = ({ reviews, head, pr }) => {
   };
 };
 
-// #928: two reviewers can legitimately disagree at the same head within
+// two reviewers can legitimately disagree at the same head within
 // minutes of each other, neither having seen the other's verdict. Last-wins
 // (above) is unchanged — it is what `check` and the merge gate act on — but
 // `record` refuses to let a fresh approve silently overwrite an unaddressed

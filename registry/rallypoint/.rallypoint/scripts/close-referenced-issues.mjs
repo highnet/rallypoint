@@ -3,13 +3,15 @@
 // Closes the issues a merged pull request references, and removes their claim
 // reservations.
 //
-// GitHub's default branch is now `release`, and `release` is also the
-// integration branch every pull request targets, so `Closes #N` fires natively
-// on merge. That was not always true: the default branch used to be `main`
-// while every pull request targeted `staging`, so the keyword never fired and
-// two issues shipped and stayed open before anyone noticed.
+// `Closes #N` fires natively on merge **only when the pull request targets the
+// repository's default branch**. Where the configured `integrationBranch` is
+// also the default branch, GitHub closes the issue itself. Where it is not — a
+// repository whose agents merge into a `develop` or `staging` tier that
+// promotes into `main` later — the keyword never fires on the merge that
+// actually shipped the work, and issues stay open indefinitely with nobody
+// noticing.
 //
-// This script keeps running anyway, because closing the issue was only ever
+// This script runs in both topologies, because closing the issue was only ever
 // half of what it does. It also removes the matching
 // `rallypoint-claims/issue-<N>` reservation ref, which native closing does not
 // touch, and nothing else deletes that ref for an issue that closes this way.
@@ -41,21 +43,22 @@
 // pass now.
 //
 // "Which issues did this merge close" is read from the pull request body AND
-// the merged commit's own message, not the body alone. PR #1127 deliberately
-// wrote `Refs #755` in the body to keep #755 open as a disclosed partial
-// delivery, but its squash commit's message still ended in `Closes #755` —
-// GitHub's native closing scans commit messages landing on the default
-// branch, not just the PR body, so it closed #755 anyway. This script, reading
-// only the body, found nothing to act on and left `status:claimed` and the
-// reservation behind; only a session noticing by hand cleaned it up. See
-// `planClosures`'s doc comment for the fix.
+// the merged commit's own message, not the body alone. A worker writing
+// `Refs #<issue>` in the body to keep an issue open as a disclosed partial
+// delivery can still end its squash commit's message with `Closes #<issue>` —
+// and GitHub's native closing scans commit messages landing on the default
+// branch, not just the pull request body, so it closes the issue anyway. A
+// script reading only the body finds nothing to act on and leaves
+// `status:claimed` and the reservation behind. See `planClosures`'s doc comment
+// for the fix.
 //
-// An empty lookup is no longer a normal outcome by default. On the #1278 merge
-// this script queried GitHub before the merge was visible as merged, resolved no
-// pull request at all, logged "No merged pull request at <sha> references an
-// issue." and exited 0 — while #1252's reservation ref and `status:claimed` both
-// survived. A green run is what nobody re-checks, so the failure mode
-// was to corrupt coordination state with every signal saying it had succeeded.
+// An empty lookup is no longer a normal outcome by default. Queried too soon
+// after a merge, GitHub does not yet report the pull request as merged, so this
+// script resolves nothing at all, logs "No merged pull request at <sha>
+// references an issue." and exits 0 — while the reservation ref and
+// `status:claimed` both survive. A green run is what nobody re-checks, so the
+// failure mode was to corrupt coordination state with every signal saying it
+// had succeeded.
 // `classifyEmptyLookup` and `unresolvedLookupMessage` below separate the
 // legitimate empty case from that one; the merger's habit of verifying cleanup
 // rather than trusting the green run is what caught it, and still owes the check
@@ -114,12 +117,12 @@ const shipped = (pullRequest, integrationBranch) =>
  *
  * `commitMessage` is read alongside `pullRequest.body` because GitHub does the
  * same: its native closing scans the message of the commit landing on the
- * default branch, not only the pull request body. PR #1127 (issue #755) is
- * the case that exposed the gap — the PR body deliberately said `Refs #755`
- * to keep the issue open as a disclosed partial delivery, but the squash
- * commit's own message still ended in `Closes #755`, so GitHub closed the
- * issue natively while this script, reading only the body, saw no closure to
- * act on and left the `status:claimed` label and reservation behind. Since
+ * default branch, not only the pull request body. The case that exposes the gap
+ * is a pull request whose body deliberately says `Refs #<issue>` to keep the
+ * issue open as a disclosed partial delivery, while the squash commit's own
+ * message still ends in `Closes #<issue>` — GitHub closes the issue natively,
+ * and a script reading only the body sees no closure to act on and leaves the
+ * `status:claimed` label and reservation behind. Since
  * `sha` here is always the commit that actually landed (`github.sha` on push,
  * or an operator-supplied SHA on `workflow_dispatch`), its message is exactly
  * what GitHub itself consulted.
@@ -162,12 +165,12 @@ export const planClosures = ({
 /**
  * Merged pull requests that shipped an issue's work without closing it.
  *
- * A worker may ship code for an issue that is not thereby finished — PR #890
- * carried a "Why `Refs`, not `Closes`" section explaining that #721's primary
- * defect needed an owner to provision a Clerk development instance, which no
- * diff can do. That is legitimate and recurring, and until #901 it had **no**
- * exit from `status:claimed` at all: the only ways out of a claim were a
- * closing keyword or a janitor timeout, and this shape has neither. The issue
+ * A worker may ship code for an issue that is not thereby finished — a pull
+ * request carrying a "Why `Refs`, not `Closes`" section because the issue's
+ * primary defect needs an owner to provision something no diff can do. That is
+ * legitimate and recurring, and it used to have **no** exit from
+ * `status:claimed` at all: the only ways out of a claim were a closing keyword
+ * or a janitor timeout, and this shape has neither. The issue
  * stayed claimed, assigned, and reserved after its session ended, which makes
  * it unclaimable by anyone and distorts the orchestrator's session sizing —
  * exactly the failure this file's header already argues against for the closed
@@ -278,15 +281,16 @@ export const claimEndedByMerge = ({ claim, mergedAt }) => {
  * The issue stays open, and whether it is claimable afterwards follows from its
  * own labels rather than from anything written here.
  *
- * That was not always so, and #935 is why it matters. Restoring `status:ready`
+ * That was not always so, and the reason it matters is worth recording.
+ * Restoring a readiness label
  * used to be unconditional, gated only on whether the label was already there:
  * a worker who finds the remaining work needs an owner decision moves the issue
  * to `status:blocked` and `needs:human` — the sanctioned move, per
  * `docs/AGENT_LOOP.md`'s "Coordination state" — and then ships whatever part it
  * could with `Refs #N`. That merge arrives here, and handing the issue back to
- * the queue overwrites the very judgement the session was left to record. #715
- * went round that loop four times before anyone noticed, each pass costing a
- * fresh worker a full session to re-derive "this needs a human".
+ * the queue overwrites the very judgement the session was left to record. An
+ * issue can go round that loop repeatedly before anyone notices, each pass
+ * costing a fresh worker a full session to re-derive "this needs a human".
  *
  * Ending the claim and restoring the queue entry are therefore separated. The
  * session genuinely ended, so `status:claimed` and the assignee go in every
@@ -300,7 +304,7 @@ export const claimEndedByMerge = ({ claim, mergedAt }) => {
  * assignee behind would silently suppress the claim later, after an owner has
  * cleared the block.
  *
- * Since #1510 this is **purely subtractive** — it removes `status:claimed` and
+ * Since the readiness label was removed, this is **purely subtractive** — it removes `status:claimed` and
  * the assignees and adds nothing. Claimability is derived from the absence of a
  * hold label, so an issue is back in the pool the moment the claim comes off,
  * and there is no second write that could fail and leave it claimable by
@@ -330,7 +334,7 @@ export const claimEndedByMerge = ({ claim, mergedAt }) => {
  *   `queued` is **derived and reported, never acted on**. Nothing in this
  *   module branches on it: `releaseShippedClaim` decides from `changed` and
  *   `held`, and `claimReleaseComment` from `held` and `closed`. It was a
- *   decision before #1510 — it said whether `status:ready` had just been added
+ *   decision before the readiness label was removed — it said whether `status:ready` had just been added
  *   — and is now only a restatement of `queueable && held.length === 0`, kept
  *   because it is the one place the answer "is this issue claimable now?" is
  *   named in this module's vocabulary rather than re-derived by a caller. Do
@@ -430,7 +434,7 @@ export const wasReopenedAfterMerge = ({ events, mergedAt }) =>
  * for the gate). The ceiling is deliberately short because this workflow runs on
  * **every** push to the integration branch: a long retry loop on a commit that
  * legitimately has no pull request would be its own problem, and replication lag
- * of the kind seen on the #1278 merge resolves in well under a second when it
+ * of this kind resolves in well under a second when it
  * resolves at all. Retrying cannot close the window — any query can race
  * replication — so the exit path below, not this loop, is the actual guard. The
  * loop only keeps the guard from crying wolf over the common transient.
@@ -482,7 +486,7 @@ export const lookupWithRetries = ({
 /**
  * Whether an empty pull-request lookup is a normal outcome or a failure.
  *
- * Two situations used to be conflated, and #1281 is the cost. A commit that
+ * Two situations used to be conflated, at a real cost. A commit that
  * resolves a pull request carrying no closing keywords legitimately has nothing
  * to do — the common case for a direct push, or a merge that closes nothing —
  * and should exit 0 quietly. A **merge commit on the integration branch** that
@@ -524,7 +528,7 @@ export const classifyEmptyLookup = ({
  * integration branch.
  *
  * It names the SHA and the exact command that finishes the job by hand, because
- * the merger who caught the #1278 incident had to work that out unaided.
+ * the first merger to catch this had to work that out unaided.
  *
  * @param {{ sha: string, integrationBranch: string, attempts: number }} input
  * @returns {string}
@@ -537,14 +541,14 @@ export const unresolvedLookupMessage = ({
   [
     `Resolved no pull request for ${sha} after ${attempts} attempt(s), but it is a merge commit on \`${integrationBranch}\`.`,
     `Every commit on \`${integrationBranch}\` must land via a pull request, so this is either GitHub's merge-state replication lagging behind the push or a genuine defect — and either way this run performed no claim cleanup. Any issue that merge shipped still carries \`status:claimed\` and a live \`rallypoint-claims/issue-<N>\` reservation, which makes it unclaimable by anyone.`,
-    `Finish the job by hand once the merge is visible: pnpm run rallypoint:close-referenced-issues ${sha}`,
+    `Finish the job by hand once the merge is visible: node .rallypoint/scripts/close-referenced-issues.mjs ${sha}`,
   ].join(" ");
 
 /**
  * Surfaces a message where the outcome is read, not only in the log.
  *
  * A workflow-command annotation puts it on the run's own summary, and the job
- * summary file puts it in the checks list — #1250's lesson, that a control whose
+ * summary file puts it in the checks list — the lesson being that a control whose
  * skip and pass look identical in the checks list can stay inert indefinitely.
  *
  * @param {{
@@ -590,7 +594,7 @@ const pullRequestsForCommit = (nameWithOwner, sha) =>
 /**
  * The message of the commit this run is reconciling — the same text GitHub's
  * own native closing scans, and `sha` is always that landed commit (see
- * `planClosures`'s doc comment for why body-only reading missed #755) — plus
+ * `planClosures`'s doc comment for why body-only reading misses closures) — plus
  * its parent count, which is how `classifyEmptyLookup` recognises a merge
  * commit. One call rather than two for the same object.
  *
@@ -619,7 +623,7 @@ const commitDetail = (nameWithOwner, sha) => {
  * A comparison that cannot be made is treated as contained. The bias is
  * deliberate and one-directional: this answer only ever gates a warning, so
  * guessing "yes" costs a false alarm somebody reads, and guessing "no" costs
- * exactly the silence #1281 is about.
+ * exactly the silence this check exists to break.
  *
  * @param {string} nameWithOwner
  * @param {string} sha
@@ -743,7 +747,7 @@ export const removeReservation = ({
  * is not an empty one: it is an answer that could not be established, and it
  * throws rather than reporting the label absent and moving on.
  *
- * Nothing is added in its place — since #1510 nothing ever is, here or in
+ * Nothing is added in its place — since the readiness label was removed nothing ever is, here or in
  * `release-claim.mjs`: removing `status:claimed` is by itself what returns a
  * still-open issue to the pool. Here the issue is closed and has no next
  * claimant either way.

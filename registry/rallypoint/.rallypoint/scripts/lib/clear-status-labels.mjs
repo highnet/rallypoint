@@ -4,7 +4,7 @@
 // `report.mjs`'s survey only ever lists open issues, so a closed issue
 // that never passed through `claim.mjs` — because a pull request closed it
 // natively with `Closes #<issue>` — keeps whatever `status:*` label it last
-// carried forever. #989 is the concrete case this fixes: it closed with
+// carried forever. The concrete case this fixes is an issue that closed with
 // a stale status label still on it. This command is the repair `report.mjs` names in
 // its `closedWithStatusLabel` detail; it never decides eligibility on its
 // own — see the refusal below, the same shape as `cleanup.mjs`'s.

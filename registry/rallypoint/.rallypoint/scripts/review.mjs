@@ -4,7 +4,7 @@
 //
 // GitHub rejects APPROVE and REQUEST_CHANGES from a pull request's own author,
 // and every Rallypoint session authenticates as the same identity, so formal
-// approvals cannot be recorded at all (see issues #80 and #83). Verdicts are
+// approvals cannot be recorded at all. Verdicts are
 // therefore written as COMMENTED reviews carrying a machine-readable block, and
 // this script is the only thing that may apply or remove the approval label.
 //
@@ -12,26 +12,26 @@
 // trust and there is no session identity to check it against, so the
 // self-review guard below is bookkeeping, not authentication. It catches an
 // honest session reviewing its own work; it does not stop a session that lies
-// about its id. Issue #83 tracks the real fix.
+// about its id.
 //
 // SUBAGENT LINEAGE: a subagent's own id is distinct by construction
 // from the session that dispatched it, so the guard above did not catch a
 // subagent dispatched by the authoring session to review its own work — the
-// exact shape #838 happened in. `record` accepts an optional
+// exact shape this failure takes. `record` accepts an optional
 // `--dispatched-by <id>`, self-declared the same way `--agent-id` is, naming
 // the session a reviewing subagent was dispatched by. When that parent is the
 // branch's own author, this is self-review by another name and is refused
 // identically. This is the same trust model as everything else in this file:
 // an honest subagent names its parent, a dishonest one omits or falsifies it,
-// and #83 is still the tracked issue for making any of it authenticated
-// rather than self-declared. `.rallypoint/roles/reviewer.md` states plainly
+// and making any of it authenticated, rather than self-declared, remains the
+// real fix. `.rallypoint/roles/reviewer.md` states plainly
 // that dispatching a review subagent from the authoring session is not
 // permitted; this is the tooling backstop for an honest session that does it
 // by mistake.
 //
 // SEVERAL REFERENCED ISSUES: a pull request may legitimately close
-// more than one issue — #1103 closed both #1099 and #793, the second folded
-// into the first by operator decision. `record` used to refuse that shape
+// more than one issue — commonly when a second is folded into the first by
+// operator decision. `record` used to refuse that shape
 // outright as an ambiguous authoring session, so a completed review of an
 // 83-file payment-critical change had nowhere to put its verdict and went in
 // as a plain comment `check` does not read. The self-review guarantee never
@@ -69,10 +69,9 @@
 // DEPENDABOT PULL REQUESTS: a pull request opened by the Dependabot
 // bot has no authoring agent session either — nobody ran `claim.mjs`, there is
 // no issue, and the head branch is `dependabot/npm_and_yarn/...`. `record`
-// refused every one of them for want of an author, so four completed reviews
-// of #1213-#1216 went in as plain comments `check` does not read and no
-// dependency bump in this repository was mergeable through the documented
-// path. It takes the same path a promotion does: the verdict binds to the
+// refused every one of them for want of an author, so completed reviews went in
+// as plain comments `check` does not read and no dependency bump was mergeable
+// through the documented path. It takes the same path a promotion does: the verdict binds to the
 // pull request number and head SHA, and the self-review guard is skipped
 // rather than refused. Recognition is by **authorship**
 // (`isDependabotAuthor`), never by the `dependabot/` branch prefix — a branch
@@ -184,12 +183,11 @@ const fail = (message, code = 1) => {
 // `EXIT` is **derived, not declared**. The authority is
 // `REVIEW_EXIT_CODES` in `lib/review-exit-codes.mjs`, which also carries each
 // code's meaning and which subcommand owns it, and from which the coupling tests
-// assert that `CHECK_MEANINGS` in `lib/report.mjs`, `CHECK_CLASSIFICATIONS` in
-// `lib/audit-merge-review.mjs`, and the prose tables in `docs/AGENT_LOOP.md` and
-// `.rallypoint/roles/merger.md` all still agree with it. Declaring the numbers
-// here as well would recreate the drift that module exists to close: #1394 is
-// the worked example, where `13` reached three of the five copies and neither
-// consumer, and a properly reviewed merge was labelled `merged:unreviewed`.
+// assert that `CHECK_MEANINGS` in `lib/report.mjs` and the prose tables in
+// `docs/AGENT_LOOP.md` and `.rallypoint/roles/merger.md` all still agree with
+// it. Declaring the numbers here as well would recreate the drift that module
+// exists to close: a code that reaches the prose tables but no consumer, and a
+// properly reviewed merge labelled unreviewed as a result.
 //
 // **Add a new code in `lib/review-exit-codes.mjs`, not here.** Its `key` becomes
 // an `EXIT.<key>` automatically, and the unit suite will then name every
@@ -313,9 +311,7 @@ const branchIssue = branchIssueOf(pull.headRefName, config.branchPrefix);
 const authorship = authorshipIssues({ linkedIssues, branchIssue });
 const authorIssues = authorship.ok ? authorship.issues : [];
 
-// The issue `status:changes-requested` is reconciled against, resolved exactly
-// the way `notify-fixer.mjs` resolves it so both writers always name the same
-// issue. `null` for a promotion or Dependabot pull request,
+// The issue `status:changes-requested` is reconciled against. `null` for a promotion or Dependabot pull request,
 // which has no linked issue at all, and for a pull request whose authoring
 // issue is unresolvable —
 // `record` refuses that case outright below, so the fallback only matters to
@@ -361,21 +357,19 @@ const setLabel = (present) =>
 // Reconciles `status:changes-requested` on the pull request and its authoring
 // issue, in the same run that `setLabel` writes `review:approved`.
 //
-// `notify-fixer.mjs` already owned both directions and still does — this does
-// not replace it. It removes the window between them: `record` writes
-// `review:approved` in seconds from the reviewer's machine, while the clear
-// went only through `.github/workflows/changes-requested.yml`, which waits on
-// the shared runner's two job slots. On #873 the flagging run reconciled 16
-// seconds after its review while the clearing run for the later approve was
-// still queued behind seventeen others, so the pull request carried
-// `review:approved` and `status:changes-requested` at once and a merger
-// reading labels rather than the reviews API could not tell which was current.
+// Done here, in the reviewer's own run, rather than left to a CI workflow
+// reacting to the review afterwards. `record` writes `review:approved` in
+// seconds from the reviewer's machine; a workflow waiting on a shared runner
+// can lag it by minutes, and in that window a pull request carries
+// `review:approved` and `status:changes-requested` at once, so a merger reading
+// labels rather than the reviews API cannot tell which is current.
 //
-// Both writers derive the same answer from the same head-bound verdict and
-// both are idempotent, so they cannot fight; whichever runs second finds
-// nothing to do. `notify-fixer.mjs` remains the backstop for what `record`
-// cannot see — a hand-submitted review, and its own documented gap where a
-// push with no accompanying review leaves the label lagging the head.
+// A repository that also runs a CI writer for this is not in conflict with
+// this one: both derive the same answer from the same head-bound verdict and
+// both are idempotent, so whichever runs second finds nothing to do. Such a
+// workflow is still the only backstop for what `record` cannot see — a
+// hand-submitted review, or a push with no accompanying review, which leaves
+// the label lagging the head.
 /** @param {boolean} present */
 const setChangesRequested = (present) => {
   const label = config.labels.changesRequested;
@@ -407,7 +401,7 @@ if (command === "record") {
   const verdict = value("--verdict");
   const notes = values("--note");
   const supersedes = value("--supersedes");
-  // #859: self-declared by a reviewing subagent, naming the session that
+  // self-declared by a reviewing subagent, naming the session that
   // dispatched it. Optional — a top-level session recording its own verdict
   // has nothing to name here — but when present it is checked against the
   // branch's author exactly like `agentId` is below, so a subagent dispatched
@@ -435,7 +429,7 @@ if (command === "record") {
     );
   }
 
-  // #928: refuse a fresh approve that would silently override another
+  // refuse a fresh approve that would silently override another
   // reviewer's unaddressed request-changes at this exact head. Checked before
   // the self-review/identity guards below, since the contest is about two
   // reviewers disagreeing rather than about who authored the branch, and it
@@ -545,9 +539,9 @@ if (command === "record") {
       );
     }
 
-    // #859: a subagent's own id is distinct by construction, so the check
+    // a subagent's own id is distinct by construction, so the check
     // above never catches a subagent dispatched by the authoring session to
-    // perform its own review — that was exactly what happened on #838. The
+    // perform its own review — which is exactly the failure this guard exists for. The
     // reviewing session declares its dispatching parent with
     // `--dispatched-by`, and when that parent is the branch's own author this
     // is self-review by another name, refused the same way and with the same
@@ -652,7 +646,7 @@ if (command === "record") {
     );
   }
 
-  // #928: re-checked against a fresh read of the reviews, immediately before
+  // re-checked against a fresh read of the reviews, immediately before
   // posting, alongside the head-race guard above. A dissent another reviewer
   // posted while this verdict was being composed must not slip through the
   // window between the check at the top of this command and the write below
@@ -779,7 +773,7 @@ if (!unclaimed && !approved && !parseVerdicts(reviews).some((entry) => entry.sha
       // self-authored reviewer must not unlock a merge just because the
       // verdict arrived via carry-forward instead of directly. Reusing that
       // check here is what keeps this a genuine extension of the existing
-      // guarantee rather than a second, weaker path to the same label. #859
+      // guarantee rather than a second, weaker path to the same label. The subagent rule
       // extends it the same way `resolveApproval` was extended: a carried
       // verdict recorded by a subagent of the branch's author is no more
       // independent than one recorded by the author directly.
@@ -814,7 +808,7 @@ if (approved) {
   // relationship lives across two variables, not in one's type, so it is
   // asserted here rather than narrowed automatically.
   const carriedFrom = /** @type {string} */ (carrySourceSha);
-  // #928: reporting only — a direct approve recorded with `--supersedes`
+  // reporting only — a direct approve recorded with `--supersedes`
   // over another reviewer's dissent is still mergeable, exactly like a plain
   // approve, but distinct enough to be worth a merger or an orchestrator
   // survey seeing at a glance. Carry-forward is a separate mechanism with its
@@ -852,11 +846,11 @@ const [reason, code] = carriedRequestChanges
     ]
   : selfApproved
     ? [
-        // #859: `reviewer` may itself differ from `worker` when this is a
+        // `reviewer` may itself differ from `worker` when this is a
         // lineage match rather than a direct one — the verdict was recorded
         // by a subagent `worker` dispatched, not by `worker` itself. Say so
         // precisely rather than implying the two ids were the same.
-        // #1106: with several referenced issues there is a set of claimants
+        // with several referenced issues there is a set of claimants
         // rather than one, so the match is membership rather than equality.
         reviewer != null && workers.includes(reviewer)
           ? `the approve verdict at ${head} came from \`${reviewer}\`, who authored the branch`

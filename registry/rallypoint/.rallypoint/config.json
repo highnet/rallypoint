@@ -3,18 +3,17 @@
   "integrationBranch": "main",
   "branchPrefix": "agent/",
   "claimRefPrefix": "rallypoint-claims/issue-",
-  "readyBacklog": {
-    "minimum": 5,
-    "maximum": 15
-  },
+  "sessionRefPrefix": "rallypoint-sessions/",
   "staleClaimHours": 3,
   "stalePullRequestHours": 24,
+  "maxOpenPullRequests": 15,
   "labels": {
-    "task": "task",
-    "ready": "status:ready",
     "claimed": "status:claimed",
     "blocked": "status:blocked",
+    "deferred": "status:deferred",
     "human": "needs:human",
-    "approved": "review:approved"
+    "approved": "review:approved",
+    "changesRequested": "status:changes-requested",
+    "mergedUnreviewed": "merged:unreviewed"
   }
 }

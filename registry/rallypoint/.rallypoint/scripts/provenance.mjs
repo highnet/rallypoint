@@ -11,7 +11,7 @@
 // GitHub's closing keywords. Anchored to the start of a line, with an optional
 // list marker, so a reference inside prose ("this closes #999 in spirit")
 // cannot be mistaken for the real link. `\b` rather than an end-of-line anchor,
-// because the repository's own convention writes "Closes #104. Refs #80, #83."
+// because the loop's own convention writes "Closes #104. Refs #80, #83."
 export const CLOSING_KEYWORD =
   /^[^\S\n]*[-*]?[^\S\n]*(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[^\S\n]+#(\d+)\b/gim;
 
@@ -124,8 +124,8 @@ export const referencingPullRequests = ({ pulls, issue, branchPrefix }) =>
 
 // Every issue whose claim comment could name this branch's author.
 //
-// A pull request may legitimately close more than one issue — #1103 closed
-// both #1099 and #793, the second having been folded into the first by
+// A pull request may legitimately close more than one issue, commonly when
+// the second has been folded into the first by
 // operator decision — and `record` used to refuse such a pull request outright
 // as ambiguous, leaving a completed review with nowhere to put its verdict
 //. The ambiguity was real but the refusal was aimed at the wrong
@@ -169,7 +169,7 @@ export const authorshipIssues = ({ linkedIssues, branchIssue }) => {
 // `record` used to hard-require a `Closes #<issue>` reference and exit before
 // consulting the branch name at all, so a pull request whose branch
 // unambiguously names its issue was un-reviewable when its body said `Refs #N`
-// instead. That is a legitimate shape: #109 and #17 are partial deliveries that
+// instead. That is a legitimate shape: partial deliveries that
 // deliberately do not close their issue, and the protocol does not forbid it
 //.
 //

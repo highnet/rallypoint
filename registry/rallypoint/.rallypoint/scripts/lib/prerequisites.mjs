@@ -8,7 +8,7 @@
 // Rallypoint drives GitHub through the `gh` CLI, and this repository cannot
 // vendor it — it is a signed platform binary with its own release channel and
 // its own credential store, so it is a declared prerequisite
-// (`docs/TOOLING.md`) rather than a dependency. Before #247 a missing `gh`
+// rather than a dependency. Without this, a missing `gh`
 // surfaced as a raw `execFileSync` ENOENT several calls into a claim, naming
 // neither the binary that was missing nor the way to install it.
 
@@ -18,10 +18,11 @@
 // those codes cannot mistake an absent prerequisite for a real verdict.
 //
 // Not 127, the shell's "command not found", despite it reading better here.
-// `pnpm run` propagates every other child exit code faithfully — 5 arrives as
-// 5, 69 as 69 — but collapses 127 to 1, and 1 is `usage` in every one of those
-// tables. Since #247 makes `pnpm run rallypoint:*` the documented invocation,
-// 127 would have arrived at the caller as a plausible, wrong answer.
+// Package-manager `run` wrappers propagate most child exit codes faithfully —
+// 5 arrives as 5, 69 as 69 — but collapse 127 to 1, and 1 is `usage` in every
+// one of those tables. So wherever these scripts are invoked through an `npm
+// run`/`pnpm run` alias rather than directly, 127 would reach the caller as a
+// plausible, wrong answer.
 export const EXIT_MISSING_PREREQUISITE = 69;
 
 export const GH_INSTALL_URL = "https://github.com/cli/cli#installation";
@@ -63,7 +64,6 @@ export const missingGhMessage = (problem) =>
     `  ${GH_INSTALL_URL}`,
     "  gh auth login",
     "",
-    "`docs/TOOLING.md` records this prerequisite and the rest of the toolchain.",
   ].join("\n");
 
 /**

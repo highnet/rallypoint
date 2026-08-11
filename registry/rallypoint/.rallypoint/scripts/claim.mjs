@@ -14,7 +14,7 @@
 
 import process from "node:process";
 
-import { beaconPush } from "./lib/early-push.mjs";
+import { beaconPush } from "./lib/beacon-push.mjs";
 import { claim } from "./lib/claim.mjs";
 import { EXIT_STALE_CHECKOUT, freshness } from "./lib/freshness.mjs";
 import { loadConfig, resolveTransport } from "./lib/gh.mjs";
@@ -37,7 +37,7 @@ process.exit(
     // name before the branch exists, which is why the beacon push lives here
     // and not in a hook. It publishes the prescribed branch at the
     // integration branch tip so the claim is visible to observers on other
-    // hosts from its first minute — the exposure #1313's worktree guard states
+    // hosts from its first minute — the exposure the worktree guard states
     // it cannot reach. Best-effort: it reports refusals and never changes the
     // exit code above.
     afterClaim: ({ branch }) =>

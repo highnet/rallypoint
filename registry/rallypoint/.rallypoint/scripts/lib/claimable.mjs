@@ -1,19 +1,19 @@
 // Whether an issue is available for a worker to claim, derived rather than
 // declared.
 //
-// Until #1510 the backlog was an *opt-in* set: an issue entered it when a
+// The backlog used to be an *opt-in* set: an issue entered it when a
 // planner added `status:ready` beside `task`, and `claim.mjs` listed candidates
 // by asking GitHub for both labels at once. Two labels had to be present for
 // work to be claimable, and the commonest board defect was one of them missing
 // — `report.mjs` carried a whole `readyWithoutTask` classification for an issue
 // advertised as ready that `claim.mjs` could never offer to anybody, found live
-// on #879 and #446.
+// more than once.
 //
 // Both labels are gone. The pool is now *opt-out*: every open issue is
 // claimable unless something on it says otherwise. That inverts the default —
 // a freshly filed issue is claimable the moment it is filed, where before it
 // sat inert until a planner opened the gate — and the inversion is deliberate,
-// decided by the owner on 2026-08-09. Nothing here restores a scoping gate; an
+// decided by the owner. Nothing here restores a scoping gate; an
 // issue that is not ready to be worked says so with a hold label.
 //
 // What this does *not* touch, and the reason the inversion is safe: the
@@ -35,7 +35,7 @@
  * that used to bound both queries are gone: `task` + `status:ready` narrowed the
  * listing to a handful of rows, so neither caller was anywhere near its page
  * limit and the limits were free to disagree. Listing every open issue removes
- * that accidental bound, and #1510's first draft replaced it with 300 in
+ * that accidental bound, and an early draft replaced it with 300 in
  * `claim.mjs` and an inherited 100 in `report.mjs` — 33 issues from the point
  * where every pool classification in the report would have gone dark at once.
  *
@@ -104,7 +104,7 @@ export const holdLabelNames = (config) =>
  *
  * Returns `null` — never an empty array — when the labels could not be read as
  * a list, so a caller cannot mistake "unreadable" for "none". That is the
- * #236 / #311 rule this repository applies everywhere: a failed read is not
+ * unreadable-is-not-absent rule this loop applies everywhere: a failed read is not
  * evidence of absence.
  *
  * @param {unknown} labels

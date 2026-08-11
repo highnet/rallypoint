@@ -4,13 +4,13 @@
 //
 // `review.mjs record` refuses permanently when `workerAgent()` cannot resolve
 // a claimant from the linked issue's comments, and until now nothing let
-// anyone attach one after the fact. #259 and #268 both hit this: their pull
+// anyone attach one after the fact. Pull requests hit this regularly: their pull
 // requests were reviewed in full, but no claim comment existed to
 // bind the verdict to, and the only way through was a human editing GitHub
 // state by hand outside any documented process.
 //
 // This does not authenticate the id it posts. Every agent id in this loop is
-// self-declared -- `review.mjs`'s header on #83 already states the self-review
+// self-declared -- `review.mjs`'s header already states the self-review
 // guard is bookkeeping, not authentication, and this command inherits that
 // same limitation. What it does guard against is defaulting to the
 // *reconciling* session's own id: `--agent-id` is mandatory, exactly like
@@ -27,7 +27,7 @@
 // already has to know the authoring issue number, which is exactly what is
 // missing when a pull request was opened outside the claim flow with no
 // `agent/<issue>-...` branch and a body that either has no closing keyword or
-// one nobody has cross-checked yet -- PR #445 against #442 is this shape. With
+// one nobody has cross-checked yet. With
 // `--pull`, the issue is resolved the same way `review.mjs record` and
 // `preflight.mjs` resolve it: via `recordableIssue()`, reusing the identical
 // branch/body signals rather than a second parser. Resolution failure is a

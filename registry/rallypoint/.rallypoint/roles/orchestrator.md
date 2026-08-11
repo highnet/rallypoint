@@ -17,7 +17,7 @@ It reports a **"## Claimable pool"** section: how many open issues carry no hold
 label and no assignee, so `claim.mjs` can offer them. Size worker rounds from
 that figure. Do **not** re-derive it with your own `gh` query — a hand query is
 a second implementation of the pool rule and can disagree with `claim.mjs`,
-which is the drift `lib/claimable.mjs` exists to remove (#1510).
+which is the drift `lib/claimable.mjs` exists to remove.
 
 No range is applied to it, and `readyBacklog` is gone from the config: how many
 sessions to start is a judgement about what the pull request queue can absorb,
@@ -33,7 +33,7 @@ verdicts") both mean approved and waiting to merge, which is what sizes
 merger sessions. `11` means the same carry-forward proof but for a
 request-changes verdict: report it, and size a fixer session for it, exactly
 like a fresh `5`/request-changes read — never as an unreviewed pull request,
-which is the misreading #244 exists to prevent.
+which is the misreading carried verdicts exist to prevent.
 Pass `--skip-pr-checks` for a faster pass when that loop is not needed (this
 also skips `needsFixer`, below, since both read the same per-PR review data).
 It also classifies disagreements between the reservation ref, the `status:*`
@@ -43,11 +43,11 @@ label, the assignee, and any open pull request — `unclaimable`, `unprotected`,
 disagreement count is itself a signal to recommend a janitor pass. Issues under
 **"Claims in flight"** are none of those: a direct `gh issue view` confirmed
 they carry `status:claimed` while the search-backed listing still lagged behind
-the claim being made (#1140). They are healthy, they are not disagreements, and
+the claim being made. They are healthy, they are not disagreements, and
 they are not grounds to recommend anything.
 `unclaimedWithOpenPr` — a ready issue with an open pull request against it, no
 reservation ref, and no claim comment — means nothing ever claimed the work now
-in flight; recommend a janitor pass to run the `rallypoint:reconcile` backfill
+in flight; recommend a janitor pass to run the `reconcile.mjs` backfill
 its detail names. `unreservedWithOpenPr` is the same shape with the claim
 comment intact, so only the ref is missing: it is **benign**, no janitor
 command applies to it, and it clears itself when the pull request merges —
@@ -62,18 +62,18 @@ read it as a clean queue.
 `wouldFailRecord` — an open pull request whose branch and body between them
 resolve no authoring issue at all — means `review.mjs record` will refuse a
 verdict on it, so **do not recommend a reviewer session for that pull request
-until its body is repaired**: the pass would be spent and thrown away (#1126).
+until its body is repaired**: the pass would be spent and thrown away.
 It is keyed to a pull request rather than an issue, and the recovery is
 authoring work on the pull request body, not a janitor command — recommend a
 fixer session against it, or raise it to the operator when the body cannot be
 repaired without knowing whose work it is. A pull request closing **several**
 issues is not this shape and is never reported as it: `record` accepts one, by
-deliberate decision in #1103/#1106, so recommend a reviewer for it as normal.
+a deliberate decision, so recommend a reviewer for it as normal.
 The report cannot see whether the referenced issues carry claim comments, which
 `record` also requires, so a silent `wouldFailRecord` section is not a promise
 that a verdict will land.
 
-Survey open issues by `status:claimed`, `status:blocked`, `status:deferred`, and `needs:human`, and open pull requests by review state — no verdict yet, changes requested, or approved and awaiting merge. The claimable pool is every open issue carrying none of those four labels and no assignee (#1510); count it that way rather than by any single label, since no label declares readiness any more. Count approved pull requests to size merger sessions. Recommend how many sessions of each other role to start next, with one line of reasoning per role tied to the signal it responds to, then stop: an operator must confirm the recommendation before any session starts.
+Survey open issues by `status:claimed`, `status:blocked`, `status:deferred`, and `needs:human`, and open pull requests by review state — no verdict yet, changes requested, or approved and awaiting merge. The claimable pool is every open issue carrying none of those four labels and no assignee; count it that way rather than by any single label, since no label declares readiness any more. Count approved pull requests to size merger sessions. Recommend how many sessions of each other role to start next, with one line of reasoning per role tied to the signal it responds to, then stop: an operator must confirm the recommendation before any session starts.
 
 ## Every recommendation carries one more condition
 
@@ -82,7 +82,7 @@ Read it, because nothing else in the report can tell you: a pull request nobody
 has reviewed and a pull request a reviewer is reading right now are identical in
 every other section — the verdict has not landed in either case, and
 `review.mjs check` exits `5` for both. Recommending against that alone is how
-the same session gets recommended twice (#494, and see "Session leases" in
+the same session gets recommended twice (see "Session leases" in
 `docs/AGENT_LOOP.md` for the mechanism).
 
 So, on every round:
@@ -226,21 +226,16 @@ reporting an honest, still-in-progress status. Re-prompting the same session
 to "keep waiting" without checking is the same single-target tunnel vision as
 above, just aimed at a session instead of the queue.
 
-## Local machine capacity is a sizing input too (#1013)
+## Local machine capacity is a sizing input too
 
 Every signal above is GitHub coordination state — a real backlog does not mean
-this machine has room to work it right now. Worker, fixer, and tester sessions
-each start a local Supabase stack; running `pnpm run db:stack list` before
-recommending how many of those to start is a cheap read that tells you how
-many are already up. `db:start` itself now refuses past a host-load threshold
-(`scripts/local-supabase-stack.mjs`, #1013) rather than letting a fifth
-concurrent stack degrade the other four, so a session dispatched into an
-already-saturated machine is not silently wasted — it is refused loudly and
-has to be retried later — but recommending fewer sessions than the queue would
-otherwise support, when the stack list already shows the machine full, avoids
-that retry entirely. This is advisory the same way every other recommendation
-here is: read the signal, size accordingly, state the reasoning in one line
-like any other.
+the machine these sessions run on has room to work it right now. Where each
+session needs a heavyweight local resource — a database stack, a container set,
+a dedicated port — check how many are already up before recommending how many
+more to start. A session dispatched into an already-saturated machine is wasted
+at best and degrades the sessions already running at worst. This is advisory the
+same way every other recommendation here is: read the signal, size accordingly,
+state the reasoning in one line like any other.
 
 ## Constraints (apply to every round)
 

@@ -2,36 +2,35 @@
 //
 // Exit codes are a public interface in this loop: the merge gate branches on
 // them, `report.mjs` turns them into an orchestrator survey line, and
-// `audit-merge-review.mjs` turns them into a clean/flagged verdict about a merge
-// that already happened. Before #1414 they were enumerated in five independent
-// places with nothing keeping them in step:
+// a merge audit can turn them into a clean/flagged verdict about a merge that
+// already happened. They are easily enumerated in several independent places
+// with nothing keeping them in step:
 //
 //   1. `EXIT` in `.rallypoint/scripts/review.mjs` — the authority, but a
 //      module-private const no consumer could read
 //   2. `docs/AGENT_LOOP.md`'s "Review" exit-code table (prose)
 //   3. `.rallypoint/roles/merger.md`'s exit-code table (prose)
 //   4. `CHECK_MEANINGS` in `lib/report.mjs` (consumer)
-//   5. `CHECK_CLASSIFICATIONS` in `lib/audit-merge-review.mjs` (consumer)
+//   5. any further consumer a repository adds
 //
-// #1394 is what that cost. Code `13` (contested approve, #928) shipped into
-// `EXIT` and into both prose tables and reached *neither* consumer. Both fell
-// through to their undocumented-code branch and failed closed as `unknown`, so
-// Merge Review Audit run 31263843529 labelled PR #1373 — a properly reviewed
-// merge whose approve explicitly superseded a dissent — as `merged:unreviewed`,
-// and orchestrator surveys reported it as an unknown state. Nothing failed
-// loudly: an unmapped code has a perfectly reasonable-looking fallback, which is
-// exactly what makes this drift silent.
+// What that cost, in practice: a new code — contested approve — shipped into
+// `EXIT` and into both prose tables and reached *no* consumer. Each fell through
+// to its undocumented-code branch and failed closed as `unknown`, so a properly
+// reviewed merge, whose approve had explicitly superseded an earlier dissent,
+// was labelled unreviewed, and orchestrator surveys reported it as an unknown
+// state. Nothing failed loudly: an unmapped code has a perfectly
+// reasonable-looking fallback, which is exactly what makes this drift silent.
 //
-// PR #1413 mapped `13` in both consumers and added one coupling test covering
-// the audit. This module is the structural fix that was deliberately out of
-// #1394's scope: `review.mjs` derives its `EXIT` from the table below rather
-// than declaring one, both consumers are asserted exhaustive over it, and both
-// prose tables are asserted to list exactly the codes it defines.
+// This module is the structural fix. `review.mjs` derives its `EXIT` from the
+// table below rather than declaring one, every consumer is asserted exhaustive
+// over it, and the prose tables are asserted to list exactly the codes it
+// defines. Adding a code here is what makes the suite name every consumer and
+// document still owing it a decision.
 //
 // **What this deliberately does not centralise is the wording.** Each consumer
 // phrases a code for its own audience — `report.mjs` for an orchestrator
-// deciding whether to dispatch a merger, `audit-merge-review.mjs` for a
-// after-the-fact judgement on a merge — and the `meaning` field here is a third
+// deciding whether to dispatch a merger, a merge audit for an after-the-fact
+// judgement on a merge — and the `meaning` field here is a third
 // phrasing, for the prose tables and for anyone reading this file. Folding them
 // into one shared sentence would flatten distinctions the codes exist to carry:
 // `5` and `11` differ by "nobody reviewed this" versus "a reviewer asked for
@@ -207,7 +206,7 @@ export const ALL_EXIT_CODES = Object.freeze(REVIEW_EXIT_CODES.map((entry) => ent
  * Asserts that a consumer's table of `check` exit codes is exhaustive over this
  * authority, throwing with a message naming what is missing or stray.
  *
- * This is the guarantee #1394 did not have: a new code cannot exist without
+ * This is the guarantee an enumerated list does not have: a new code cannot exist without
  * every consumer of `check` results having to decide what it means. It fails on
  * the *next* code to be added, at the moment it is added, rather than at the
  * moment a real merge is misclassified because of it.
@@ -215,9 +214,8 @@ export const ALL_EXIT_CODES = Object.freeze(REVIEW_EXIT_CODES.map((entry) => ent
  * Called from each consumer's unit test rather than at module load. Throwing at
  * import time would take out `report.mjs` and the merge audit — live coordination
  * tooling — over a bookkeeping omission, turning a silent misreport into an
- * outage. The unit suite runs in `pnpm run check`, which is the gate every branch
- * passes before it reaches a reviewer, so the omission is caught before it ships
- * either way.
+ * outage. Where the unit suite runs in the gate every branch passes before it
+ * reaches a reviewer, the omission is caught before it ships either way.
  *
  * A consumer may map codes beyond the required set — `report.mjs` maps `1`,
  * because a survey wants to say "usage error calling review.mjs check" rather
@@ -237,7 +235,7 @@ export const assertExhaustiveCheckMapping = (mapping, label) => {
     throw new Error(
       `${label} does not map \`review.mjs check\` exit code(s) ${missing.join(", ")}. ` +
         "An unmapped code falls through to an `unknown` fallback that looks reasonable and is wrong — " +
-        "see #1394. Add each one to this consumer, in its own words.",
+        "Add each one to this consumer, in its own words.",
     );
   }
 
@@ -288,7 +286,7 @@ export const sliceSection = (markdown, heading) => {
  * hand-maintained table of these codes, and both are read by agents as
  * specifications — `merger.md`'s in particular is what a merger session branches
  * on when deciding whether to merge. Neither was compared against anything
- * before #1414. Slice with `sliceSection` first where the document holds more
+ * Slice with `sliceSection` first where the document holds more
  * than one exit-code table.
  *
  * The shape both tables share is a leading cell holding nothing but a

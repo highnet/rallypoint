@@ -56,7 +56,7 @@
 //
 // A lookup that failed resolves to **unknown**, never to "free". The same rule
 // `report.mjs` and `release-claim.mjs` already state, and the one whose
-// violation caused #236 and #311: an error, a non-array body, or a response that
+// violation is how stale warnings get written: an error, a non-array body, or a response that
 // filled its page is not evidence of absence. Presence is established by
 // *listing* the ref, never inferred from a create's or a delete's failure.
 
@@ -552,7 +552,7 @@ export const pullRequestHead = (gh, pr) => {
  * the same ref, so exactly one caller wins. `takeover` force-updates a ref whose
  * lease this caller has already established is stale, and is deliberately
  * last-writer-wins — two orchestrators taking over the same stale lease at the
- * same instant is the bounded, self-correcting worst case #494 already accepts,
+ * same instant is the bounded, self-correcting worst case this design accepts,
  * and refusing it would leave a stale lease blocking its target until a janitor
  * pass came round.
  *
@@ -781,7 +781,7 @@ export const lease = ({
   // Presence is established by listing, always, before anything is written or
   // deleted — never inferred from a create's or a delete's own failure. A
   // branch-scoped credential answers 403 whether or not the ref is there, and
-  // reading one as proof either way is how #236's stale warnings were written.
+  // reading one as proof either way is how stale warnings get written.
   const leases = readLeases(gh, repository, config.sessionRefPrefix);
 
   if (!leases.ok) {

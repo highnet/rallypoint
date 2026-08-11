@@ -1,10 +1,10 @@
 // Deleting a merged issue branch from origin, with every call to `gh` and
 // `git` injected.
 //
-// This exists because **no merge in this repository has ever cleaned up after
-// itself**: 421 of the 461 `agent/*` branches on origin were merged and
-// still there. Three findings, each measured on a live merge, shape every
-// decision below.
+// This exists because merges do not clean up after themselves, and the debris
+// accumulates fast: an agent loop left unattended will happily leave hundreds
+// of merged `agent/*` branches on origin. Three findings, each measured on a
+// live merge, shape every decision below.
 //
 // 1. **`gh pr merge --delete-branch` couples the two deletes, and the local one
 //    fails first.** A merger runs minutes after its worker, so the worker's
@@ -15,23 +15,22 @@
 //    deletes are sequenced independently here, remote first, and the local one
 //    is reported rather than fatal.
 // 2. **`git push origin --delete` is not a usable fallback.** Any `git push`
-//    fires this repository's `pre-push` hook, which is `pnpm run check` — lint,
-//    typecheck, the full unit suite and a production build. Measured blowing
-//    past two minutes without ever reaching the network. `pre-push` cannot
-//    distinguish "pushing code" from "deleting a ref", so it taxes routine ref
-//    maintenance at the price of a full build.
+//    fires a `pre-push` hook, and in a repository that gates pushes on lint,
+//    typecheck, tests, and a build, that runs the whole gate before the command
+//    ever reaches the network. `pre-push` cannot distinguish "pushing code"
+//    from "deleting a ref", so it taxes routine ref maintenance at the price of
+//    a full build.
 // 3. **The GitHub API ref delete works.** No hook, no worktree dependency, no
 //    local state consulted. That is the mechanism used here.
 //
 // Two safety properties are load-bearing and each has its own test:
 //
 // - **Merge containment is judged only after `git fetch`.** A genuinely merged
-//   branch reads as unmerged against stale remote-tracking refs, which is how
-//   the caretaker gathering #1288's evidence was misled. The fetch is not an
-//   optimisation; without it this refuses correct deletions.
+//   branch reads as unmerged against stale remote-tracking refs. The fetch is
+//   not an optimisation; without it this refuses correct deletions.
 // - **Only a branch carrying the configured branch prefix is ever deletable.**
-//   `main`, `staging`, `release`, and every `rallypoint-claims/*` and
-//   `rallypoint-sessions/*` ref fail that test by construction, so no argument,
+//   The integration and promotion branches, and every `claimRefPrefix` and
+//   `sessionRefPrefix` ref, fail that test by construction, so no argument,
 //   typo, or surprising pull request payload can aim this at one.
 //
 // Everything below judges **the SHA the ref listing just returned**, never a
@@ -232,7 +231,7 @@ export const pullRequestBranch = (gh, pr) => {
  * **Never fatal, and deliberately runs after the remote delete.** A local
  * worktree still holding a just-merged branch is the normal state minutes after
  * a merge, not an error condition, and letting it decide the exit code is the
- * exact defect #1288 records.
+ * exact defect this guards against.
  *
  * **`force` is exactly "this run proved the branch merged".** Where it did —
  * the remote ref was present and contained — `-D` is right, because `-d` judges
@@ -408,7 +407,7 @@ export const deleteMergedBranch = ({
 
     try {
       // The mechanism, and the reason this script exists. Not
-      // `git push --delete`: that fires `pre-push`, which is `pnpm run check`.
+      // `git push --delete`: that fires `pre-push`, which is the repository's pre-push checks.
       gh("api", "--method", "DELETE", `repos/${repository}/git/${refPath}`);
       stdout(`Deleted \`${branch}\` from origin.`);
     } catch (error) {

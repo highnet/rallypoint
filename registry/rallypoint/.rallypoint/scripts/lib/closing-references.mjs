@@ -11,13 +11,12 @@
 // auto-close anyway, and a commit message narrating a closure somebody else
 // performed months ago links that one too.
 //
-// The two models disagree, and until this module nothing in the repository
-// could see the disagreement: `grep -rn closingIssuesReferences` over the
-// checkout returned zero hits. On 2026-08-06 the gap silently reversed an
-// operator decision — an issue reopened 16 minutes earlier under a `needs:human`
-// hold was re-closed by a merge, from a sentence in a commit message about a
-// hand-close performed on 2026-07-26 — and left a second issue's claim
-// reservation stranded. The issue this module was written for records both.
+// The two models disagree, and without something like this module nothing in a
+// repository can see the disagreement. Left unseen, the gap silently reverses
+// operator decisions: an issue reopened minutes earlier under a `needs:human`
+// hold gets re-closed by an unrelated merge, on the strength of one sentence in
+// a commit message describing a hand-close somebody performed long before — and
+// the issue's claim reservation is stranded behind it.
 //
 // **This is deliberately a second parser, which anywhere else in this directory
 // would be the defect.** `provenance.mjs`'s header, `close-referenced-issues.mjs`,

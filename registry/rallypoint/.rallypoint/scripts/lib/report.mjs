@@ -290,8 +290,7 @@ export const listAssignedOpenIssues = (gh) =>
  *
  * One healthy in-flight claim therefore trips `unclaimable`, `stranded`, and
  * `assigneeDrift` at once — three classifications, one shared premise, which is
- * that a label listing is a statement about *now*. It is not. Observed on #1135
- * on 2026-08-06 and again on #1266 on 2026-08-08.
+ * that a label listing is a statement about *now*. It is not.
  *
  * `gh issue view` is not search-backed, so it settles the question the listing
  * could only guess at. It is called only for an issue a listing has *already*
@@ -300,7 +299,7 @@ export const listAssignedOpenIssues = (gh) =>
  * A read that fails is `ok: false` and the caller leaves the issue **reported**
  * — the module's standing rule, and the safe direction here: a real
  * disagreement that stays on the report costs a janitor one look, while a
- * suppressed one is #236 all over again.
+ * suppressed one strands a reservation nobody goes looking for.
  *
  * @param {(...args: string[]) => string} gh
  * @param {string} issueNumber
@@ -571,7 +570,7 @@ export const classify = ({
   // authority on eligibility and refuses harmlessly when a claim is not
   // releasable yet.
   //
-  // The two differ, and #901 is why the wider set exists. A session that
+  // The two differ, and the wider set exists for a reason. A session that
   // claims, pushes, merges, and ends inside the window leaves a claim that
   // `release-claim.mjs` now releases on settled-pull-request grounds while this
   // classifier — which reads only the claim's age — would never nominate it.
@@ -644,9 +643,9 @@ export const classify = ({
 
   // Claims caught mid-flight: a reservation ref the strongly-consistent git
   // data API already returns, against a label listing that has not caught up
-  // (#1140, and see `viewIssue` for the mechanism). Held out of the three
+  // (see `viewIssue` for the mechanism). Held out of the three
   // classifications the lag produces, and reported in their own section — the
-  // same shape #1308 used for `localWorkHeld`, because a suppression nobody can
+  // same shape `localWorkHeld` uses, because a suppression nobody can
   // see is the failure mode both of these exist to avoid.
   /** @type {{ issue: string, detail: string }[]} */
   const claimsInFlight = [];
@@ -718,22 +717,21 @@ export const classify = ({
     }
   }
 
-  // ref with no `status:claimed` issue behind it -> unclaimable (the #236
-  // stranding case).
+  // ref with no `status:claimed` issue behind it -> unclaimable (the stranding case).
   //
   // A pool issue is skipped here because `stranded` below reports it, and the
-  // two would otherwise fire together on every one of them. Since #1510 the
+  // two would otherwise fire together on every one of them. Since the readiness label was removed, the
   // pool is defined by the *absence* of `status:claimed`, so every stranded
   // issue is necessarily also an unclaimable one — `stranded` became a strict
   // subset rather than a sibling, and left unguarded the commonest janitor case
-  // of all (#329's orphaned reservation) would appear twice under two headings
+  // of all — an orphaned reservation — would appear twice under two headings
   // implying two different remedies.
   //
   // The split is kept rather than collapsed because the two are not equally
   // urgent. A held issue with an orphan ref is inert: the hold keeps
   // `claim.mjs` away from it regardless. A *claimable* issue with an orphan ref
   // is offered to a session and then silently skipped when the reservation
-  // collides, which is the state that cost #329 six weeks.
+  // collides, which is the state a stranded reservation can sit in for weeks.
   if (refs.ok && claimed.ok) {
     for (const [issueNumber, ref] of refByIssue) {
       if (openIssues.ok && poolByIssue.has(issueNumber)) continue;
@@ -855,7 +853,7 @@ export const classify = ({
                 `ref and no claim comment while pull request ${pulls} already ` +
                 "references it, so `review.mjs record` will refuse the branch with " +
                 "exit 2 for want of one. Recover with " +
-                `\`pnpm run rallypoint:reconcile --issue ${issueNumber} ` +
+                `\`node .rallypoint/scripts/reconcile.mjs --issue ${issueNumber} ` +
                 "--agent-id <authoring-session-id>` (docs/AGENT_LOOP.md, " +
                 '"Reconciling a missing claim comment").',
             },
@@ -880,9 +878,9 @@ export const classify = ({
   // is reconciled onto, where a null result is tolerated rather than refused.
   // So `recordableIssue`'s third reason, `ambiguous-body` — a branchless pull
   // request whose body closes several issues — is a shape `record` accepts,
-  // and is exactly the multi-issue pull request #1103/#1106 made reviewable.
-  // Flagging it would withhold a reviewer from the one shape #1106 was filed
-  // to stop stranding.
+  // and is exactly the multi-issue pull request the loop deliberately made
+  // reviewable. Flagging it would withhold a reviewer from the one shape that
+  // change was made to stop stranding.
   //
   // It reads only the branch name and the body, which the pull request listing
   // already carries, so no extra network call is made and `--skip-pr-checks`
@@ -994,21 +992,20 @@ export const classify = ({
   // `status:deferred` or `needs:human` — is outside both loops, and that is a
   // state the loop reaches by two ordinary routes, not by corruption:
   //
-  // - A **reopened** issue. Closing never clears the assignee (442 of 558 closed
-  //   issues here are assigned, so that is the norm and not worth repairing at
-  //   close time — it records who did the work). Reopening one hands back an
-  //   open, assigned, unreserved issue; #34 sat exactly so after its operator
-  //   reopen on 2026-08-06.
+  // - A **reopened** issue. Closing never clears the assignee — that is the norm
+  //   and not worth repairing at close time, since it records who did the work.
+  //   Reopening one hands back an open, assigned, unreserved issue.
   // - A **worker standing down**, which `worker.md` tells it to do by moving the
   //   issue to `status:blocked` + `needs:human` and releasing its reservation.
-  //   Until #1217 that release left the assignee behind; #721, #784, #795, #883
-  //   and #1056 were all found this way on 2026-08-07.
+  //   That release used to leave the assignee behind, and issues in this state
+  //   accumulate quietly.
   //
   // Nothing is refused while the issue sits here, because the hold label keeps
   // `claim.mjs` away from it regardless. It springs when somebody clears the
   // hold: the issue then reads as free on every board while every claim attempt
-  // passes over it as somebody's work in progress. #329 spent six weeks in that
-  // state, and since #1510 clearing a hold is the *only* step needed to make an
+  // passes over it as somebody's work in progress. An issue can sit like that for
+  // weeks. Since the readiness label was removed, clearing a hold is the *only*
+  // step needed to make an
   // issue claimable — there is no second label to add, so no second moment at
   // which a person might notice the stale assignee.
   //
@@ -1208,13 +1205,12 @@ export const classify = ({
 
   // A closed issue still carrying a `status:*` label — nothing in the loop
   // above ever looks at closed issues, since every other classification reads
-  // `gh issue list --state open` (`listIssuesByLabel`). #989 closed natively
-  // when its pull request merged with a `Closes #989` keyword and kept a
-  // stale status label: `report.mjs`'s own survey never fetches a closed issue, so
+  // `gh issue list --state open` (`listIssuesByLabel`). An issue that closes natively when its pull request
+  // merges with a `Closes #<issue>` keyword can keep a stale status label: `report.mjs`'s own survey never fetches a closed issue, so
   // it structurally could not have landed in any of the classifications above,
   // and no other script touches a label left on an issue that was never
   // claimed through the protocol (`close-referenced-issues.mjs` only reacts to
-  // `status:claimed`, which #989 never carried). Reported, and repairable with
+  // `status:claimed`, which such an issue never carried). Reported, and repairable with
   // `clear-status-labels.mjs`, which this classification's detail names.
   if (closedStatus) {
     for (const reason of closedStatus.failures) unknowns.push(reason);
@@ -1340,12 +1336,12 @@ export const classify = ({
 // is the single authority. The wording here is deliberately its own:
 // this table is read by an orchestrator deciding whether to dispatch a merger,
 // so it phrases each code as a board state in a few words, where
-// `CHECK_CLASSIFICATIONS` in `audit-merge-review.mjs` phrases the same code as
-// an after-the-fact judgement on a merge. What is derived from the authority is
+// A merge audit would phrase the same code as an after-the-fact judgement on a
+// merge. What is derived from the authority is
 // exhaustiveness, never the strings — `report.test.mjs` asserts that every code
 // `check` can answer about a pull request's review state is mapped here, so a
 // new code cannot reach this consumer's `undocumented exit code` fallback the
-// way `13` did in #1394. Add a new code to `review-exit-codes.mjs`; the suite
+// way a previously unmapped code did. Add a new code to `review-exit-codes.mjs`; the suite
 // will then require a line here.
 /** @type {Record<number, string>} */
 export const CHECK_MEANINGS = {
@@ -1356,7 +1352,7 @@ export const CHECK_MEANINGS = {
   6: "the approve at head came from the branch author",
   7: "branch author unidentifiable; independence cannot be established",
   8: "hand-recorded verdict at head this script cannot read",
-  // #244: no verdict recorded at this exact head, but the branch's own
+  // No verdict recorded at this exact head, but the branch's own
   // contribution to the integration branch is provably unchanged since an
   // earlier verdict — the push only merged the integration branch in. `10`
   // is mergeable, the same as `0`; a survey should report it as waiting to
@@ -1367,8 +1363,7 @@ export const CHECK_MEANINGS = {
   // "Carried verdicts".
   10: "approved at an earlier head; carries forward, waiting to merge",
   11: "request-changes carries forward from an earlier head; unaddressed, not unreviewed",
-  // #928, added by #1394 alongside the same omission in
-  // `audit-merge-review.mjs`'s `CHECK_CLASSIFICATIONS`. Mergeable, exactly like
+  // A contested approve. Mergeable, exactly like
   // `0` — `merger.md`'s table says "Merge exactly like `0`" — so a survey must
   // not report it as an unknown state. It says so rather than reading as a
   // plain `0` because an orchestrator deciding whether to dispatch a merger
@@ -1454,7 +1449,7 @@ export const leaseUnknowns = (summary) =>
  * The session-lease section: what has already been dispatched, per open pull
  * request and per targetless role.
  *
- * This is what closes #494's interval. A pull request needing a reviewer and a
+ * This is what closes the orchestrator's blind interval. A pull request needing a reviewer and a
  * pull request already covered by a live reviewer lease look identical in every
  * other section of this report — the verdict has not landed yet in either case —
  * so a second orchestrator surveying the same board recommends the same session

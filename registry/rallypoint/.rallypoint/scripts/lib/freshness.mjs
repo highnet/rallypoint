@@ -1,13 +1,13 @@
 // Whether this checkout's copy of the coordination protocol is the one the
 // integration branch currently defines.
 //
-// #586: a Merger session found its worktree missing `.rallypoint/roles/merger.md`
-// entirely, and carrying `integrationBranch: "staging"` — the value retired when
-// the integration branch moved to `release`. It was not a long-lived worktree
-// that had drifted. Every `worktree-agent-*` branch on this machine is created
-// at the tip of `main`, and `main` is the *tail* of the promotion chain
-// (`release` -> `staging` -> `main`), hundreds of commits behind the branch the
-// protocol is actually defined on. A session booting there reads a superseded
+// The case this exists for: a session finds its worktree missing a role prompt
+// entirely, and carrying a retired `integrationBranch` value. It need not be a
+// long-lived worktree that has drifted. Where worktrees are branched from the
+// repository default branch, and the default branch is the *tail* of a
+// promotion chain rather than the integration branch itself, it can sit
+// hundreds of commits behind the branch the protocol is actually defined on. A
+// session booting there reads a superseded
 // role prompt, superseded docs, and a `.rallypoint/scripts/` directory missing
 // entry points the role prompt tells it to run — a janitor's first instructed
 // command died with `MODULE_NOT_FOUND` this way.
@@ -26,15 +26,14 @@
 // this branch adds to those paths are in the other direction and do not count,
 // so the check does not fire on the very pull request that edits the protocol.
 //
-// #827: that commit-range measurement alone refused a whole legitimate class of
+// That commit-range measurement alone refuses a whole legitimate class of
 // session, unconditionally and by construction. A merger handling a promotion
-// necessarily sits on the *base* branch (`staging` when promoting `release` ->
-// `staging`, `main` when promoting `staging` -> `main`), so it lags the head
-// branch by exactly the batch being promoted — coordination-surface commits
-// included. No re-created worktree can make that pass, because moving to
-// `release` would mean no longer being on the branch the promotion merges into.
+// necessarily sits on the *base* branch, so it lags the head branch by exactly
+// the batch being promoted — coordination-surface commits included. No
+// re-created worktree can make that pass, because moving to the head branch
+// would mean no longer being on the branch the promotion merges into.
 // A check that always fails for a legitimate session class trains that class to
-// proceed past it, which is worse than the inconvenience: #586's guarantee only
+// proceed past it, which is worse than the inconvenience: this guarantee only
 // holds while a refusal is believed.
 //
 // Two changes answer that, and both keep the substance of the question — is the
@@ -43,7 +42,7 @@
 //
 //   1. A missing commit whose content the checkout already carries is not
 //      drift. `HEAD...<ref>` restricted to the same paths is what several
-//      reviewer sessions independently hand-rolled on 2026-08-02 to decide the
+//      reviewer sessions independently hand-rolled to decide the
 //      drift they were being refused over was benign. Three dots, not two: it
 //      measures only what `<ref>` added since the merge base, so a branch's own
 //      protocol edits are not counted against it.
@@ -56,8 +55,8 @@
 //
 // A promotion whose batch genuinely changes the coordination surface is still
 // surfaced, under its own exit code: the scripts and role prompts that session
-// runs are the base branch's, and that is the substance of what the #811 merger
-// checked by hand.
+// runs are the base branch's, and that is the substance of what a merger would
+// otherwise have to check by hand.
 
 import { isPromotionBranch } from "../provenance.mjs";
 
@@ -403,14 +402,14 @@ export const freshness = ({
   const { allowStale, promoting } = parseArgs(argv);
 
   // Promotion is established from the argument, through the same predicate
-  // `preflight.mjs` and `notify-fixer.mjs` use, and never inferred from what
+  // `preflight.mjs` uses, and never inferred from what
   // the checkout happens to be — inference from the checkout is exactly what
   // would let a genuinely stale worktree excuse itself.
-  // A snapshot promotion head (`promotion/release-2026-08-09`, #1517) is
+  // A snapshot promotion head (`<promotionSnapshotPrefix><name>`) is
   // accepted here on containment alone: there is no pull request in view, so
   // there is no base to state and none to forge either — `baseRefName: null`
   // says exactly that. Containment is the whole guard, and it is a *stronger*
-  // proof than the exact name ever was against #827's worry, a stale worktree
+  // proof than the exact name ever was against the worry above, a stale worktree
   // excusing itself: a head reachable from `origin/<snapshotted>` is by
   // definition carrying no protocol the batch does not already have.
   const promotionEvidence = {

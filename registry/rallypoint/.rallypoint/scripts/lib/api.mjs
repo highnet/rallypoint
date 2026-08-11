@@ -76,12 +76,12 @@ export class ApiError extends Error {
         (detail ? `: ${detail}` : "") +
         // The failure a cloud agent session actually hits, and the one whose
         // remedy is not in this repository. Saying so here saves the next
-        // session rediscovering it — see #246.
+        // session rediscovering it.
         (detail?.includes("not enabled for this session")
           ? "\n\nThis session's credential is not authorized for the repository " +
             "API, so no Rallypoint command can reach GitHub from here. The " +
             "remedy is an org admin connecting the GitHub App for the " +
-            "organization; see #246 for what has been measured."
+            "organization."
           : ""),
     );
     this.name = "ApiError";
@@ -364,8 +364,8 @@ export const createTransport = ({ request, repository }) => {
             // `gh pr view --json author` reports `{ login, is_bot, ... }` with
             // the `[bot]` suffix stripped; REST reports
             // `user: { login: "dependabot[bot]", type: "Bot" }`. Only `login`
-            // and `is_bot` are read (`isDependabotAuthor` in provenance.mjs,
-            // #1225), and it accepts either spelling of the login, so the two
+            // and `is_bot` are read (`isDependabotAuthor` in provenance.mjs),
+            // and it accepts either spelling of the login, so the two
             // transports agree on whether a pull request is bot-authored.
             author: pull.user
               ? { login: pull.user.login, is_bot: pull.user.type === "Bot" }

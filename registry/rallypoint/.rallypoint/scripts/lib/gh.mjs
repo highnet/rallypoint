@@ -90,7 +90,8 @@ export const git = (...args) =>
 /**
  * Whether the `gh` binary is on `PATH`, asked once and before any request so a
  * missing prerequisite is reported by name rather than three calls into a
- * claim (#247's failure mode, extended to the transport choice itself).
+ * claim — the missing-prerequisite failure mode, extended to the transport
+ * choice itself.
  */
 const hasGh = () => {
   try {

@@ -103,11 +103,7 @@ export const agents = [
   },
   {
     slug: "merger",
-    // PLACEHOLDER. Every other plate is an authored painting; this is a
-    // stand-in drawn in the same ink-on-vellum idiom so the roster is not
-    // missing a tile. Drop the painting at public/world/roles/merger.jpg and
-    // change this one line.
-    portrait: "/world/roles/merger.svg",
+    portrait: "/world/roles/merger.jpg",
     name: "Merger",
     title: "The ferryman",
     summary: "Carries approved work across, and never on the verdict alone.",

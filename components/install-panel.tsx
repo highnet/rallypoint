@@ -37,6 +37,8 @@ const modes: Array<{
   },
 ];
 
+// A representative install, not the whole manifest — `view loop` prints every
+// target and checksum, and the panel's own copy points at it for the rest.
 const files = [
   "AGENTS.md",
   "AGENTIC_LOOP.md",
@@ -49,7 +51,13 @@ const files = [
   ".rallypoint/roles/tester.md",
   ".rallypoint/roles/fixer.md",
   ".rallypoint/roles/janitor.md",
+  ".rallypoint/roles/merger.md",
   ".rallypoint/roles/orchestrator.md",
+  ".rallypoint/scripts/claim.mjs",
+  ".rallypoint/scripts/review.mjs",
+  ".rallypoint/scripts/report.mjs",
+  ".rallypoint/scripts/janitor-pass.mjs",
+  "…and 35 more scripts",
 ];
 
 export function InstallPanel() {

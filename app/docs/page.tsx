@@ -57,7 +57,7 @@ const humanPrompts = [
   {
     label: "Chained into one message",
     prompt:
-      "Run the planner to top up the ready queue, then have a worker pick up whatever's highest priority, and kick off review as soon as that PR is open.",
+      "Run the planner to top up the backlog, then have a worker pick up whatever's highest priority, and kick off review as soon as that PR is open.",
   },
   {
     label: "Several roles at once",
@@ -161,7 +161,7 @@ export default function DocsPage() {
                   <td data-label="Role">Planner</td>
                   <td data-label="Claims">No</td>
                   <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">Grooms a ready backlog.</td>
+                  <td data-label="Purpose">Grooms an ordered, claimable backlog.</td>
                 </tr>
                 <tr>
                   <td data-label="Role">Worker</td>
@@ -200,7 +200,15 @@ export default function DocsPage() {
                   <td data-label="Claims">No</td>
                   <td data-label="Reviews">No</td>
                   <td data-label="Purpose">
-                    Releases stale claims and reservations.
+                    Releases stale claims, reservations, and leases.
+                  </td>
+                </tr>
+                <tr>
+                  <td data-label="Role">Merger</td>
+                  <td data-label="Claims">No</td>
+                  <td data-label="Reviews">No</td>
+                  <td data-label="Purpose">
+                    Verifies CI and the verdict, merges, reconciles the claim.
                   </td>
                 </tr>
                 <tr>
@@ -208,7 +216,7 @@ export default function DocsPage() {
                   <td data-label="Claims">No</td>
                   <td data-label="Reviews">No</td>
                   <td data-label="Purpose">
-                    Reads state and dispatches the next role.
+                    Reads state and recommends which roles run next.
                   </td>
                 </tr>
               </tbody>

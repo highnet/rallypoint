@@ -40,35 +40,37 @@ export function Wordmark({ className, href = "/" }: WordmarkProps) {
         title="Roll for initiative"
         type="button"
       >
-        <svg aria-hidden="true" viewBox="0 0 72 72">
+        <svg aria-hidden="true" viewBox="0 0 25 25">
           <path
             className="wordmark-die-focus"
-            d="M36 3 58 10l11 21-9 23-24 15-24-10-9-22 10-24Z"
+            d="M12.5 0 24 7.5v12L12.5 25 1 19.5v-12Z"
           />
-          <g className="wordmark-die-faces">
-            <path className="die-face die-face-1" d="M36 3 13 13l23 5Z" />
-            <path className="die-face die-face-2" d="M36 3 36 18 58 10Z" />
-            <path className="die-face die-face-3" d="M13 13 3 37l14-7Z" />
-            <path className="die-face die-face-4" d="M13 13 17 30 36 18Z" />
-            <path className="die-face die-face-5" d="M3 37 12 59 24 52Z" />
-            <path className="die-face die-face-6" d="M3 37 24 52 17 30Z" />
-            <path className="die-face die-face-7" d="M12 59 36 69 24 52Z" />
-            <path className="die-face die-face-8" d="M36 69 48 49 24 52Z" />
-            <path className="die-face die-face-9" d="M36 69 60 54 48 49Z" />
-            <path className="die-face die-face-10" d="M60 54 69 31 54 29Z" />
-            <path className="die-face die-face-11" d="M60 54 54 29 48 49Z" />
-            <path className="die-face die-face-12" d="M69 31 58 10 54 29Z" />
-            <path className="die-face die-face-13" d="M58 10 36 18 54 29Z" />
-            <path className="die-face die-face-14" d="M36 18 17 30 36 35Z" />
-            <path className="die-face die-face-main" d="M17 30 24 52 36 35Z" />
-            <path className="die-face die-face-5" d="M24 52 48 49 36 35Z" />
-            <path className="die-face die-face-10" d="M48 49 54 29 36 35Z" />
-            <path className="die-face die-face-2" d="M54 29 36 18 36 35Z" />
+          <g className="wordmark-die-pixels" shapeRendering="crispEdges">
+            <path
+              className="die-px-dark"
+              d="M22 13h1v1h-1zM22 14h1v1h-1zM22 15h1v1h-1zM22 16h1v1h-1zM21 17h2v1h-2zM22 18h1v1h-1zM3 19h2v1h-2zM20 19h2v1h-2zM5 20h2v1h-2zM18 20h2v1h-2zM7 21h1v1h-1zM17 21h1v1h-1z"
+            />
+            <path
+              className="die-px-mid"
+              d="M14 6h1v1h-1zM14 7h7v1h-7zM15 8h8v1h-8zM15 9h7v1h-7zM16 10h6v1h-6zM17 11h5v1h-5zM17 12h5v1h-5zM2 13h1v1h-1zM18 13h3v1h-3zM2 14h1v1h-1zM19 14h2v1h-2zM2 15h1v1h-1zM19 15h2v1h-2zM2 16h1v1h-1zM20 16h1v1h-1zM2 17h2v1h-2zM2 18h1v1h-1zM7 19h11v1h-11zM8 20h9v1h-9zM9 21h7v1h-7zM11 22h3v1h-3zM12 23h1v1h-1z"
+            />
+            <path
+              className="die-px-lo"
+              d="M13 2h2v1h-2zM13 3h3v1h-3zM13 4h5v1h-5zM15 5h5v1h-5zM10 6h1v1h-1zM4 7h7v1h-7zM2 8h8v1h-8zM3 9h7v1h-7zM3 10h6v1h-6zM3 11h5v1h-5zM3 12h5v1h-5zM4 13h3v1h-3zM4 14h2v1h-2zM4 15h2v1h-2zM4 16h1v1h-1z"
+            />
+            <path
+              className="die-px-hi"
+              d="M10 2h2v1h-2zM9 3h3v1h-3zM7 4h5v1h-5zM5 5h5v1h-5z"
+            />
+            <path
+              className="die-face-main"
+              d="M12 6h1v1h-1zM12 7h1v1h-1zM11 8h3v1h-3zM11 9h3v1h-3zM10 10h5v1h-5zM9 11h7v1h-7zM9 12h7v1h-7zM8 13h1v1h-1zM12 13h1v1h-1zM16 13h1v1h-1zM7 14h4v1h-4zM12 14h1v1h-1zM14 14h1v1h-1zM16 14h2v1h-2zM7 15h2v1h-2zM12 15h1v1h-1zM14 15h1v1h-1zM16 15h2v1h-2zM6 16h3v1h-3zM10 16h3v1h-3zM14 16h1v1h-1zM16 16h3v1h-3zM6 17h3v1h-3zM12 17h1v1h-1zM16 17h3v1h-3z"
+            />
+            <path
+              className="die-px-ink"
+              d="M12 0h1v1h-1zM10 1h5v1h-5zM9 2h1v1h-1zM12 2h1v1h-1zM15 2h1v1h-1zM7 3h2v1h-2zM12 3h1v1h-1zM16 3h2v1h-2zM5 4h2v1h-2zM12 4h1v1h-1zM18 4h2v1h-2zM4 5h1v1h-1zM10 5h5v1h-5zM20 5h1v1h-1zM2 6h8v1h-8zM11 6h1v1h-1zM13 6h1v1h-1zM15 6h8v1h-8zM1 7h3v1h-3zM11 7h1v1h-1zM13 7h1v1h-1zM21 7h3v1h-3zM1 8h1v1h-1zM10 8h1v1h-1zM14 8h1v1h-1zM23 8h1v1h-1zM1 9h2v1h-2zM10 9h1v1h-1zM14 9h1v1h-1zM22 9h2v1h-2zM1 10h2v1h-2zM9 10h1v1h-1zM15 10h1v1h-1zM22 10h2v1h-2zM1 11h2v1h-2zM8 11h1v1h-1zM16 11h1v1h-1zM22 11h2v1h-2zM1 12h2v1h-2zM8 12h1v1h-1zM16 12h1v1h-1zM22 12h2v1h-2zM1 13h1v1h-1zM3 13h1v1h-1zM7 13h1v1h-1zM9 13h3v1h-3zM13 13h3v1h-3zM17 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM1 14h1v1h-1zM3 14h1v1h-1zM6 14h1v1h-1zM11 14h1v1h-1zM13 14h1v1h-1zM15 14h1v1h-1zM18 14h1v1h-1zM21 14h1v1h-1zM23 14h1v1h-1zM1 15h1v1h-1zM3 15h1v1h-1zM6 15h1v1h-1zM9 15h3v1h-3zM13 15h1v1h-1zM15 15h1v1h-1zM18 15h1v1h-1zM21 15h1v1h-1zM23 15h1v1h-1zM1 16h1v1h-1zM3 16h1v1h-1zM5 16h1v1h-1zM9 16h1v1h-1zM13 16h1v1h-1zM15 16h1v1h-1zM19 16h1v1h-1zM21 16h1v1h-1zM23 16h1v1h-1zM1 17h1v1h-1zM4 17h2v1h-2zM9 17h3v1h-3zM13 17h3v1h-3zM19 17h2v1h-2zM23 17h1v1h-1zM1 18h1v1h-1zM3 18h19v1h-19zM23 18h1v1h-1zM1 19h2v1h-2zM5 19h2v1h-2zM18 19h2v1h-2zM22 19h2v1h-2zM3 20h2v1h-2zM7 20h1v1h-1zM17 20h1v1h-1zM20 20h2v1h-2zM5 21h2v1h-2zM8 21h1v1h-1zM16 21h1v1h-1zM18 21h2v1h-2zM7 22h4v1h-4zM14 22h4v1h-4zM9 23h3v1h-3zM13 23h3v1h-3zM11 24h3v1h-3z"
+            />
           </g>
-          <path
-            className="wordmark-die-outline"
-            d="M36 3 58 10l11 21-9 23-24 15-24-10-9-22 10-24Z"
-          />
         </svg>
       </button>
       <Link href={href}>Rallypoint</Link>

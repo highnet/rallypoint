@@ -255,7 +255,7 @@ button.wordmark-die {
 }
 
 /* Pixel-art d20, tilted like a tossed die: 32x32 grid, one path per tone, rendered crisp. */
-.die-px-ink { fill: var(--die-ink); }
+.die-px-ink { fill: var(--die-ink, oklch(0.17 0.045 42)); }
 .die-px-hi { fill: oklch(0.93 0.02 85); }
 .die-px-lo { fill: oklch(0.85 0.03 80); }
 .die-px-mid { fill: oklch(0.7 0.035 75); }
@@ -4795,13 +4795,12 @@ td:first-child {
   clip-path: none;
   display: flex;
   filter: drop-shadow(0 8px 7px rgba(18, 5, 0, 0.52));
-  height: 78px;
+  height: 72px;
   justify-content: center;
   overflow: visible;
   right: 5%;
   top: 65%;
-  transform: rotate(-7deg);
-  width: 70px;
+  width: 72px;
 }
 
 .atlas-die::before,
@@ -4813,63 +4812,8 @@ td:first-child {
   display: block;
   height: 100%;
   overflow: visible;
+  shape-rendering: crispEdges;
   width: 100%;
-}
-
-.atlas-d20-shell {
-  fill: #5c250d;
-}
-
-.atlas-d20-face {
-  stroke: rgba(62, 20, 4, 0.92);
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.atlas-d20-face.face-1,
-.atlas-d20-face.face-6,
-.atlas-d20-face.face-9,
-.atlas-d20-face.face-12 {
-  fill: #f0b640;
-}
-
-.atlas-d20-face.face-2,
-.atlas-d20-face.face-4,
-.atlas-d20-face.face-8,
-.atlas-d20-face.face-13 {
-  fill: #a84a12;
-}
-
-.atlas-d20-face.face-3,
-.atlas-d20-face.face-10,
-.atlas-d20-face.face-14 {
-  fill: #6e2b0d;
-}
-
-.atlas-d20-face.face-5,
-.atlas-d20-face.face-11 {
-  fill: #d47a18;
-}
-
-.atlas-d20-face.face-7 {
-  fill: #8e3a10;
-}
-
-.atlas-d20-outline {
-  fill: none;
-  stroke: #341105;
-  stroke-linejoin: round;
-  stroke-width: 3.5;
-}
-
-.atlas-d20-number {
-  fill: #fff0c4;
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 21px;
-  font-weight: 800;
-  paint-order: stroke;
-  stroke: rgba(52, 17, 5, 0.72);
-  stroke-width: 2px;
 }
 
 html[data-audience="agent"],
@@ -4980,8 +4924,8 @@ html[data-audience="agent"] .agent-constraint {
 
 @media (max-width: 620px) {
   .atlas-die {
-    height: 58px;
-    width: 52px;
+    height: 54px;
+    width: 54px;
   }
 
   html[data-audience="agent"] .audience-switch {

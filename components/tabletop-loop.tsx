@@ -4,6 +4,7 @@ import { ArrowRight, MapPinned } from "lucide-react";
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
 
+import { PixelD20 } from "@/components/pixel-d20";
 import { cn } from "@/lib/utils";
 
 const atlasLocations = [
@@ -158,35 +159,7 @@ export function TabletopLoop() {
         })}
 
         <div className="atlas-die" aria-hidden="true">
-          <svg className="atlas-die-svg" viewBox="0 0 100 112" role="presentation">
-            <polygon
-              className="atlas-d20-shell"
-              points="50,2 85,20 98,58 78,94 50,110 22,94 2,58 15,20"
-            />
-            <g className="atlas-d20-faces">
-              <polygon className="atlas-d20-face face-1" points="50,2 15,20 50,28" />
-              <polygon className="atlas-d20-face face-2" points="50,2 50,28 85,20" />
-              <polygon className="atlas-d20-face face-3" points="15,20 2,58 50,28" />
-              <polygon className="atlas-d20-face face-4" points="2,58 22,70 50,28" />
-              <polygon className="atlas-d20-face face-5" points="85,20 50,28 98,58" />
-              <polygon className="atlas-d20-face face-6" points="98,58 50,28 78,70" />
-              <polygon className="atlas-d20-face face-7" points="50,28 78,70 22,70" />
-              <polygon className="atlas-d20-face face-8" points="2,58 22,94 22,70" />
-              <polygon className="atlas-d20-face face-9" points="22,94 50,110 22,70" />
-              <polygon className="atlas-d20-face face-10" points="50,110 50,90 22,70" />
-              <polygon className="atlas-d20-face face-11" points="22,70 50,90 78,70" />
-              <polygon className="atlas-d20-face face-12" points="50,90 50,110 78,70" />
-              <polygon className="atlas-d20-face face-13" points="50,110 78,94 78,70" />
-              <polygon className="atlas-d20-face face-14" points="78,94 98,58 78,70" />
-            </g>
-            <polygon
-              className="atlas-d20-outline"
-              points="50,2 85,20 98,58 78,94 50,110 22,94 2,58 15,20"
-            />
-            <text className="atlas-d20-number" x="50" y="62" textAnchor="middle">
-              20
-            </text>
-          </svg>
+          <PixelD20 className="atlas-die-svg" />
         </div>
 
       </div>

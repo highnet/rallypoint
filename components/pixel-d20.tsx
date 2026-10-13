@@ -1,0 +1,41 @@
+import type { ReactNode } from "react";
+
+type PixelD20Props = {
+  children?: ReactNode;
+  className?: string;
+};
+
+/** Pixel-art d20 from the Rallypoint logo: 32x32 grid, one path per tone. */
+export function PixelD20({ children, className }: PixelD20Props) {
+  return (
+    <svg aria-hidden="true" className={className} viewBox="0 0 32 32">
+      {children}
+      <g className="wordmark-die-pixels" shapeRendering="crispEdges">
+        <path
+          className="die-px-dark"
+          d="M27 20h1v1h-1zM26 21h1v1h-1zM25 22h1v1h-1z"
+        />
+        <path
+          className="die-px-mid"
+          d="M25 20h1v1h-1zM21 21h4v1h-4zM17 22h7v1h-7zM13 23h10v1h-10zM9 24h14v1h-14zM8 25h1v1h-1zM12 25h10v1h-10zM15 26h6v1h-6zM18 27h2v1h-2z"
+        />
+        <path
+          className="die-px-lo"
+          d="M28 17h1v1h-1zM4 18h1v1h-1zM28 18h1v1h-1zM5 21h1v1h-1zM5 22h1v1h-1zM6 23h1v1h-1z"
+        />
+        <path
+          className="die-px-hi"
+          d="M13 4h2v1h-2zM11 5h2v1h-2zM14 5h5v1h-5zM10 6h3v1h-3zM9 7h2v1h-2zM15 7h11v1h-11zM8 8h1v1h-1zM11 8h1v1h-1zM16 8h10v1h-10zM6 9h1v1h-1zM9 9h3v1h-3zM17 9h9v1h-9zM7 10h5v1h-5zM18 10h8v1h-8zM5 11h6v1h-6zM19 11h7v1h-7zM3 12h8v1h-8zM21 12h5v1h-5zM3 13h8v1h-8zM22 13h5v1h-5zM4 14h6v1h-6zM23 14h4v1h-4zM4 15h6v1h-6zM24 15h3v1h-3zM5 16h5v1h-5zM25 16h2v1h-2zM5 17h4v1h-4zM26 17h1v1h-1zM6 18h3v1h-3zM6 19h3v1h-3zM6 20h2v1h-2zM7 21h1v1h-1zM7 22h1v1h-1z"
+        />
+        <path
+          className="die-face-main"
+          d="M13 8h2v1h-2zM13 9h3v1h-3zM13 10h4v1h-4zM12 11h6v1h-6zM12 12h7v1h-7zM12 13h9v1h-9zM11 14h7v1h-7zM20 14h2v1h-2zM11 15h2v1h-2zM15 15h2v1h-2zM18 15h2v1h-2zM21 15h2v1h-2zM11 16h1v1h-1zM13 16h2v1h-2zM16 16h1v1h-1zM18 16h2v1h-2zM21 16h3v1h-3zM10 17h5v1h-5zM16 17h1v1h-1zM18 17h2v1h-2zM21 17h4v1h-4zM10 18h4v1h-4zM15 18h2v1h-2zM18 18h2v1h-2zM21 18h5v1h-5zM10 19h3v1h-3zM14 19h4v1h-4zM20 19h5v1h-5zM9 20h3v1h-3zM16 20h5v1h-5zM9 21h8v1h-8zM9 22h4v1h-4zM8 23h1v1h-1z"
+        />
+        <path
+          className="die-px-ink"
+          d="M12 2h3v1h-3zM11 3h8v1h-8zM10 4h3v1h-3zM15 4h9v1h-9zM9 5h2v1h-2zM13 5h1v1h-1zM19 5h8v1h-8zM8 6h2v1h-2zM13 6h15v1h-15zM6 7h3v1h-3zM11 7h4v1h-4zM26 7h2v1h-2zM5 8h3v1h-3zM9 8h2v1h-2zM12 8h1v1h-1zM15 8h1v1h-1zM26 8h2v1h-2zM4 9h2v1h-2zM7 9h2v1h-2zM12 9h1v1h-1zM16 9h1v1h-1zM26 9h3v1h-3zM3 10h4v1h-4zM12 10h1v1h-1zM17 10h1v1h-1zM26 10h3v1h-3zM2 11h3v1h-3zM11 11h1v1h-1zM18 11h1v1h-1zM26 11h3v1h-3zM1 12h2v1h-2zM11 12h1v1h-1zM19 12h2v1h-2zM26 12h3v1h-3zM1 13h2v1h-2zM11 13h1v1h-1zM21 13h1v1h-1zM27 13h3v1h-3zM1 14h3v1h-3zM10 14h1v1h-1zM18 14h2v1h-2zM22 14h1v1h-1zM27 14h3v1h-3zM2 15h2v1h-2zM10 15h1v1h-1zM13 15h2v1h-2zM17 15h1v1h-1zM20 15h1v1h-1zM23 15h1v1h-1zM27 15h3v1h-3zM2 16h3v1h-3zM10 16h1v1h-1zM12 16h1v1h-1zM15 16h1v1h-1zM17 16h1v1h-1zM20 16h1v1h-1zM24 16h1v1h-1zM27 16h3v1h-3zM2 17h3v1h-3zM9 17h1v1h-1zM15 17h1v1h-1zM17 17h1v1h-1zM20 17h1v1h-1zM25 17h1v1h-1zM27 17h1v1h-1zM29 17h2v1h-2zM2 18h2v1h-2zM5 18h1v1h-1zM9 18h1v1h-1zM14 18h1v1h-1zM17 18h1v1h-1zM20 18h1v1h-1zM26 18h2v1h-2zM29 18h2v1h-2zM3 19h3v1h-3zM9 19h1v1h-1zM13 19h1v1h-1zM18 19h2v1h-2zM25 19h6v1h-6zM3 20h3v1h-3zM8 20h1v1h-1zM12 20h4v1h-4zM21 20h4v1h-4zM26 20h1v1h-1zM28 20h2v1h-2zM3 21h2v1h-2zM6 21h1v1h-1zM8 21h1v1h-1zM17 21h4v1h-4zM25 21h1v1h-1zM27 21h2v1h-2zM3 22h2v1h-2zM6 22h1v1h-1zM8 22h1v1h-1zM13 22h4v1h-4zM24 22h1v1h-1zM26 22h2v1h-2zM4 23h2v1h-2zM7 23h1v1h-1zM9 23h4v1h-4zM23 23h4v1h-4zM4 24h5v1h-5zM23 24h3v1h-3zM4 25h4v1h-4zM9 25h3v1h-3zM22 25h2v1h-2zM5 26h10v1h-10zM21 26h2v1h-2zM8 27h10v1h-10zM20 27h2v1h-2zM13 28h8v1h-8zM17 29h3v1h-3z"
+        />
+      </g>
+    </svg>
+  );
+}

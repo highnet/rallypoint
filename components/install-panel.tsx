@@ -1,50 +1,44 @@
 "use client";
 
-import { Check, FileCode2, PackagePlus, ScrollText } from "lucide-react";
-
 import { CommandCopy } from "@/components/command-copy";
-import { Button } from "@/components/ui/button";
 import { type InstallMode, useRallypointStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const modes: Array<{
   id: InstallMode;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
   command: string;
   detail: string;
 }> = [
   {
     id: "npm",
     label: "npm",
-    icon: PackagePlus,
     command: "npx rallypoint@latest add loop",
-    detail: "Installs the campaign pack with Rallypoint’s own conflict-safe CLI.",
+    detail: "Writes the loop with Rallypoint’s own conflict-safe CLI. Add the dry-run flag to plan without writing.",
   },
   {
     id: "pnpm",
     label: "pnpm",
-    icon: ScrollText,
     command: "pnpm dlx rallypoint@latest add loop",
     detail: "Runs the same first-party registry installer through pnpm.",
   },
   {
     id: "inspect",
     label: "Inspect first",
-    icon: FileCode2,
     command: "npx rallypoint@latest view loop",
-    detail: "Shows every target and checksum without writing to your repository.",
+    detail: "Prints every target path and checksum without writing to your repository.",
   },
 ];
 
 // A representative install, not the whole manifest — `view loop` prints every
-// target and checksum, and the panel's own copy points at it for the rest.
+// target and checksum.
 const files = [
   "AGENTS.md",
   "AGENTIC_LOOP.md",
   "docs/AGENT_LOOP.md",
   ".rallypoint/LICENSE",
   ".rallypoint/config.json",
+  ".rallypoint/roles/orchestrator.md",
   ".rallypoint/roles/planner.md",
   ".rallypoint/roles/worker.md",
   ".rallypoint/roles/reviewer.md",
@@ -52,12 +46,10 @@ const files = [
   ".rallypoint/roles/fixer.md",
   ".rallypoint/roles/janitor.md",
   ".rallypoint/roles/merger.md",
-  ".rallypoint/roles/orchestrator.md",
   ".rallypoint/scripts/claim.mjs",
   ".rallypoint/scripts/review.mjs",
   ".rallypoint/scripts/report.mjs",
   ".rallypoint/scripts/janitor-pass.mjs",
-  "…and 35 more scripts",
 ];
 
 export function InstallPanel() {
@@ -65,62 +57,66 @@ export function InstallPanel() {
   const setInstallMode = useRallypointStore((state) => state.setInstallMode);
   const selected = modes.find((mode) => mode.id === installMode) ?? modes[0];
 
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const index = modes.findIndex((mode) => mode.id === installMode);
+    const delta = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (!delta) return;
+    event.preventDefault();
+    const next = modes[(index + delta + modes.length) % modes.length];
+    setInstallMode(next.id);
+    document.getElementById(`install-tab-${next.id}`)?.focus();
+  };
+
   return (
-    <div className="install-grid">
-      <div
-        aria-label="The Rallypoint campaign files packed as an adventurer’s field kit"
-        className="install-field-art"
-        role="img"
-      />
-      <div className="install-console">
-        <div className="mode-tabs" role="tablist" aria-label="Install methods">
-          {modes.map((mode) => {
-            const Icon = mode.icon;
-            return (
-              <Button
+    <div className="install">
+      <div className="install-steps">
+        <div className="install-step">
+          <p className="step-title">
+            <span className="step-index">1</span> Write the loop into your repository
+          </p>
+          <div aria-label="Install method" className="tabs" onKeyDown={onKeyDown} role="tablist">
+            {modes.map((mode) => (
+              <button
+                aria-controls="install-panel"
                 aria-selected={installMode === mode.id}
-                className={cn(installMode === mode.id && "is-selected")}
+                className={cn("tab", installMode === mode.id && "is-selected")}
+                id={`install-tab-${mode.id}`}
                 key={mode.id}
                 onClick={() => setInstallMode(mode.id)}
                 role="tab"
-                size="sm"
-                variant="parchment"
+                tabIndex={installMode === mode.id ? 0 : -1}
+                type="button"
               >
-                <Icon />
                 {mode.label}
-              </Button>
-            );
-          })}
+              </button>
+            ))}
+          </div>
+          <div aria-labelledby={`install-tab-${selected.id}`} id="install-panel" role="tabpanel">
+            <CommandCopy command={selected.command} id={`install-${selected.id}`} label="install command" />
+            <p className="install-detail">{selected.detail}</p>
+          </div>
         </div>
-        <CommandCopy command={selected.command} id={`install-${selected.id}`} />
-        <p>{selected.detail}</p>
-        <div className="install-notes">
-          <span><Check /> Conflict-safe</span>
-          <span><Check /> Dry-run ready</span>
-          <span><Check /> Agent-agnostic</span>
+        <div className="install-step">
+          <p className="step-title">
+            <span className="step-index">2</span> Bring GitHub up to date
+          </p>
+          <CommandCopy command="npx rallypoint@latest init" id="install-init" label="init command" />
+          <p className="install-detail">
+            Needs an authenticated <code>gh</code>. Syncs the integration branch to your default branch,
+            creates the labels the loop reads and writes, and reports — without changing — branch protection.
+          </p>
         </div>
       </div>
-
-      <div className="file-scroll" aria-label="Files installed by Rallypoint">
-        <div className="scroll-roller scroll-roller-top" aria-hidden="true" />
-        <div className="scroll-heading">
-          <p className="scroll-kicker">Repository field manifest</p>
-          <p className="scroll-title">The campaign pack</p>
-        </div>
-        <ul>
+      <div className="manifest">
+        <p className="manifest-title">What lands in the repository</p>
+        <ul aria-label="Files installed by Rallypoint">
           {files.map((file) => (
             <li key={file}>
-              <span aria-hidden="true">◆</span>
               <code>{file}</code>
             </li>
           ))}
         </ul>
-        <p className="scroll-colophon">
-          <span>{files.length} files</span>
-          <span>Conflict-safe manifest</span>
-        </p>
-        <span aria-hidden="true" className="scroll-seal">RP</span>
-        <div className="scroll-roller scroll-roller-bottom" aria-hidden="true" />
+        <p className="manifest-more">…and the rest of the scripts. <code>view loop</code> lists every file with its checksum.</p>
       </div>
     </div>
   );

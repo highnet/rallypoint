@@ -1,200 +1,130 @@
-/**
- * THESIS: Rallypoint is a living hexcrawl atlas; it refuses the standard
- * developer-tool hero with a decorative dashboard beside it.
- * OWN-WORLD: candlelit carved oak, aged vellum, charcoal engraving, moss,
- * oxblood, lapis, tarnished brass, ember routes, and authored creature plates.
- * STORY: see the repository as a world, choose a role location, understand the
- * handoff, then install the protocol into the repo.
- * FIRST VIEWPORT: a pinned expedition folio occupies the left third while a
- * dominant selectable atlas and its six inhabited locations fill the rest.
- * FORM: approved Hexcrawl Atlas direction C, ranked first for immersion; the
- * staging is an atlas pinned open on a ranger's campaign table.
- */
-import {
-  ArrowDown,
-  ArrowRight,
-  GitBranch,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { AudienceFork, AudienceSwitch } from "@/components/audience-fork";
+import { ClaimRace } from "@/components/claim-race";
 import { CommandCopy } from "@/components/command-copy";
-import { AudienceFork } from "@/components/audience-fork";
 import { InstallPanel } from "@/components/install-panel";
-import { LoopRibbon } from "@/components/loop-ribbon";
-import { MobileNav } from "@/components/mobile-nav";
 import { OwnershipBand } from "@/components/ownership-band";
-import { RoleParty } from "@/components/role-party";
-import { TabletopLoop } from "@/components/tabletop-loop";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Wordmark } from "@/components/wordmark";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { PrTally } from "@/components/pr-tally";
+import { RoleMatrix } from "@/components/role-matrix";
+import { SignalRail } from "@/components/signal-rail";
+import { SiteHeader } from "@/components/site-header";
+import { LabelTable, StateLines } from "@/components/state-lines";
+import { SiteFooter } from "@/components/site-footer";
 
 const heroCommand = "npx rallypoint@latest add loop";
 
 export default function Home() {
   return (
-    <main>
-      <section className="hero" id="top">
-        <header className="site-header">
-          <Wordmark href="#top" />
-          <nav aria-label="Primary navigation">
-            <Link href="#loop">The loop</Link>
-            <Link href="#party">Roles</Link>
-            <Link href="#install">Install</Link>
-            <Link href="/docs">Docs</Link>
-          </nav>
-          <div className="header-actions">
-            <ThemeToggle />
-            <MobileNav />
+    <>
+      <SiteHeader />
+      <main id="main">
+        <section aria-label="Introduction" className="hero">
+          <div className="hero-bar">
+            <AudienceSwitch />
           </div>
-        </header>
+          <AudienceFork
+            human={
+              <>
+                <div className="hero-grid">
+                  <h1 className="hero-title">
+                    Coordinate coding agents with nothing but&nbsp;GitHub.
+                  </h1>
+                  <div className="hero-side">
+                    <p className="lede">
+                      Rallypoint installs eight roles, a label state machine and an atomic claim into
+                      your repository. Agents never message each other: they read and write issues,
+                      branches, labels and pull requests — and no agent approves its own work.
+                    </p>
+                    <CommandCopy command={heroCommand} id="hero-command" label="install command" />
+                    <p className="hero-links">
+                      <Link className="text-link" href="/docs">
+                        Read the docs <ArrowRight aria-hidden="true" />
+                      </Link>
+                      <span>MIT · agent-agnostic</span>
+                    </p>
+                  </div>
+                </div>
+                <SignalRail />
+              </>
+            }
+          />
+        </section>
 
-        <AudienceFork
-          human={
-            <div className="hero-grid">
-              <div className="hero-copy expedition-folio">
-                <span className="folio-thread" aria-hidden="true" />
-                <div className="campaign-stamp">
-                  <Sparkles aria-hidden="true" />
-                  Field codex · GitHub-native orchestration
-                </div>
-                <h1>Your agents need a quest log.</h1>
-                <p className="hero-lede">
-                  Rallypoint turns your repository into a living campaign:
-                  explicit roles, one quest at a time, independent review, and
-                  a trail every agent can follow.
-                </p>
-                <div className="hero-actions">
-                  <a
-                    className={cn(buttonVariants({ variant: "quest", size: "lg" }))}
-                    href="#install"
-                  >
-                    Install the loop
-                    <ArrowRight />
-                  </a>
-                  <a
-                    className={cn(buttonVariants({ variant: "ghost", size: "lg" }))}
-                    href="#loop"
-                  >
-                    Read the field rules
-                    <ArrowDown />
-                  </a>
-                </div>
-                <CommandCopy command={heroCommand} id="hero-command" />
-                <p className="folio-footnote">
-                  Additive. Conflict-safe. The repository remains the source of truth.
-                </p>
-              </div>
-              <TabletopLoop />
+        <section aria-labelledby="claim-title" className="band band-yellow" id="claim">
+          <div className="band-inner claim-layout">
+            <div className="claim-copy">
+              <h2 id="claim-title">One claim per issue, decided by GitHub.</h2>
+              <p>
+                Assignment is not a lock. Before a worker touches an issue, <code>claim.mjs</code>{" "}
+                creates a reservation ref. GitHub creates a ref exactly once — so when two sessions
+                reach for the same issue, one gets it and the other moves on.
+              </p>
             </div>
-          }
-        />
-      </section>
-
-      <section className="manifesto" id="loop">
-        <div className="section-heading">
-          <p className="section-note">One shared campaign board</p>
-          <h2>Read state. Claim one quest. Earn the merge.</h2>
-        </div>
-        <div className="manifesto-copy">
-          <p>
-            Rallypoint keeps coordination where the work already lives:
-            GitHub issues are the quest log, branches are active expeditions,
-            and pull requests are the gates every change must pass.
-          </p>
-          <div className="oath">
-            <ShieldCheck aria-hidden="true" />
-            <p>
-              No side-channel database. No agent reviews its own work. No
-              worker carries more than one claimed issue.
-            </p>
+            <ClaimRace />
           </div>
-        </div>
-        <div
-          aria-label="The six role handoff shown as an ember trail across the campaign"
-          className="protocol-art"
-          role="img"
-        />
-        <p className="loop-ribbon-hint">
-          Tap a step to see what it does and open the role that owns it.
-        </p>
-        <LoopRibbon />
-      </section>
+        </section>
 
-      <section className="party-section" id="party">
-        <div className="section-heading party-heading">
-          <p className="section-note">Assemble the party</p>
-          <h2>Separate roles. Explicit powers. Fewer collisions.</h2>
-        </div>
-        <RoleParty />
-      </section>
-
-      <section className="install-section" id="install">
-        <div className="section-heading install-heading">
-          <p className="section-note">Drop it into an existing repo</p>
-          <h2>One command installs the whole campaign.</h2>
-          <span>
-            Powered by Rallypoint’s own registry and zero-dependency CLI:
-            source-owned, inspectable, conflict-safe, and easy to remove.
-          </span>
-        </div>
-        <InstallPanel />
-      </section>
-
-      <section className="ownership-section" id="ownership">
-        <div
-          aria-label="A fox archivist opening a repository charter vault filled with role folios, keys, and removable seals"
-          className="ownership-art"
-          role="img"
-        />
-        <div className="ownership-folio">
-          <div className="section-heading">
-            <p className="section-note">No lock-in, no subscription</p>
-            <h2>You own what gets installed.</h2>
+        <section aria-labelledby="labels-title" className="band" id="labels">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="labels-title">Labels are the state machine.</h2>
+              <p>
+                There is no side-channel database. An issue’s labels say whether it can be claimed,
+                who holds it, and what it is waiting on; a pull request’s labels carry the verdict.
+                Every agent reads the same board.
+              </p>
+            </div>
+            <StateLines />
+            <LabelTable />
           </div>
-          <OwnershipBand />
-        </div>
-      </section>
+        </section>
 
-      <section className="proof-section">
-        <div
-          aria-label="The Codewright forge-bastion where a raven smith, badger mason, and owl verifier complete an ember-lit bridge"
-          className="proof-art"
-          role="img"
-        />
-        <div className="proof-folio">
-          <div className="proof-mark" aria-hidden="true">
-            <GitBranch />
+        <section aria-labelledby="roles-title" className="band band-rule" id="roles">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="roles-title">Eight roles. None approves its own work.</h2>
+              <p>
+                Every session adopts exactly one role and works inside its boundary. Each role is one
+                plain file under <code>.rallypoint/roles/</code>, so prompting an agent into it is one
+                sentence.
+              </p>
+            </div>
+            <RoleMatrix />
           </div>
-          <div>
-            <p>Proven in the wild</p>
-            <h2>Extracted from the loop that builds Codewright.</h2>
-          </div>
-          <p>
-            Atomic issue claims, strict role boundaries, one-issue branches,
-            independent review, fixer passes, and stale-state cleanup—distilled
-            into a portable repository protocol.
-          </p>
-          <Link
-            className={cn(
-              buttonVariants({ variant: "parchment", size: "lg" }),
-              "proof-cta",
-            )}
-            href="/docs"
-          >
-            Read the docs
-            <ArrowRight />
-          </Link>
-        </div>
-      </section>
+        </section>
 
-      <footer>
-        <Wordmark className="footer-wordmark" href="#top" />
-        <p>GitHub is the board. Agents are the party.</p>
-      </footer>
-    </main>
+        <section aria-labelledby="proof-title" className="band band-blue" id="proof">
+          <div className="band-inner proof-layout">
+            <div className="proof-copy">
+              <h2 id="proof-title">UTON OS was built through this loop.</h2>
+              <p>
+                A studio booking platform with payments, delivered by agents in Claude Code, Codex and
+                OpenCode with GitHub as the only source of truth: 1,328 pull requests opened and 1,256
+                merged in eight weeks. Payments, credentials and auth stayed on human-only approval
+                paths.
+              </p>
+            </div>
+            <PrTally />
+          </div>
+        </section>
+
+        <section aria-labelledby="install-title" className="band" id="install">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="install-title">Two commands. Then it is your code.</h2>
+              <p>
+                Rallypoint’s zero-dependency CLI reads its own checksummed manifest, refuses
+                conflicting writes, and leaves an existing <code>AGENTS.md</code> untouched.
+              </p>
+            </div>
+            <InstallPanel />
+            <OwnershipBand />
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

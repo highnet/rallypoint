@@ -1,46 +1,35 @@
-import { FileCode, KeyRound, ScrollText, Unplug } from "lucide-react";
-
 const claims = [
   {
-    icon: FileCode,
-    title: "Fully customizable",
+    title: "Plain text, fully yours to edit",
     detail:
       "Every installed file is plain text — roles, config, scripts. Edit it, delete it, rewrite it. There is no proprietary format to work around.",
   },
   {
-    icon: Unplug,
-    title: "You download the starting point",
+    title: "Downloaded once, not rented",
     detail:
-      "“Add loop” writes real files into your repository once. From that moment they're yours to change, not a subscription you keep renting.",
+      "“add loop” writes real files into your repository once. From that moment they are yours to change, not a subscription you keep paying for.",
   },
   {
-    icon: KeyRound,
-    title: "The agents live in your codebase",
+    title: "Runs where your code runs",
     detail:
-      "Every role runs inside your own repository, your own CI, your own credentials. Nothing calls home, because there is no Rallypoint server to call.",
+      "Every role runs inside your repository, your CI, your credentials. Nothing calls home, because there is no Rallypoint server to call.",
   },
   {
-    icon: ScrollText,
-    title: "Ongoing, non-exclusive MIT license",
+    title: "MIT, permanently",
     detail:
-      "What gets installed is MIT-licensed, permanently and non-exclusively. If Rallypoint disappears tomorrow, what's already in your repository keeps working and stays yours.",
+      "What gets installed is MIT-licensed, permanently and non-exclusively. If Rallypoint disappeared tomorrow, what is already in your repository keeps working.",
   },
 ];
 
 export function OwnershipBand() {
   return (
-    <ol className="rule-list ownership-list">
-      {claims.map(({ icon: Icon, title, detail }) => (
-        <li key={title}>
-          <span aria-hidden="true">
-            <Icon />
-          </span>
-          <div>
-            <p className="ownership-title">{title}</p>
-            <p>{detail}</p>
-          </div>
-        </li>
+    <dl className="ownership">
+      {claims.map(({ title, detail }) => (
+        <div key={title}>
+          <dt>{title}</dt>
+          <dd>{detail}</dd>
+        </div>
       ))}
-    </ol>
+    </dl>
   );
 }

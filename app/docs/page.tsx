@@ -1,48 +1,30 @@
-import {
-  ArrowLeft,
-  CircleDot,
-  GitBranch,
-  MessageSquare,
-  ShieldCheck,
-} from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
-import { MobileNav } from "@/components/mobile-nav";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Wordmark } from "@/components/wordmark";
+import { SignalFlag } from "@/components/signal-flag";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import { LabelTable } from "@/components/state-lines";
+import { agents } from "@/lib/agents";
 
-const rolePrompts = [
-  {
-    role: "Orchestrator",
-    prompt:
-      "Read AGENTS.md, then read .rallypoint/roles/orchestrator.md. Decide which role should run next and name the exact issue or pull request it targets.",
-  },
-  {
-    role: "Planner",
-    prompt: "Read AGENTS.md, then read .rallypoint/roles/planner.md and follow it exactly.",
-  },
-  {
-    role: "Worker",
-    prompt: "Read AGENTS.md, then read .rallypoint/roles/worker.md and follow it exactly.",
-  },
-  {
-    role: "Reviewer",
-    prompt: "Read AGENTS.md, then read .rallypoint/roles/reviewer.md and follow it exactly.",
-  },
-  {
-    role: "Tester",
-    prompt: "Read AGENTS.md, then read .rallypoint/roles/tester.md and follow it exactly.",
-  },
-  {
-    role: "Fixer",
-    prompt: "Read AGENTS.md, then read .rallypoint/roles/fixer.md and follow it exactly.",
-  },
-  {
-    role: "Janitor",
-    prompt: "Read AGENTS.md, then read .rallypoint/roles/janitor.md and follow it exactly.",
-  },
-];
+export const metadata: Metadata = {
+  title: "Docs",
+  description:
+    "The Rallypoint protocol: rules, eight role boundaries, labels, installation, and how to prompt each role.",
+};
+
+const orchestratorPrompt =
+  "Read AGENTS.md, then read .rallypoint/roles/orchestrator.md. Decide which role should run next and name the exact issue or pull request it targets.";
+
+const rolePrompts = agents.map((agent) => ({
+  slug: agent.slug,
+  role: agent.name,
+  prompt:
+    agent.slug === "orchestrator"
+      ? orchestratorPrompt
+      : `Read AGENTS.md, then read .rallypoint/roles/${agent.slug}.md and follow it exactly.`,
+}));
 
 const humanPrompts = [
   {
@@ -73,251 +55,192 @@ const humanPrompts = [
 
 const rules = [
   "One issue, one branch, one pull request.",
-  "A worker claims exactly one ready issue before editing code.",
+  "A worker claims exactly one claimable issue before editing code.",
   "A reviewer never approves work produced by the same agent.",
   "The repository and GitHub API are the only coordination state.",
   "Every role has explicit GitHub permissions and explicit prohibitions.",
-  "Failed checks and requested changes stay with the current quest.",
+  "Failed checks and requested changes stay with the current issue.",
+];
+
+const toc = [
+  { href: "#principles", label: "Principles" },
+  { href: "#roles", label: "Role boundaries" },
+  { href: "#labels", label: "Labels" },
+  { href: "#install", label: "Install" },
+  { href: "#prompting", label: "Prompting" },
 ];
 
 export default function DocsPage() {
   return (
-    <main className="docs-page">
-      <header className="site-header docs-header">
-        <Wordmark />
-        <nav aria-label="Documentation navigation">
-          <a href="#principles">Principles</a>
-          <a href="#roles">Roles</a>
-          <a href="#install">Install</a>
-          <a href="#prompting">Prompting</a>
-        </nav>
-        <div className="header-actions">
-          <ThemeToggle />
-          <MobileNav />
-        </div>
-      </header>
-
-      <article className="docs-shell">
-        <div className="docs-hero">
-          <div className="docs-hero-art" aria-hidden="true">
-            <span className="docs-hero-map" />
-            <span className="docs-hero-seal">RP</span>
-          </div>
-          <Link className="back-link" href="/">
-            <ArrowLeft />
-            Back to the campaign table
-          </Link>
-          <p className="docs-kicker">Rallypoint Docs</p>
+    <>
+      <SiteHeader current="/docs" />
+      <main className="docs" id="main">
+        <div className="docs-intro">
           <h1>A repository protocol agents can actually follow.</h1>
-          <p>
-            Rallypoint does not run your models. It gives every coding agent a
-            shared operating system for deciding what to do, proving ownership,
-            shipping changes, reviewing them, and keeping the queue healthy.
+          <p className="lede">
+            Rallypoint does not run your models. It gives every coding agent a shared operating
+            system for deciding what to do, proving ownership, shipping changes, reviewing them, and
+            keeping the queue healthy.
           </p>
         </div>
 
-        <section className="docs-section docs-principles" id="principles">
-          <div className="docs-section-title">
-            <ShieldCheck />
-            <h2>The party oath</h2>
-          </div>
-          <div
-            aria-label="Seven adventurers taking the party oath around a carved campaign table"
-            className="docs-principles-art"
-            role="img"
-          />
-          <ol className="rule-list">
-            {rules.map((rule, index) => (
-              <li key={rule}>
-                <span>{index + 1}</span>
-                <p>{rule}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <div className="docs-layout">
+          <nav aria-label="On this page" className="docs-toc">
+            <p>On this page</p>
+            <ol>
+              {toc.map((item) => (
+                <li key={item.href}>
+                  <a href={item.href}>{item.label}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
 
-        <section className="docs-section docs-roles" id="roles">
-          <div className="docs-section-title">
-            <CircleDot />
-            <h2>Role boundaries</h2>
-          </div>
-          <div
-            aria-label="The role boundary fortress with seven separate work stations connected by guarded handoff paths"
-            className="docs-roles-art"
-            role="img"
-          />
-          <div className="docs-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Role</th>
-                  <th>Claims?</th>
-                  <th>Reviews?</th>
-                  <th>Purpose</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td data-label="Role">Planner</td>
-                  <td data-label="Claims">No</td>
-                  <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">Grooms an ordered, claimable backlog.</td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Worker</td>
-                  <td data-label="Claims">One</td>
-                  <td data-label="Reviews">Never own work</td>
-                  <td data-label="Purpose">
-                    Ships one issue as one pull request.
-                  </td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Reviewer</td>
-                  <td data-label="Claims">No</td>
-                  <td data-label="Reviews">Yes</td>
-                  <td data-label="Purpose">
-                    Grants or withholds the verdict.
-                  </td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Tester</td>
-                  <td data-label="Claims">Filed gap only</td>
-                  <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">
-                    Finds and closes coverage gaps.
-                  </td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Fixer</td>
-                  <td data-label="Claims">No</td>
-                  <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">
-                    Addresses review feedback in place.
-                  </td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Janitor</td>
-                  <td data-label="Claims">No</td>
-                  <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">
-                    Releases stale claims, reservations, and leases.
-                  </td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Merger</td>
-                  <td data-label="Claims">No</td>
-                  <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">
-                    Verifies CI and the verdict, merges, reconciles the claim.
-                  </td>
-                </tr>
-                <tr>
-                  <td data-label="Role">Orchestrator</td>
-                  <td data-label="Claims">No</td>
-                  <td data-label="Reviews">No</td>
-                  <td data-label="Purpose">
-                    Reads state and recommends which roles run next.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="docs-section docs-install" id="install">
-          <div className="docs-section-title">
-            <GitBranch />
-            <h2>Install the campaign pack</h2>
-          </div>
-          <div
-            aria-label="A campaign quartermaster's field kit containing the complete repository pack"
-            className="docs-install-art"
-            role="img"
-          />
-          <p>
-            Rallypoint’s CLI reads its own signed campaign manifest and writes
-            each file to an explicit repository-root path. It stops on
-            conflicts rather than overwriting anything silently. An existing
-            AGENTS.md gets special handling: it’s left untouched, the rest of
-            the loop still installs, and the CLI suggests adding a one-line{" "}
-            <code>@AGENTIC_LOOP.md</code> reference to it.
-          </p>
-          <CommandCopy
-            command="npx rallypoint@latest view loop"
-            id="docs-view"
-          />
-          <CommandCopy
-            command="npx rallypoint@latest add loop"
-            id="docs-install"
-          />
-        </section>
-
-        <section className="docs-section docs-prompting" id="prompting">
-          <div className="docs-section-title">
-            <MessageSquare />
-            <h2>Prompt the party</h2>
-          </div>
-          <div
-            aria-label="The Owl Scriptorium coordinating seven sealed role messages"
-            className="docs-correspondence-art"
-            role="img"
-          />
-          <p>
-            A role is one file, so at minimum, prompting an agent to become
-            that role means pointing a fresh session at{" "}
-            <code>AGENTS.md</code> and exactly one file under{" "}
-            <code>.rallypoint/roles/</code>. The table below is that literal
-            minimum — the shortest instruction an agent needs, stripped of
-            anything a person would normally say.
-          </p>
-          <p>
-            Don’t know what should happen next? Prompt the orchestrator
-            first. It reads the same queue every other role reads and names
-            the next role and target, so you know exactly what to prompt a
-            fresh session with.
-          </p>
-          <div className="docs-table-wrap prompt-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Role</th>
-                  <th>Prompt</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rolePrompts.map(({ role, prompt }) => (
-                  <tr key={role}>
-                    <td data-label="Role">{role}</td>
-                    <td data-label="Prompt">{prompt}</td>
-                  </tr>
+          <article className="docs-body">
+            <section aria-labelledby="principles-title" className="docs-section" id="principles">
+              <h2 id="principles-title">Principles</h2>
+              <ol className="rule-list">
+                {rules.map((rule) => (
+                  <li key={rule}>{rule}</li>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <CommandCopy
-            command="Read AGENTS.md, then read .rallypoint/roles/orchestrator.md. Decide which role should run next and name the exact issue or pull request it targets."
-            id="docs-prompt-orchestrator"
-          />
+              </ol>
+            </section>
 
-          <h3 className="docs-subheading">How a person actually asks</h3>
-          <p>
-            Nobody talks like the table above. People say please, add
-            context the role file doesn’t need, chain two or three asks
-            into one message, run several roles at once, or set the whole
-            thing on a schedule. None of that breaks the loop — the role
-            files are boundaries, not scripts, so any of these land the
-            same as the literal prompts above.
-          </p>
-          <ul className="prompt-examples">
-            {humanPrompts.map(({ label, prompt }) => (
-              <li className="prompt-example" key={label}>
-                <p className="prompt-label">{label}</p>
-                <p className="prompt-text">“{prompt}”</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </article>
-    </main>
+            <section aria-labelledby="roles-title" className="docs-section" id="roles">
+              <h2 id="roles-title">Role boundaries</h2>
+              <p>
+                Every session adopts exactly one role. The orchestrator decides which role a new
+                session should adopt by reading repository state; every other role then works within
+                its own boundary alone.
+              </p>
+              <div className="table-wrap">
+                <table className="code-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Role</th>
+                      <th scope="col">Claims?</th>
+                      <th scope="col">Reviews?</th>
+                      <th scope="col">Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {agents.map((agent) => (
+                      <tr key={agent.slug}>
+                        <th scope="row">
+                          <Link className="role-cell" href={`/agents/${agent.slug}`}>
+                            <SignalFlag className="role-flag" signal={agent.slug} />
+                            <span>{agent.name}</span>
+                          </Link>
+                        </th>
+                        <td data-label="Claims">{agent.claims}</td>
+                        <td data-label="Reviews">{agent.reviews}</td>
+                        <td data-label="Purpose">{agent.responsibility}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section aria-labelledby="labels-title" className="docs-section" id="labels">
+              <h2 id="labels-title">Labels</h2>
+              <p>
+                Labels are state, and their names are configurable in{" "}
+                <code>.rallypoint/config.json</code>. An open issue is claimable unless something holds
+                it back: no assignee and none of <code>status:claimed</code>,{" "}
+                <code>status:blocked</code>, <code>status:deferred</code> or <code>needs:human</code>.
+                There is no readiness label.
+              </p>
+              <LabelTable />
+            </section>
+
+            <section aria-labelledby="install-title" className="docs-section" id="install">
+              <h2 id="install-title">Install</h2>
+              <p>
+                Rallypoint’s CLI reads its own checksummed manifest and writes each file to an
+                explicit repository-root path. It stops on conflicts rather than overwriting anything
+                silently. An existing <code>AGENTS.md</code> gets special handling: it is left
+                untouched, the rest of the loop still installs, and the CLI suggests adding a one-line{" "}
+                <code>@AGENTIC_LOOP.md</code> reference to it.
+              </p>
+              <div className="docs-commands">
+                <CommandCopy command="npx rallypoint@latest view loop" id="docs-view" />
+                <CommandCopy command="npx rallypoint@latest add loop" id="docs-install" label="install command" />
+                <CommandCopy command="npx rallypoint@latest init" id="docs-init" label="init command" />
+              </div>
+              <p>
+                <code>init</code> requires the GitHub CLI, installed and authenticated. It syncs the
+                configured integration branch to the repository’s default branch, creates the labels
+                the loop reads and writes, and reports — without changing — whether the default branch
+                has protection rules.
+              </p>
+            </section>
+
+            <section aria-labelledby="prompting-title" className="docs-section" id="prompting">
+              <h2 id="prompting-title">Prompting</h2>
+              <p>
+                A role is one file, so at minimum, prompting an agent to become that role means
+                pointing a fresh session at <code>AGENTS.md</code> and exactly one file under{" "}
+                <code>.rallypoint/roles/</code>. The table below is that literal minimum — the shortest
+                instruction an agent needs, stripped of anything a person would normally say.
+              </p>
+              <p>
+                Don’t know what should happen next? Prompt the orchestrator first. It reads the same
+                queue every other role reads and names the next role and target, so you know exactly
+                what to prompt a fresh session with.
+              </p>
+              <CommandCopy
+                command={orchestratorPrompt}
+                id="docs-prompt-orchestrator"
+                label="orchestrator prompt"
+                shell={false}
+              />
+              <div className="table-wrap">
+                <table className="code-table prompt-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Role</th>
+                      <th scope="col">Prompt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rolePrompts.map(({ slug, role, prompt }) => (
+                      <tr key={role}>
+                        <th scope="row">
+                          <span className="role-cell">
+                            <SignalFlag className="role-flag" signal={slug} />
+                            <span>{role}</span>
+                          </span>
+                        </th>
+                        <td data-label="Prompt">
+                          <code>{prompt}</code>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <h3>How a person actually asks</h3>
+              <p>
+                Nobody talks like the table above. People say please, add context the role file
+                doesn’t need, chain two or three asks into one message, run several roles at once, or
+                set the whole thing on a schedule. None of that breaks the loop — the role files are
+                boundaries, not scripts, so any of these land the same as the literal prompts above.
+              </p>
+              <ul className="prompt-examples">
+                {humanPrompts.map(({ label, prompt }) => (
+                  <li key={label}>
+                    <p className="prompt-label">{label}</p>
+                    <blockquote>{prompt}</blockquote>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </article>
+        </div>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

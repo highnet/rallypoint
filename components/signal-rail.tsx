@@ -10,7 +10,7 @@ import {
   Pause,
   Play,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { LabelChip } from "@/components/label-chip";
 import { SignalFlag } from "@/components/signal-flag";
@@ -26,6 +26,16 @@ function subscribeReduce(onChange: () => void) {
   query.addEventListener("change", onChange);
   return () => query.removeEventListener("change", onChange);
 }
+
+// Clicks on the controls before React hydrates have no handler and would be
+// lost — on a phone that window is seconds long, the visitor's Next does
+// nothing and autoplay then starts as if they had never touched it. This runs
+// as the HTML parses, queues those clicks (with the play state the visitor
+// asked for), and SignalRail replays them once it is live.
+const EARLY_INPUT = `(function(){var r=document.currentScript.parentNode,q=window.__railQueue=[];r.addEventListener("click",function(e){if(window.__railLive)return;var b=e.target.closest("[data-rail-control]");if(!b)return;q.push({el:b,want:b.getAttribute("aria-pressed")!=="true"});},true);})();`;
+
+type QueuedInput = { el: HTMLElement; want: boolean };
+type RailWindow = Window & { __railQueue?: QueuedInput[]; __railLive?: boolean };
 
 function roleName(slug: Station["holder"]) {
   return agents.find((agent) => agent.slug === slug)?.name ?? slug;
@@ -64,6 +74,23 @@ export function SignalRail() {
     return () => window.clearTimeout(timer);
   }, [active, playing, inView]);
 
+  // Layout effect: it runs in the hydration commit itself, so no click can be
+  // both handled by React and queued by the early script.
+  useLayoutEffect(() => {
+    const railWindow = window as RailWindow;
+    railWindow.__railLive = true;
+    const queue = railWindow.__railQueue ?? [];
+    railWindow.__railQueue = [];
+    // One task per click so each replay sees the step the previous one set.
+    const timers = queue.map(({ el, want }) =>
+      window.setTimeout(() => {
+        const isToggle = el.hasAttribute("aria-pressed");
+        if (!isToggle || (el.getAttribute("aria-pressed") === "true") !== want) el.click();
+      }, 0),
+    );
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, []);
+
   const go = useCallback((index: number) => {
     setChoice(false);
     setActive((index + stations.length) % stations.length);
@@ -71,6 +98,7 @@ export function SignalRail() {
 
   return (
     <section aria-labelledby="rail-title" className="rail" id="loop" ref={rootRef}>
+      <script dangerouslySetInnerHTML={{ __html: EARLY_INPUT }} suppressHydrationWarning />
       <div className="rail-head">
         <h2 className="rail-title" id="rail-title">
           <span className="rail-title-number">#{runIssue.number}</span> {runIssue.title}
@@ -79,6 +107,7 @@ export function SignalRail() {
         <div className="rail-controls" role="group" aria-label="Step through the run">
           <button
             aria-label="Previous step"
+            data-rail-control=""
             className="btn btn-icon btn-secondary"
             onClick={() => go(active - 1)}
             type="button"
@@ -87,6 +116,7 @@ export function SignalRail() {
           </button>
           <button
             aria-label={playing ? "Pause the run" : "Play the run"}
+            data-rail-control=""
             aria-pressed={playing}
             className="btn btn-icon btn-secondary"
             onClick={() => setChoice(!playing)}
@@ -96,6 +126,7 @@ export function SignalRail() {
           </button>
           <button
             aria-label="Next step"
+            data-rail-control=""
             className="btn btn-icon btn-secondary"
             onClick={() => go(active + 1)}
             type="button"
@@ -115,6 +146,7 @@ export function SignalRail() {
             >
               <button
                 aria-current={index === active ? "step" : undefined}
+                data-rail-control=""
                 className="station-button"
                 onClick={() => go(index)}
                 type="button"

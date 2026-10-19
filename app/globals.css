@@ -662,6 +662,7 @@ svg {
   letter-spacing: -0.035em;
   line-height: 0.92;
   max-width: 9.5em;
+  word-spacing: 0.08em;
 }
 
 .hero-side {
@@ -2269,6 +2270,7 @@ a.role-cell:hover span {
   font-stretch: 78%;
   letter-spacing: -0.035em;
   line-height: 0.9;
+  word-spacing: 0.08em;
 }
 
 .contract-spec {

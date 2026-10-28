@@ -99,6 +99,7 @@ within its own boundary alone.
 | Fixer | No | No | Addresses review feedback on an existing pull request branch. |
 | Janitor | No | No | Repairs GitHub coordination state: stale claims, orphaned refs, leases. |
 | Merger | No | No | Verifies CI and the verdict, merges, and reconciles the claim. |
+| Improver | Its own filed change | Never own work | Proposes one measured change to a tunable role prompt, then keeps or reverts it on the evidence. |
 
 ## Atomic claims
 
@@ -301,6 +302,93 @@ node .rallypoint/scripts/delete-merged-branch.mjs --pr <N>
 Use this rather than `gh pr merge --delete-branch`, which couples the local and
 remote deletes, attempts the local one first, and abandons the remote delete
 when the authoring worktree is still checked out on the branch.
+
+## Self-improvement
+
+The role prompts are the loop's only tunable part, and until now they were
+tuned by hand, from whatever incident an operator happened to notice. The
+improver role closes that loop on evidence the loop already records: merged
+and closed pull requests, and the verdicts `review.mjs` wrote on them.
+
+```bash
+node .rallypoint/scripts/improvement.mjs retro [--days <n>] [--json]
+node .rallypoint/scripts/improvement.mjs status
+node .rallypoint/scripts/improvement.mjs check --pr <N>
+node .rallypoint/scripts/improvement.mjs evaluate --pr <N> [--record --agent-id <id>]
+```
+
+The cycle is one change at a time:
+
+```text
+retro → one issue → one prompt change, labelled loop:improvement
+  → independent review → check → merge
+  → evaluationSample measured pull requests later: evaluate
+  → kept, or a revert carrying Reverts-Improvement: #N
+```
+
+### What is measured
+
+Only agent pull requests are measured — heads under `branchPrefix`, excluding
+improvements themselves, so the loop never grades its own tuning as delivery.
+
+| Metric | Better | Meaning |
+| --- | --- | --- |
+| `firstPassApprovalRate` | up | Merged pull requests that never drew a request-changes verdict |
+| `meanReviewRounds` | down | Request-changes verdicts per merged pull request |
+| `abandonRate` | down | Closed pull requests that closed without merging |
+| `escalationRate` | down | Closed pull requests carrying `needs:human` |
+| `medianHoursToMerge` | down | Hours from opening to merge |
+| `mergedUnreviewedRate` | down | Merged pull requests labelled `merged:unreviewed` |
+
+`retro` also lists the request-changes notes that recurred across two or more
+pull requests. A note reviewers keep writing is usually a rule the authoring
+role's prompt does not state yet, which makes it the clearest thing to fix.
+
+### The guardrails are code, not the improver's judgement
+
+- **A proposal names its own audit.** The pull request body opens a line with a
+  `rallypoint-improvement` block naming the `metric` it should move and a
+  different `counter-metric` it could harm. `check` refuses a body without one.
+- **Frozen paths need a person.** Every script, the config, `AGENTIC_LOOP.md`,
+  `AGENTS.md`, this document, `.github/`, and the reviewer, merger and improver
+  prompts are frozen whatever `improvement.tunablePaths` says, and frozen wins
+  over tunable. An optimiser that can edit its own judge improves the score,
+  not the work. `check` exits `3` on any such path.
+- **One change at a time.** `check` exits `4` while the previous improvement is
+  still being measured, due for evaluation, or evaluated as not kept and still
+  unreverted. Two changes in flight cannot be told apart.
+- **Equal samples, by count.** `evaluate` compares the `evaluationSample`
+  measured pull requests that closed last before the change merged with the
+  first that many after it, stopping at the next improvement's merge. Counting
+  pull requests rather than days keeps a quiet week from being compared with a
+  busy one.
+- **Kept means better, with nothing broken.** The target must move in its
+  better direction; the counter-metric may not worsen by more than
+  `counterTolerance` (relative); `mergedUnreviewedRate` may not rise at all.
+  "Same" is not kept — a change that buys nothing is only more prompt.
+- **Unreadable is never empty.** Any history that cannot be read fully exits
+  `5` and decides nothing.
+
+The result is recorded on the improvement pull request as a comment opening
+with a `rallypoint-evaluation` block, which is how `status` and `check` know
+the change has been judged. Like verdicts, it is written by an agent identity
+and is only as trustworthy as that identity; an owner overrules it by
+reverting or restoring the change by hand.
+
+| Code | `status` | `check` | `evaluate` |
+| --- | --- | --- | --- |
+| `0` | Ready to propose | Valid and tunable | Kept |
+| `1` | Usage | Usage | Usage, or not a merged improvement |
+| `2` | Evaluation or revert due | Invalid improvement block | Not kept: revert it |
+| `3` | Still measuring | Touches a frozen or untunable path | Inconclusive |
+| `4` | Improvement already open | An earlier change is still pending | — |
+| `5` | Unknown | Unknown | Unknown |
+
+The numbers are a gate, not a proof: ten pull requests is a small sample, and
+the evaluation says only that the loop did measurably better or did not. What
+"better" means — which metrics matter, and the tolerances — stays with the
+repository's owners, in `.rallypoint/config.json`, which the improver cannot
+edit.
 
 ## Two-tier repositories
 

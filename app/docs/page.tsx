@@ -11,7 +11,7 @@ import { agents } from "@/lib/agents";
 export const metadata: Metadata = {
   title: "Docs",
   description:
-    "The Rallypoint protocol: rules, eight role boundaries, labels, installation, and how to prompt each role.",
+    "The Rallypoint protocol: rules, nine role boundaries, labels, installation, and how to prompt each role.",
 };
 
 const orchestratorPrompt =

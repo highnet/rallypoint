@@ -4,8 +4,8 @@
   "items": [
     {
       "name": "loop",
-      "version": "0.4.0",
-      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, and an orchestrator that dispatches them.",
+      "version": "0.5.0",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, an improver that tunes the loop on measured results, and an orchestrator that dispatches them.",
       "files": [
         {
           "source": "LICENSE",
@@ -60,6 +60,10 @@
           "target": ".rallypoint/roles/orchestrator.md"
         },
         {
+          "source": ".rallypoint/roles/improver.md",
+          "target": ".rallypoint/roles/improver.md"
+        },
+        {
           "source": ".rallypoint/scripts/carry-forward.mjs",
           "target": ".rallypoint/scripts/carry-forward.mjs",
           "executable": true
@@ -92,6 +96,11 @@
         {
           "source": ".rallypoint/scripts/freshness.mjs",
           "target": ".rallypoint/scripts/freshness.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/improvement.mjs",
+          "target": ".rallypoint/scripts/improvement.mjs",
           "executable": true
         },
         {
@@ -151,6 +160,10 @@
         {
           "source": ".rallypoint/scripts/lib/gh.mjs",
           "target": ".rallypoint/scripts/lib/gh.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/improvement.mjs",
+          "target": ".rallypoint/scripts/lib/improvement.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/git.mjs",

@@ -4,9 +4,9 @@
   "items": [
     {
       "name": "loop",
-      "version": "0.4.0",
-      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, and an orchestrator that dispatches them.",
-      "fileCount": 52
+      "version": "0.5.0",
+      "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, an improver that tunes the loop on measured results, and an orchestrator that dispatches them.",
+      "fileCount": 55
     }
   ]
 }

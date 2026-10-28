@@ -33,7 +33,7 @@ export default function Home() {
                   </h1>
                   <div className="hero-side">
                     <p className="lede">
-                      Rallypoint installs eight roles, a label state machine and an atomic claim into
+                      Rallypoint installs nine roles, a label state machine and an atomic claim into
                       your repository. Agents never message each other: they read and write issues,
                       branches, labels and pull requests — and no agent approves its own work.
                     </p>
@@ -84,7 +84,7 @@ export default function Home() {
         <section aria-labelledby="roles-title" className="band band-rule" id="roles">
           <div className="band-inner">
             <div className="section-head">
-              <h2 id="roles-title">Eight roles. None approves its own work.</h2>
+              <h2 id="roles-title">Nine roles. None approves its own work.</h2>
               <p>
                 Every session adopts exactly one role and works inside its boundary. Each role is one
                 plain file under <code>.rallypoint/roles/</code>, so prompting an agent into it is one

@@ -14,7 +14,7 @@ Developers and technical leads coordinating several coding agents through GitHub
 
 ## Product Purpose
 
-Rallypoint installs a complete, agent-agnostic operating protocol into an existing repository: eight roles (orchestrator, planner, worker, reviewer, tester, fixer, janitor, merger), atomic issue claiming through a reservation ref, labels as a state machine, branch and pull-request rules, independent review bound to a head SHA, maintenance routines, and ready-to-run prompts. MIT-licensed; nothing calls home.
+Rallypoint installs a complete, agent-agnostic operating protocol into an existing repository: nine roles (orchestrator, planner, worker, reviewer, tester, fixer, janitor, merger, improver), atomic issue claiming through a reservation ref, labels as a state machine, branch and pull-request rules, independent review bound to a head SHA, maintenance routines, and ready-to-run prompts. MIT-licensed; nothing calls home.
 
 ## Positioning
 

@@ -3,10 +3,13 @@
 A portable, GitHub-native operating protocol for coordinating coding agents.
 
 Rallypoint turns a repository into the shared coordination surface for planners,
-workers, reviewers, testers, fixers, janitors, and an orchestrator that dispatches
-them. It adds explicit role prompts, an atomic issue-claim protocol, branch and
-pull-request rules, and stale-state cleanup without requiring a backend or
-agent-specific runtime.
+workers, reviewers, testers, fixers, janitors, an improver, and an orchestrator
+that dispatches them. It adds explicit role prompts, an atomic issue-claim
+protocol, branch and pull-request rules, and stale-state cleanup without
+requiring a backend or agent-specific runtime. The improver closes the loop on
+the protocol itself: it measures how delivery went, proposes one change to one
+role prompt, and keeps or reverts it on equal before/after samples, with the
+reviewer's and merger's prompts and every script frozen to it.
 
 ## Install
 

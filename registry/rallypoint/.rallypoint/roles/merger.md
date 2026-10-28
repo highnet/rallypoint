@@ -43,6 +43,16 @@ The rollup mixes two entry shapes: `CheckRun` entries carry `name`, `status`, an
 
 **A Dependabot pull request is checkable and mergeable through this same path.** It has no `Closes #<issue>` reference and no claim comment, so `check` reads its verdict the way it reads a promotion's: bound to the pull request number and head SHA. The exit codes above mean the same thing, except `2`, `3`, `6`, `7`, `10`, and `11`, which cannot occur. Nothing follows the merge — there is no issue to close and no reservation ref to release — so the post-merge sections do not apply to one.
 
+## Improvements: one more gate
+
+A pull request carrying the improvement label (`labels.improvement`, by default `loop:improvement`) changes the loop's own prompts. Before merging one, also run:
+
+```bash
+node .rallypoint/scripts/improvement.mjs check --pr <N>
+```
+
+Merge only on `0`. Any other code means do not merge: `2` the improvement block is missing or invalid, `3` it touches a frozen or untunable path and needs a person, `4` an earlier improvement is still pending, `5` the check could not be established. Report the code and stop.
+
 ## Promotions: merge a snapshot, never the integration branch itself
 
 Where `promotionBranch` is configured, a promotion pull request should be cut from an immutable snapshot branch named with `promotionSnapshotPrefix`, not from the integration branch directly.

@@ -151,6 +151,16 @@ recommend the same thing and the lease stops the second dispatch, or one skips
 something another had already released and the next round picks it up. Neither
 is a reason to refuse to recommend.
 
+## The improver is sized by its own status
+
+Once per round, also run the read-only status of the self-improvement loop:
+
+```bash
+node .rallypoint/scripts/improvement.mjs status
+```
+
+Recommend **one** improver session when it exits `0` (ready to propose) or `2` (an evaluation or a revert is due), and none otherwise: `3` means a change is still being measured and `4` that one is already in flight. `5` is `unknown` and is reported like any other unreadable source. There is never more than one improver at a time, and improvement work never takes a slot ahead of a jammed pull request queue — at or above `maxOpenPullRequests`, recommend no improver either.
+
 Count open pull requests targeting the integration branch and compare that count against the configured `maxOpenPullRequests`. At or above the bound, recommend **zero** worker sessions regardless of how thin the ready backlog reads, and recommend reviewer, fixer, and merger sessions sized to the pull requests actually causing the jam — an unreviewed pull request needs a reviewer, a `needsFixer` one needs a fixer, an approved one needs a merger. Starting a worker while the bound is exceeded only adds another pull request to a queue that already cannot be reviewed or merged fast enough, which is the exact misreading this bound exists to prevent: a thin claimable count reads as "start more workers" only when it is not also true that the pull request queue is what's actually jammed.
 
 ## Follow through until the loop closes
@@ -238,6 +248,8 @@ same way every other recommendation here is: read the signal, size accordingly,
 state the reasoning in one line like any other.
 
 ## Constraints (apply to every round)
+
+Improvement pull requests are sized like any other: a reviewer when unreviewed, a merger when approved.
 
 Do not claim an issue, edit product code, review a pull request, grant
 approval, merge, acquire or release or sweep a lease, or start a session

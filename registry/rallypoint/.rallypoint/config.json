@@ -15,6 +15,13 @@
     "human": "needs:human",
     "approved": "review:approved",
     "changesRequested": "status:changes-requested",
-    "mergedUnreviewed": "merged:unreviewed"
+    "mergedUnreviewed": "merged:unreviewed",
+    "improvement": "loop:improvement"
+  },
+  "improvement": {
+    "tunablePaths": [".rallypoint/roles/"],
+    "evaluationSample": 10,
+    "windowDays": 14,
+    "counterTolerance": 0.1
   }
 }

@@ -22,7 +22,7 @@ const martianMono = Martian_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rallypoint.tools";
 const title = "Rallypoint — Coordinate coding agents with nothing but GitHub";
 const description =
-  "An MIT-licensed, agent-agnostic protocol: eight roles, labels as a state machine, atomic issue claims, and independent review — installed into your repository with one command.";
+  "An MIT-licensed, agent-agnostic protocol: nine roles, labels as a state machine, atomic issue claims, and independent review — installed into your repository with one command.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

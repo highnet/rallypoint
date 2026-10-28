@@ -20,7 +20,7 @@ Rallypoint installs a complete, agent-agnostic operating protocol into an existi
 
 Agents never talk to each other. They read and write the same public signals — issues, branches, labels, pull requests — so the repository itself is the coordinator, and every handoff is auditable after the fact.
 
-Rallypoint is a self-improving graph: roles are the nodes, labels the edges, GitHub the shared state, and the improver role tunes the role prompts one measured change at a time — kept or reverted on equal before/after samples, with scripts, config and the reviewer's, merger's and improver's prompts frozen to it. This is the fourth rung of agentic delivery (agents → loops → graphs → self-improving systems).
+Rallypoint is a self-improving graph: roles are the nodes, labels the edges, GitHub the shared state, and the improver role tunes the role prompts one measured change at a time — kept or reverted on equal before/after samples, with scripts, config and the reviewer's, merger's and improver's prompts frozen to it. This is the sixth and top rung of agentic delivery (chat → autocomplete → agents in pilot → loops → graphs → self-improving systems).
 
 ## Conversion & proof
 

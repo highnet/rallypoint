@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.4.0...rallypoint-v0.5.0) (2026-10-28)
+
+
+### Features
+
+* add an improver role that tunes the loop on measured results ([1558e96](https://github.com/highnet/rallypoint/commit/1558e9626672d57cf3f9a17c0b14d52476ae9abe))
+* make Rallypoint a self-improving graph with an improver role ([c8b22d8](https://github.com/highnet/rallypoint/commit/c8b22d848a9f70904973fcee3517340ea567b33b))
+
 ## [0.4.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.3.0...rallypoint-v0.4.0) (2026-08-11)
 
 

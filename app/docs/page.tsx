@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
+import { ImprovementCycle } from "@/components/improvement-cycle";
 import { SignalFlag } from "@/components/signal-flag";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -11,7 +12,7 @@ import { agents } from "@/lib/agents";
 export const metadata: Metadata = {
   title: "Docs",
   description:
-    "The Rallypoint protocol: rules, nine role boundaries, labels, installation, and how to prompt each role.",
+    "The Rallypoint protocol: rules, nine role boundaries, labels, self-improvement, installation, and how to prompt each role.",
 };
 
 const orchestratorPrompt =
@@ -60,12 +61,14 @@ const rules = [
   "The repository and GitHub API are the only coordination state.",
   "Every role has explicit GitHub permissions and explicit prohibitions.",
   "Failed checks and requested changes stay with the current issue.",
+  "The loop changes its own prompts one measured change at a time, and never its own judge.",
 ];
 
 const toc = [
   { href: "#principles", label: "Principles" },
   { href: "#roles", label: "Role boundaries" },
   { href: "#labels", label: "Labels" },
+  { href: "#self-improvement", label: "Self-improvement" },
   { href: "#install", label: "Install" },
   { href: "#prompting", label: "Prompting" },
 ];
@@ -152,6 +155,24 @@ export default function DocsPage() {
                 There is no readiness label.
               </p>
               <LabelTable />
+            </section>
+
+            <section
+              aria-labelledby="self-improvement-title"
+              className="docs-section"
+              id="self-improvement"
+            >
+              <h2 id="self-improvement-title">Self-improvement</h2>
+              <p>
+                Rallypoint is a self-improving graph. The improver reads the loop’s own history,
+                proposes one change to one role prompt labelled <code>loop:improvement</code>, and
+                keeps it only when <code>improvement.mjs evaluate</code> finds the named metric improved
+                over equal samples before and after the merge, with the named counter-metric and
+                unreviewed merges no worse. Scripts, <code>.rallypoint/config.json</code>, the protocol
+                documents and the reviewer’s, merger’s and improver’s prompts are frozen to it; what
+                “better” means stays with the repository’s owners.
+              </p>
+              <ImprovementCycle />
             </section>
 
             <section aria-labelledby="install-title" className="docs-section" id="install">

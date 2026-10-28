@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AudienceFork, AudienceSwitch } from "@/components/audience-fork";
 import { ClaimRace } from "@/components/claim-race";
 import { CommandCopy } from "@/components/command-copy";
+import { ImprovementCycle } from "@/components/improvement-cycle";
 import { InstallPanel } from "@/components/install-panel";
 import { OwnershipBand } from "@/components/ownership-band";
 import { PrTally } from "@/components/pr-tally";
@@ -33,9 +34,11 @@ export default function Home() {
                   </h1>
                   <div className="hero-side">
                     <p className="lede">
-                      Rallypoint installs nine roles, a label state machine and an atomic claim into
-                      your repository. Agents never message each other: they read and write issues,
-                      branches, labels and pull requests — and no agent approves its own work.
+                      Rallypoint installs a self-improving graph of agents into your repository: nine
+                      roles, a label state machine and an atomic claim. Agents never message each
+                      other: they read and write issues, branches, labels and pull requests — no
+                      agent approves its own work, and the loop tunes its own prompts on measured
+                      results.
                     </p>
                     <CommandCopy command={heroCommand} id="hero-command" label="install command" />
                     <p className="hero-links">
@@ -92,6 +95,22 @@ export default function Home() {
               </p>
             </div>
             <RoleMatrix />
+          </div>
+        </section>
+
+        <section aria-labelledby="improve-title" className="band band-rule" id="improve">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="improve-title">A graph that improves itself, and cannot grade itself.</h2>
+              <p>
+                Roles are the nodes, labels are the edges, and GitHub holds the state. The improver
+                closes the last loop: it measures how delivery went, changes one role prompt, and
+                keeps the change only if the numbers say so. Scripts, config and the reviewer’s and
+                merger’s prompts are frozen to it — an optimiser that can edit its own judge improves
+                the score, not the work.
+              </p>
+            </div>
+            <ImprovementCycle />
           </div>
         </section>
 

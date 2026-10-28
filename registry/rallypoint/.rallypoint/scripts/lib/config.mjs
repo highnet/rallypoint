@@ -1,4 +1,6 @@
 // Validation for `.rallypoint/config.json`.
+
+import { validateImprovement } from "./improvement.mjs";
 //
 // The reservation ref is the only mutual exclusion primitive the loop has when
 // several agent sessions share one GitHub identity, and its name comes entirely
@@ -209,6 +211,14 @@ export const validateConfig = (config) => {
       }
     }
   }
+
+  // Optional, like the promotion keys: a config written before the
+  // self-improvement layer existed keeps working on its defaults.
+  problems.push(
+    ...validateImprovement(
+      /** @type {Record<string, unknown>} */ (config).improvement,
+    ),
+  );
 
   return problems.length === 0 ? { ok: true } : { ok: false, problems };
 };

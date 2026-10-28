@@ -1,5 +1,5 @@
 /**
- * The eight roles, in the order docs/AGENT_LOOP.md lists them. Every field is
+ * The nine roles, in the order docs/AGENT_LOOP.md lists them. Every field is
  * protocol fact taken from the installed role files; the homepage matrix, the
  * docs table and the /agents/[slug] contracts all read from here.
  */
@@ -16,7 +16,7 @@ export const agents = [
     yield: "Sized recommendation",
     does: [
       "Reads the claimable pool, open claims, and pull-request state across the repository.",
-      "Decides which role — planner, worker, reviewer, tester, fixer, merger, or janitor — should run next.",
+      "Decides which role — planner, worker, reviewer, tester, fixer, merger, janitor, or improver — should run next.",
       "Recommends how many sessions of each role to start, then stops for an operator to confirm.",
     ],
     never: ["Claims an issue itself", "Edits product code or reviews a diff", "Starts a session on its own authority"],
@@ -147,6 +147,24 @@ export const agents = [
     ],
     never: ["Claims work", "Reviews or approves", "Merges on a stale or unread check"],
     handoff: "Merged work, a closed or deliberately open issue, and no reservation left standing.",
+  },
+  {
+    slug: "improver",
+    name: "Improver",
+    summary: "Tunes the loop's own prompts, one measured change at a time.",
+    claims: "Its own filed change",
+    reviews: "Never own work",
+    responsibility: "Proposes one measured change to a tunable role prompt, then keeps or reverts it on the evidence.",
+    capacity: "One change in flight",
+    authority: "Propose",
+    yield: "Kept or reverted change",
+    does: [
+      "Reads the loop's own history: review rounds, abandoned work, escalations, and the notes reviewers keep repeating.",
+      "Proposes one small change to one tunable role prompt, naming the metric it should move and the one it could harm.",
+      "Evaluates the change against equal samples before and after it merged, and reverts it when it did not help.",
+    ],
+    never: ["Edits the reviewer's, merger's, or its own prompt", "Touches scripts or config", "Grades or merges its own change"],
+    handoff: "A recorded verdict on the last change — kept, or reverted by an ordinary pull request.",
   },
 ] as const;
 

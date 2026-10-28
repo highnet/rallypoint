@@ -12,7 +12,7 @@ export function RoleMatrix() {
     <div className="table-wrap">
       <table className="code-table role-matrix">
         <caption className="sr-only">
-          The eight Rallypoint roles, whether each claims issues or reviews, and what it is responsible for
+          The nine Rallypoint roles, whether each claims issues or reviews, and what it is responsible for
         </caption>
         <thead>
           <tr>

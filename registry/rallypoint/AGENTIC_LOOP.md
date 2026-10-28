@@ -22,6 +22,7 @@ This repository coordinates humans and coding agents exclusively through GitHub 
 - No secrets, credentials, tokens, or local environment files in commits.
 - Keep the repository green. The worker owns failures introduced by its pull request.
 - Only the top-level agent mutates GitHub; subagents may research and verify inside the same claimed issue.
+- The loop may improve its own role prompts only through the improver role: one change at a time, gated by `node .rallypoint/scripts/improvement.mjs check`, and kept or reverted by `improvement.mjs evaluate`. Scripts, config, protocol documents, and the reviewer, merger and improver prompts are frozen to it.
 
 ## Delivery
 

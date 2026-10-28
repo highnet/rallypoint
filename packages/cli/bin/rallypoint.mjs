@@ -218,6 +218,7 @@ function requiredLabels(labels) {
     { name: labels.blocked, color: "d93f0b", description: "Cannot proceed" },
     { name: labels.human, color: "5319e7", description: "Requires an owner decision or protected action" },
     { name: labels.approved, color: "0e8a16", description: "Reviewer verdict on a pull request" },
+    { name: labels.improvement ?? "loop:improvement", color: "c5def5", description: "A measured change to the loop's own prompts" },
     { name: "prio:p0", color: "b60205", description: "Priority: highest" },
     { name: "prio:p1", color: "d93f0b", description: "Priority: high" },
     { name: "prio:p2", color: "fbca04", description: "Priority: normal" },

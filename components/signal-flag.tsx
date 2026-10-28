@@ -66,6 +66,13 @@ const fields: Record<SignalId, React.ReactNode> = {
       <path className="sf-w" d="M9.5 0h5v24h-5zM0 9.5h24v5H0z" />
     </>
   ),
+  // A rising chevron: the loop climbing on its own measured results.
+  improver: (
+    <>
+      <rect className="sf-w" height="24" width="24" />
+      <path className="sf-b" d="M0 24L12 6l12 18h-6.5L12 15.5 6.5 24z" />
+    </>
+  ),
   // Four fields meeting at one point: the Rallypoint mark.
   rallypoint: (
     <>

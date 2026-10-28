@@ -8,6 +8,7 @@ export const siteLinks = [
   { href: "/#loop", label: "The loop" },
   { href: "/#labels", label: "Labels" },
   { href: "/#roles", label: "Roles" },
+  { href: "/#improve", label: "Self-improving" },
   { href: "/#install", label: "Install" },
   { href: "/docs", label: "Docs" },
 ];

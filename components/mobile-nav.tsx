@@ -3,6 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type MobileNavProps = {
   links: { href: string; label: string }[];
@@ -53,37 +54,39 @@ export function MobileNav({ links }: MobileNavProps) {
       >
         <Menu aria-hidden="true" />
       </button>
-      {open && (
-        <div className="mobile-nav-layer">
-          <button
-            aria-hidden="true"
-            className="mobile-nav-backdrop"
-            onClick={() => setOpen(false)}
-            tabIndex={-1}
-            type="button"
-          />
-          <nav aria-label="Mobile" className="mobile-nav-sheet">
+      {open &&
+        createPortal(
+          <div className="mobile-nav-layer">
             <button
-              aria-label="Close navigation"
-              className="btn btn-icon btn-quiet mobile-nav-close"
+              aria-hidden="true"
+              className="mobile-nav-backdrop"
               onClick={() => setOpen(false)}
-              ref={closeRef}
+              tabIndex={-1}
               type="button"
-            >
-              <X aria-hidden="true" />
-            </button>
-            <ul>
-              {links.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} onClick={() => setOpen(false)}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-      )}
+            />
+            <nav aria-label="Mobile" className="mobile-nav-sheet">
+              <button
+                aria-label="Close navigation"
+                className="btn btn-icon btn-quiet mobile-nav-close"
+                onClick={() => setOpen(false)}
+                ref={closeRef}
+                type="button"
+              >
+                <X aria-hidden="true" />
+              </button>
+              <ul>
+                {links.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} onClick={() => setOpen(false)}>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

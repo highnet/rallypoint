@@ -61,3 +61,44 @@ jobs:
       - name: Publish to npm
         working-directory: packages/cli
         run: npm publish
+
+  # Installs the version just published, from npm, the way users do, and
+  # drives add loop → init → add swarm → swarm doctor → swarm plan --dry-run
+  # against a fake gh and a fake Supabase. A failure here means the release on
+  # npm is broken even though the test gates passed.
+  smoke:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Read the published version
+        id: version
+        run: echo "version=$(node -p "require('./packages/cli/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the version on npm
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          for attempt in $(seq 1 40); do
+            if [ "$(npm view "rallypoint@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
+              echo "rallypoint@$VERSION is on npm."
+              exit 0
+            fi
+            echo "Waiting for rallypoint@$VERSION on npm (attempt $attempt/40)…"
+            sleep 15
+          done
+          echo "::error title=Smoke test::rallypoint@$VERSION did not appear on npm within 10 minutes"
+          exit 1
+
+      - name: Smoke test the published CLI
+        run: node .github/scripts/smoke-published-cli.mjs "${{ steps.version.outputs.version }}"

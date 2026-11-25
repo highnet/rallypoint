@@ -1,0 +1,64 @@
+name: CI
+
+# The project's own gate: lint + types, and the CLI and Swarm suites on both
+# Linux and Windows. Runs on every pull request and on every push to main, so
+# main's own runs show whether it is green. The job names are the required
+# status checks on main's branch protection: rename them only together with
+# that protection rule.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint-types:
+    name: Lint and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint and tsc
+        run: npm test
+
+  cli-swarm:
+    name: CLI and Swarm (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: CLI tests
+        run: npm run cli:test
+
+      - name: Swarm tests
+        run: npm run swarm:test

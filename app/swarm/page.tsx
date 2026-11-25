@@ -2,12 +2,15 @@ import { ArrowRight, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AudienceFork, AudienceSwitch } from "@/components/audience-fork";
 import { CommandCopy } from "@/components/command-copy";
 import { LabelChip } from "@/components/label-chip";
 import { SignalFlag } from "@/components/signal-flag";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { SwarmCompare } from "@/components/swarm-compare";
+import { SwarmAgentQuickstart } from "@/components/swarm-agent-quickstart";
+import { SwarmMark } from "@/components/swarm-mark";
 import { SwarmMechanism } from "@/components/swarm-mechanism";
 import {
   arenaPitch,
@@ -19,6 +22,7 @@ import {
   swarmCommands,
   swarmEnvLines,
   swarmLoop,
+  swarmPrompts,
   swarmRoles,
   swarmUiEnvLines,
   swarmUiRoutes,
@@ -52,8 +56,8 @@ const toc = [
   { href: "#roles", label: "Roles" },
   { href: "#referee", label: "Referee" },
   { href: "#conductor", label: "Conductor" },
+  { href: "#prompts", label: "Prompts" },
   { href: "#ui", label: "Swarm UI" },
-  { href: "#edges", label: "Edges" },
   { href: "#requirements", label: "Requirements" },
   { href: "#setup", label: "Setup" },
 ];
@@ -88,29 +92,6 @@ const memoryRows = [
     written: "swarm say --kind question|proposal|handoff …",
     when: "When a session needs to ask, propose or hand off.",
     used: "Read by the next session with swarm inbox, and by anyone on the Board.",
-  },
-];
-
-const edges = [
-  {
-    title: "Not a hosted service",
-    detail:
-      "No Rallypoint servers, accounts or telemetry. Your GitHub repository and your Supabase project hold everything. Nothing calls home.",
-  },
-  {
-    title: "Not a break from the loop",
-    detail:
-      "add loop, init and every vanilla promise keep working. Swarm is additive: a layer installed on top of the loop.",
-  },
-  {
-    title: "Not game-specific",
-    detail:
-      "No chess, Go or Elo in the generic install. Swarm Arena is one example; your goal and your measure define your swarm.",
-  },
-  {
-    title: "Not self-grading",
-    detail:
-      "The referee, review, merge, the scripts and swarm.json are frozen paths. The improver can tune skills and role prompts, never its own judges.",
   },
 ];
 
@@ -188,9 +169,19 @@ export default function SwarmPage() {
     <>
       <SiteHeader current="/swarm" />
       <main id="main">
+        <div className="swarm-audience-bar">
+          <AudienceSwitch />
+        </div>
+        <AudienceFork
+          agent={<SwarmAgentQuickstart />}
+          human={
+            <>
         <div className="swarm-intro">
           <div className="swarm-intro-grid">
-            <h1>Rallypoint Swarm. For goals no single agent finishes alone.</h1>
+            <div className="swarm-intro-title swarm-mark-trigger">
+              <SwarmMark className="swarm-hero-mark" />
+              <h1>Rallypoint Swarm. For goals no single agent finishes alone.</h1>
+            </div>
             <div className="swarm-intro-side">
               <p className="lede">
                 The next tier of Rallypoint. Swarm keeps GitHub as the owner of the work and adds what a
@@ -456,6 +447,27 @@ export default function SwarmPage() {
           </div>
         </section>
 
+        <section aria-labelledby="prompts-title" className="band band-rule" id="prompts">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="prompts-title">A prompt for every situation.</h2>
+              <p>
+                Paste one into a coding agent on the repository after genesis has merged. Each is
+                self-contained; the session picks up the rest from the skills.
+              </p>
+            </div>
+            <ul className="swarm-prompts">
+              {swarmPrompts().map((item) => (
+                <li key={item.id}>
+                  <p className="step-title">{item.title}</p>
+                  <p className="install-detail">{item.when}</p>
+                  <CommandCopy command={item.prompt} id={`swarm-prompt-${item.id}`} label={`${item.title.toLowerCase()} prompt`} shell={false} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         <section aria-labelledby="ui-title" className="band" id="ui">
           <div className="band-inner">
             <div className="section-head">
@@ -555,22 +567,6 @@ export default function SwarmPage() {
           </div>
         </section>
 
-        <section aria-labelledby="edges-title" className="band" id="edges">
-          <div className="band-inner">
-            <div className="section-head">
-              <h2 id="edges-title">What Swarm is not.</h2>
-              <p>The edges are part of the design. Each one is a promise the install keeps.</p>
-            </div>
-            <dl className="ownership swarm-edges">
-              {edges.map((edge) => (
-                <div key={edge.title}>
-                  <dt>{edge.title}</dt>
-                  <dd>{edge.detail}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
 
         <section aria-labelledby="requirements-title" className="band" id="requirements">
           <div className="band-inner">
@@ -693,6 +689,9 @@ export default function SwarmPage() {
             </p>
           </div>
         </section>
+            </>
+          }
+        />
       </main>
       <SiteFooter />
     </>

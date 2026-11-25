@@ -479,6 +479,45 @@ svg {
   text-underline-offset: 0.45em;
 }
 
+/* Swarm, brought forward: the one nav item with its own mark and tag. */
+.site-nav a.nav-featured {
+  align-items: center;
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  display: inline-flex;
+  font-weight: 700;
+  gap: var(--s-2);
+  margin-right: var(--s-2);
+  padding: var(--s-1) var(--s-3) var(--s-1) var(--s-2);
+}
+
+.site-nav a.nav-featured:hover,
+.site-nav a.nav-featured[aria-current="page"] {
+  background: var(--paper-sunk);
+  text-decoration: none;
+}
+
+.nav-featured-mark {
+  --swarm-mark-w: 46px;
+}
+
+.nav-featured-tag {
+  background: var(--sig-yellow);
+  color: var(--sig-black);
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.15em 0.45em;
+  text-transform: uppercase;
+}
+
+.mobile-nav-featured {
+  align-items: center;
+  display: flex !important;
+  font-weight: 700;
+  gap: var(--s-3);
+}
+
 .header-actions {
   align-items: center;
   display: flex;
@@ -2538,9 +2577,10 @@ a.role-cell:hover span {
 }
 
 .tier-swarm {
-  border-left: 1px solid var(--rule);
-  padding-left: var(--s-6);
-  padding-right: 0;
+  background: var(--paper-sunk);
+  border: 2px solid var(--ink);
+  border-top-width: 0;
+  padding: var(--s-5) var(--s-6) var(--s-6);
 }
 
 .tier-name {
@@ -2551,8 +2591,26 @@ a.role-cell:hover span {
   line-height: 1.1;
 }
 
-.tier-name span {
-  box-shadow: inset 0 -0.22em 0 var(--sig-yellow);
+.tier-mark {
+  --swarm-mark-w: 118px;
+  margin-bottom: var(--s-1);
+}
+
+.tier-name-swarm {
+  background: var(--sig-yellow);
+  color: var(--sig-black);
+  padding: 0 0.18em;
+}
+
+.tier-badge {
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  justify-self: start;
+  letter-spacing: 0.08em;
+  padding: 0.25em 0.6em;
+  text-transform: uppercase;
 }
 
 .tier-cost {
@@ -2579,14 +2637,13 @@ a.role-cell:hover span {
     grid-template-columns: 1fr;
   }
 
-  .tier,
-  .tier-swarm {
-    border-left: 0;
+  .tier {
     padding: var(--s-5) 0;
   }
 
   .tier-swarm {
-    border-top: 1px solid var(--rule);
+    border-top-width: 2px;
+    padding: var(--s-5) var(--s-4) var(--s-6);
   }
 }
 
@@ -3751,12 +3808,206 @@ a.role-cell:hover span {
   font-size: var(--t-sm);
 }
 
-.hero-tier-link {
-  font-size: var(--t-sm);
+/* Hero pointer to the next tier: a scattered swarm of role flags that closes
+   into one rank beside the Rallypoint mark on hover and focus. */
+.tier-cta {
+  align-items: center;
+  background: var(--paper-sunk);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-s);
+  color: var(--ink);
+  display: inline-flex;
+  gap: var(--s-3);
+  min-height: 48px;
+  padding: 6px var(--s-4) 6px var(--s-3);
+  text-decoration: none;
+  transition: background-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 
-[data-audience="agent"] .hero-tier-link {
+.tier-cta:hover {
+  background: var(--paper);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.tier-cta:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.tier-cta-text {
+  display: grid;
+  line-height: 1.15;
+}
+
+.tier-cta-kicker {
+  color: var(--ink-soft);
+  font-size: var(--t-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tier-cta-name {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.tier-cta-arrow {
+  flex: none;
+  height: 18px;
+  transition: transform 160ms var(--ease-out);
+  width: 18px;
+}
+
+.tier-cta:hover .tier-cta-arrow,
+.tier-cta:focus-visible .tier-cta-arrow {
+  transform: translateX(3px);
+}
+
+[data-audience="agent"] .tier-cta {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tier-cta,
+  .tier-cta-arrow {
+    transition: none;
+  }
+}
+
+/* ── Swarm mark: the loop in rank, the swarm in flight ─────────────────
+   Positions are percentages of a 92 × 34 field, so the mark scales with
+   --swarm-mark-w alone. */
+.swarm-mark {
+  aspect-ratio: 92 / 34;
+  display: block;
+  flex: none;
+  position: relative;
+  width: var(--swarm-mark-w, 92px);
+}
+
+.swarm-mark-flag,
+.swarm-mark-point {
+  display: block;
+  height: 35.3%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transition: left 420ms var(--ease-out), top 420ms var(--ease-out), transform 420ms var(--ease-out);
+  width: 13.04%;
+}
+
+.swarm-mark-point {
+  height: 58.8%;
+  left: 78.26%;
+  top: 20.6%;
+  width: 21.74%;
+}
+
+/* In flight */
+.swarm-mark-swarm .swarm-mark-flag-1 { left: 2.2%; top: 8.8%; transform: rotate(-8deg); }
+.swarm-mark-swarm .swarm-mark-flag-2 { left: 16.3%; top: 52.9%; transform: rotate(6deg); }
+.swarm-mark-swarm .swarm-mark-flag-3 { left: 26.1%; top: 2.9%; transform: rotate(4deg); }
+.swarm-mark-swarm .swarm-mark-flag-4 { left: 40.2%; top: 44.1%; transform: rotate(-6deg); }
+.swarm-mark-swarm .swarm-mark-flag-5 { left: 51.1%; top: 11.8%; transform: rotate(7deg); }
+.swarm-mark-swarm .swarm-mark-flag-6 { left: 60.9%; top: 58.8%; transform: rotate(-4deg); }
+
+/* In rank: the loop, and the swarm once it reaches the rally point */
+.swarm-mark-rank .swarm-mark-flag,
+.swarm-mark-trigger:hover .swarm-mark-flag,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag {
+  top: 32.35%;
+  transform: none;
+}
+.swarm-mark-rank .swarm-mark-flag-1,
+.swarm-mark-trigger:hover .swarm-mark-flag-1,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag-1 { left: 0; }
+.swarm-mark-rank .swarm-mark-flag-2,
+.swarm-mark-trigger:hover .swarm-mark-flag-2,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag-2 { left: 13.04%; }
+.swarm-mark-rank .swarm-mark-flag-3,
+.swarm-mark-trigger:hover .swarm-mark-flag-3,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag-3 { left: 26.09%; }
+.swarm-mark-rank .swarm-mark-flag-4,
+.swarm-mark-trigger:hover .swarm-mark-flag-4,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag-4 { left: 39.13%; }
+.swarm-mark-rank .swarm-mark-flag-5,
+.swarm-mark-trigger:hover .swarm-mark-flag-5,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag-5 { left: 52.17%; }
+.swarm-mark-rank .swarm-mark-flag-6,
+.swarm-mark-trigger:hover .swarm-mark-flag-6,
+.swarm-mark-trigger:focus-visible .swarm-mark-flag-6 { left: 65.22%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .swarm-mark-flag,
+  .swarm-mark-point {
+    transition: none;
+  }
+}
+
+/* ── Stack tiles ───────────────────────────────────────────────────── */
+.stack-list {
+  display: grid;
+  gap: var(--s-2);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13.5rem), 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stack-item {
+  align-items: center;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-s);
+  display: flex;
+  gap: var(--s-3);
+  min-width: 0;
+  padding: var(--s-2) var(--s-3) var(--s-2) var(--s-2);
+}
+
+.stack-icon {
+  align-items: center;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-s);
+  color: var(--ink);
+  display: inline-flex;
+  flex: none;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.stack-icon svg {
+  height: 18px;
+  width: 18px;
+}
+
+.stack-text {
+  display: grid;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.stack-name {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  gap: var(--s-2);
+}
+
+.stack-optional {
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: var(--t-2xs);
+  font-weight: 600;
+  padding: 0 0.4em;
+}
+
+.stack-role {
+  color: var(--ink-soft);
+  font-size: var(--t-xs);
 }
 
 /* Swarm loop: marks the steps Swarm adds around the vanilla stations. */
@@ -3764,4 +4015,435 @@ a.role-cell:hover span {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--ink-soft);
+}
+
+/* ── Step-by-step wizard ─────────────────────────────────────────────── */
+.wiz-stepper {
+  display: grid;
+  gap: var(--s-3);
+  padding-bottom: var(--s-5);
+}
+
+.wiz-stepper ol {
+  display: grid;
+  gap: var(--s-2);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wiz-stepper-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.wiz-stepper-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.wiz-stepper-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.wiz-stepper-index {
+  align-items: center;
+  border: 1.5px solid var(--ink-soft);
+  display: inline-flex;
+  flex: none;
+  font-size: var(--t-xs);
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.wiz-stepper-index svg {
+  height: 16px;
+  width: 16px;
+}
+
+.wiz-stepper .is-done .wiz-stepper-button {
+  color: var(--ink);
+}
+
+.wiz-stepper .is-done .wiz-stepper-index {
+  background: var(--paper-sunk);
+  border-color: var(--ink);
+}
+
+.wiz-stepper .is-current .wiz-stepper-button {
+  color: var(--ink);
+}
+
+.wiz-stepper .is-current .wiz-stepper-index {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.wiz-stepper-button:not(:disabled):hover .wiz-stepper-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wiz-progress {
+  background: var(--rule);
+  height: 4px;
+  overflow: hidden;
+}
+
+.wiz-progress span {
+  background: var(--sig-blue);
+  display: block;
+  height: 100%;
+  transition: width 240ms var(--ease-out);
+}
+
+.wiz-step-count {
+  color: var(--ink-soft);
+  font-size: var(--t-sm);
+  margin: 0;
+}
+
+.wiz-step-count strong {
+  color: var(--ink);
+}
+
+.wiz-stage {
+  scroll-margin-top: 96px;
+}
+
+.wiz-stage [data-step-heading]:focus {
+  outline: none;
+}
+
+.wiz-stage [data-step-heading]:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.wiz-stage > .wiz-step {
+  padding-bottom: var(--s-6);
+}
+
+.wiz-stage .wiz-divider {
+  margin-top: var(--s-6);
+}
+
+.wiz-error {
+  border-left: 3px solid var(--sig-red);
+  color: var(--sig-red-text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  margin: var(--s-2) 0 0;
+  padding-left: var(--s-3);
+}
+
+.wiz-nav {
+  align-items: center;
+  background: var(--paper);
+  border-top: 2px solid var(--ink);
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  justify-content: space-between;
+  padding: var(--s-4) 0;
+  position: sticky;
+  z-index: 5;
+}
+
+.wiz-nav-forward {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.wiz-nav .btn svg {
+  height: 18px;
+  width: 18px;
+}
+
+.wiz-summary {
+  border-top: 1px solid var(--rule);
+  display: grid;
+  margin: var(--s-5) 0 var(--s-6);
+}
+
+.wiz-summary > div {
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  gap: var(--s-1) var(--s-4);
+  grid-template-columns: 9rem minmax(0, 1fr) auto;
+  padding: var(--s-3) 0;
+}
+
+.wiz-summary dt {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wiz-summary dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wiz-summary-edit .btn {
+  min-height: 36px;
+}
+
+.wiz-summary-edit svg {
+  height: 15px;
+  width: 15px;
+}
+
+.wiz-summary-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+}
+
+.wiz-summary-targets > span {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--s-2);
+}
+
+@media (max-width: 759px) {
+  .wiz-stepper ol {
+    gap: var(--s-1);
+  }
+
+  /* Numbers only; the current step is named in the count line below. */
+  .wiz-stepper-name {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .wiz-stepper-button {
+    justify-content: center;
+  }
+
+  .wiz-summary > div {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .wiz-summary dt {
+    grid-column: 1 / -1;
+  }
+
+  .wiz-nav .wiz-nav-forward {
+    width: 100%;
+  }
+
+  .wiz-nav-next {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiz-progress span {
+    transition: none;
+  }
+}
+
+/* ── /swarm: audience switch, hero mark, prompts ─────────────────────── */
+.swarm-audience-bar {
+  margin: 0 auto;
+  max-width: var(--frame);
+  padding: var(--s-6) var(--gutter) 0;
+}
+
+.swarm-audience-bar + .audience-panel .swarm-intro {
+  padding-top: var(--s-7);
+}
+
+.swarm-agent-page {
+  margin: 0 auto;
+  max-width: var(--frame);
+  padding: var(--s-7) var(--gutter) var(--s-9);
+}
+
+.swarm-agent-page h2 {
+  border-top: 2px solid var(--ink);
+  font-size: var(--t-lg);
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+}
+
+.swarm-intro-title {
+  display: grid;
+  gap: var(--s-5);
+  justify-items: start;
+}
+
+.swarm-hero-mark {
+  --swarm-mark-w: clamp(150px, 18vw, 230px);
+}
+
+.swarm-prompts,
+.agent-prompts {
+  display: grid;
+  gap: var(--s-5) var(--s-6);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.swarm-prompts li,
+.agent-prompts li {
+  align-content: start;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+}
+
+.swarm-prompts .install-detail,
+.agent-prompts .install-detail {
+  margin: 0;
+}
+
+.agent-cli {
+  border-top: 1px solid var(--rule);
+  display: grid;
+  font-size: var(--t-sm);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.agent-cli li {
+  border-bottom: 1px solid var(--rule);
+  padding: var(--s-2) 0;
+}
+
+.agent-cli code {
+  font-weight: 600;
+  margin-right: var(--s-2);
+}
+
+.agent-swarm {
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-5);
+}
+
+.agent-swarm h2 {
+  font-size: var(--t-md);
+}
+
+/* ── Wizard output: agentic first, then by hand, then prompts ──────── */
+.wiz-out-kicker {
+  color: var(--ink-soft);
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.wiz-out-agentic {
+  background: var(--paper-sunk);
+  border: 2px solid var(--ink);
+  padding: var(--s-5);
+}
+
+.wiz-out-agentic .wiz-out-kicker {
+  background: var(--sig-yellow);
+  color: var(--sig-black);
+  justify-self: start;
+  padding: 0.2em 0.5em;
+}
+
+.wiz-out-head {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  justify-content: space-between;
+}
+
+/* "Copy all": only the button shows; the annotated script is what it copies. */
+.wiz-copy-all.command {
+  background: transparent;
+  border: 1.5px solid var(--ink);
+}
+
+.wiz-copy-all.command code {
+  display: none;
+}
+
+.wiz-copy-all .command-copy {
+  border-left: 0;
+  color: var(--ink);
+}
+
+.wiz-copy-all .command-copy-text::after {
+  content: " all";
+}
+
+.wiz-prompt {
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+}
+
+.wiz-prompt .install-detail {
+  margin: 0;
+}
+
+.wiz-config-peek summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.wiz-config-peek[open] summary {
+  margin-bottom: var(--s-3);
+}
+
+.wizard {
+  scroll-margin-top: 88px;
+}
+
+/* Long prompts (they carry swarm.json): scroll inside, keep the page short. */
+.command-tall code {
+  max-height: 22rem;
+}
+
+@media (max-width: 599px) {
+  .command-tall code {
+    max-height: 16rem;
+  }
 }

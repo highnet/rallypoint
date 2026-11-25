@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 
 type AudienceForkProps = {
   human: ReactNode;
+  /** The agent branch. Defaults to the loop's quickstart. */
+  agent?: ReactNode;
 };
 
 export function AudienceSwitch() {
@@ -46,7 +48,7 @@ export function AudienceSwitch() {
   );
 }
 
-export function AudienceFork({ human }: AudienceForkProps) {
+export function AudienceFork({ human, agent }: AudienceForkProps) {
   const audience = useRallypointStore((state) => state.audience);
 
   useEffect(() => {
@@ -66,6 +68,8 @@ export function AudienceFork({ human }: AudienceForkProps) {
     >
       {audience === "human" ? (
         human
+      ) : agent ? (
+        agent
       ) : (
         <div className="agent-quickstart">
           <h1>Read the contract. Pick one role. Respect the handoff.</h1>
@@ -92,13 +96,24 @@ export function AudienceFork({ human }: AudienceForkProps) {
             Constraints: no agent reviews its own work; no worker holds more than one claim; GitHub
             remains the only coordination state.
           </p>
-          <p className="agent-constraint">
-            Running in a Swarm repository? Follow <code>.claude/skills/swarm-agent/SKILL.md</code>; it
-            picks your role with <code>npx rallypoint@latest swarm next</code>. Details:{" "}
-            <Link className="text-link" href="/swarm">
-              /swarm
-            </Link>
-          </p>
+          <div className="agent-swarm">
+            <h2>Running in a Swarm repository?</h2>
+            <p className="agent-constraint">
+              Follow <code>.claude/skills/swarm-agent/SKILL.md</code>. It checks the setup, opens a
+              session and picks your role, finishing work before starting it:
+            </p>
+            <div className="agent-commands">
+              <CommandCopy command="npx rallypoint@latest swarm doctor" id="agent-swarm-doctor" />
+              <CommandCopy command="npx rallypoint@latest swarm next" id="agent-swarm-next" />
+            </div>
+            <p className="agent-constraint">
+              Setting one up, or need every prompt?{" "}
+              <Link className="text-link" href="/swarm">
+                /swarm
+              </Link>{" "}
+              has an agent branch too.
+            </p>
+          </div>
         </div>
       )}
     </div>

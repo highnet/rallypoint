@@ -2,6 +2,8 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { CommandCopy } from "@/components/command-copy";
+import { loopStack, StackList, swarmStack } from "@/components/stack-list";
+import { SwarmMark } from "@/components/swarm-mark";
 import { swarmCommands } from "@/lib/swarm";
 
 /**
@@ -15,12 +17,14 @@ export function SwarmTiers() {
         Choose a tier
       </h2>
       <div className="tier">
+        <SwarmMark className="tier-mark" variant="rank" />
         <p className="tier-name">Rallypoint</p>
         <p className="tier-cost">GitHub only · zero setup</p>
         <p className="tier-gives">
           Roles, labels, an atomic claim and independent review, coordinated through issues and pull
           requests alone.
         </p>
+        <StackList items={loopStack} label="Rallypoint runs on" />
         <CommandCopy command={swarmCommands.addLoop} id="tier-loop" label="install command" />
         <p className="tier-links">
           <Link className="text-link" href="#install">
@@ -28,15 +32,18 @@ export function SwarmTiers() {
           </Link>
         </p>
       </div>
-      <div className="tier tier-swarm">
+      <div className="tier tier-swarm swarm-mark-trigger">
+        <p className="tier-badge">Next tier</p>
+        <SwarmMark className="tier-mark" />
         <p className="tier-name">
-          Rallypoint <span>Swarm</span>
+          Rallypoint <span className="tier-name-swarm">Swarm</span>
         </p>
         <p className="tier-cost">Builds on the loop · + your own Supabase · more setup, more capability</p>
         <p className="tier-gives">
           Shared memory, a referee on every change, roles that pick themselves, a retro from every
           session, and a conductor loop that keeps the swarm running on hard goals.
         </p>
+        <StackList items={swarmStack} label="Rallypoint Swarm runs on" />
         <CommandCopy command={swarmCommands.addSwarm} id="tier-swarm" label="Swarm install command" />
         <p className="tier-links">
           <Link className="text-link" href="/swarm/wizard">

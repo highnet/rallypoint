@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowUpRight, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { CommandCopy } from "@/components/command-copy";
 import {
   arenaExample,
   arenaPitch,
+  agentSetupPrompt,
   arenaUrl,
   buildSwarmConfig,
   conductorPrompt,
@@ -15,6 +16,7 @@ import {
   measureModes,
   swarmCommands,
   swarmEnvLines,
+  swarmPrompts,
   targetId,
   targetPalette,
   type Focus,
@@ -58,6 +60,18 @@ const uiShapes: { id: UiShape; name: string; detail: string }[] = [
   { id: "none", name: "No UI for now", detail: "GitHub and your Supabase tables only." },
 ];
 
+const steps = [
+  { id: "pitch", title: "Pitch", optional: false },
+  { id: "goal", title: "Goal", optional: true },
+  { id: "measure", title: "Referee", optional: true },
+  { id: "targets", title: "Targets", optional: true },
+  { id: "ui", title: "UI and words", optional: true },
+  { id: "conductor", title: "Conductor", optional: true },
+  { id: "setup", title: "Your setup", optional: false },
+] as const;
+
+const lastStep = steps.length - 1;
+
 function Decide() {
   return <span className="wiz-optional">Optional · or let the genesis session decide</span>;
 }
@@ -67,8 +81,33 @@ export function SwarmWizard() {
   const [modeChosen, setModeChosen] = useState(false);
   const [category, setCategory] = useState(swarmGoalCategories[0].id);
   const [notice, setNotice] = useState("");
+  const [step, setStep] = useState(0);
+  const [pitchError, setPitchError] = useState(false);
   const pitchRef = useRef<HTMLTextAreaElement>(null);
+  const stepRef = useRef<HTMLDivElement>(null);
+  const navigated = useRef(false);
   const base = useId();
+  const pitchReady = state.pitch.trim().length > 0;
+
+  const go = (next: number) => {
+    if (next > 0 && !pitchReady) {
+      setPitchError(true);
+      setStep(0);
+      pitchRef.current?.focus();
+      return;
+    }
+    navigated.current = true;
+    setStep(Math.max(0, Math.min(lastStep, next)));
+  };
+
+  // Move focus to the new step's heading after the user navigates, so
+  // keyboard and screen-reader users land where the content changed.
+  useEffect(() => {
+    if (!navigated.current) return;
+    const heading = stepRef.current?.querySelector<HTMLElement>("[data-step-heading]");
+    heading?.focus({ preventScroll: true });
+    stepRef.current?.closest("form")?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [step]);
 
   const set = <K extends keyof WizardState>(key: K, value: WizardState[K]) =>
     setState((current) => ({ ...current, [key]: value }));
@@ -80,7 +119,8 @@ export function SwarmWizard() {
   const applyExample = () => {
     setState(arenaExample);
     setModeChosen(true);
-    setNotice("Filled every step with the Swarm Arena example. Change anything you like.");
+    setPitchError(false);
+    setNotice("Filled every step with the Swarm Arena example. Step through it, or jump to your setup.");
   };
 
   useEffect(() => {
@@ -88,19 +128,24 @@ export function SwarmWizard() {
     const timer = window.setTimeout(() => {
       setState(arenaExample);
       setModeChosen(true);
+      setStep(lastStep);
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
   const pickGoal = (goal: string) => {
     setState((current) => ({ ...current, pitch: goal }));
+    setPitchError(false);
     setNotice(`Pitch set to: ${goal}`);
     pitchRef.current?.focus();
   };
 
   const config = useMemo(() => JSON.stringify(buildSwarmConfig(effective), null, 2), [effective]);
   const conductor = conductorPrompt(effective);
-  const genesis = genesisPrompt(state.pitch);
+  const genesis = genesisPrompt(state.pitch, config);
+  const agentSetup = agentSetupPrompt(state.pitch, config, state.uiShape);
+  const firstTarget = state.targets.find((t) => t.name.trim());
+  const prompts = swarmPrompts(firstTarget ? firstTarget.id?.trim() || targetId(firstTarget.name) : undefined);
   const activeCategory = swarmGoalCategories.find((c) => c.id === category) ?? swarmGoalCategories[0];
 
   const updateTarget = (index: number, patch: Partial<WizardState["targets"][number]>) =>
@@ -118,10 +163,6 @@ export function SwarmWizard() {
     { title: "Install the loop, if it is not there yet", command: swarmCommands.addLoop },
     { title: "Bring GitHub up to date for the loop", command: swarmCommands.init },
     { title: "Install Swarm", command: swarmCommands.addSwarm },
-    {
-      title: "Replace .rallypoint/swarm.json",
-      detail: "Paste the swarm.json above over the default that add swarm wrote.",
-    },
     ...(state.uiShape === "product"
       ? [{ title: "Add the swarm UI to your app", command: swarmCommands.addUi }]
       : state.uiShape === "dashboard"
@@ -136,23 +177,127 @@ export function SwarmWizard() {
     { title: "Set the agents’ environment", command: swarmEnvLines, shell: false, detail: "Never commit the secret." },
     { title: "Check everything", command: swarmCommands.doctor },
     {
-      title: "Run genesis",
+      title: "Run genesis: paste this into a coding agent on the repository",
+      command: genesis,
+      shell: false,
       detail:
-        "Paste the genesis prompt above into a coding agent on the repository. It opens one pull request; review and merge it like any other.",
+        "One prompt: it writes your swarm.json, decides what you left open, and opens one pull request. Review and merge it like any other.",
     },
     { title: "Create target labels and store the goal", command: swarmCommands.swarmInit },
     { title: "Start one session by hand", command: swarmCommands.agentPrompt, shell: false },
   ];
 
+  const allCommands = commands
+    .map((item, index) => {
+      const head = `# ${index + 1}. ${item.title}`;
+      const body = item.command
+        ? item.shell === false
+          ? item.command
+              .split("\n")
+              .map((line) => (line ? `#   ${line}` : "#"))
+              .join("\n")
+          : item.command
+        : `#   ${item.detail ?? ""}`;
+      return `${head}\n${body}`;
+    })
+    .join("\n\n");
+
+  const uiShapeName = uiShapes.find((shape) => shape.id === state.uiShape)?.name ?? state.uiShape;
+  const namedTargets = state.targets.filter((target) => target.name.trim());
+  const summary: { label: string; value: React.ReactNode; step: number }[] = [
+    { label: "Pitch", value: state.pitch.trim() || "—", step: 0 },
+    { label: "Goal", value: state.title.trim() || "Genesis decides", step: 1 },
+    {
+      label: "Referee",
+      value: `${measureModes.find((m) => m.id === mode)?.name ?? mode}${modeChosen ? "" : " (suggested)"}`,
+      step: 2,
+    },
+    {
+      label: "Targets",
+      value: namedTargets.length ? (
+        <span className="wiz-summary-targets">
+          {namedTargets.map((target) => (
+            <span key={target.name}>
+              <span aria-hidden="true" className="wiz-swatch" style={{ background: target.color }} />
+              {target.name}
+            </span>
+          ))}
+        </span>
+      ) : (
+        "Genesis decides"
+      ),
+      step: 3,
+    },
+    { label: "UI", value: `${uiShapeName} · ${state.visibility}`, step: 4 },
+    {
+      label: "Conductor",
+      value: `${state.concurrency} at once · ${state.budget === null ? "unbounded" : `${state.budget} sessions`} · ${state.focus}`,
+      step: 5,
+    },
+  ];
+
   return (
-    <form className="wizard" onSubmit={(event) => event.preventDefault()}>
+    <form
+      className="wizard"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (step < lastStep) go(step + 1);
+      }}
+    >
       <p aria-live="polite" className="sr-only">
         {notice}
       </p>
 
-      {/* 1 · Pitch */}
+      <nav aria-label="Wizard steps" className="wiz-stepper">
+        <ol>
+          {steps.map((item, index) => {
+            const state_ = index === step ? "current" : index < step ? "done" : "todo";
+            return (
+              <li className={`is-${state_}`} key={item.id}>
+                <button
+                  aria-current={index === step ? "step" : undefined}
+                  className="wiz-stepper-button"
+                  disabled={index > 0 && !pitchReady}
+                  onClick={() => go(index)}
+                  type="button"
+                >
+                  <span aria-hidden="true" className="wiz-stepper-index">
+                    {state_ === "done" ? <Check /> : index + 1}
+                  </span>
+                  <span className="wiz-stepper-name">
+                    {item.title}
+                    <span className="sr-only">
+                      {state_ === "done" ? " (visited)" : ""}
+                      {item.optional ? " (optional)" : ""}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        <div
+          aria-label="Wizard progress"
+          aria-valuemax={steps.length}
+          aria-valuemin={1}
+          aria-valuenow={step + 1}
+          aria-valuetext={`Step ${step + 1} of ${steps.length}: ${steps[step].title}`}
+          className="wiz-progress"
+          role="progressbar"
+        >
+          <span style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+        </div>
+        <p className="wiz-step-count">
+          Step {step + 1} of {steps.length} · <strong>{steps[step].title}</strong>
+          {steps[step].optional ? <span className="wiz-optional"> · optional</span> : null}
+        </p>
+      </nav>
+
+      <div className="wiz-stage" ref={stepRef}>
+
+      {step === 0 ? (
       <fieldset className="wiz-step wiz-step-primary">
-        <legend>
+        <legend data-step-heading tabIndex={-1}>
           <span className="step-index">1</span> Describe your swarm in a sentence or two
         </legend>
         <div className="wiz-example">
@@ -172,14 +317,24 @@ export function SwarmWizard() {
           Your pitch
         </label>
         <textarea
+          aria-describedby={pitchError ? `${base}-pitch-error` : undefined}
+          aria-invalid={pitchError && !pitchReady ? true : undefined}
           className="wiz-input wiz-textarea"
           id={`${base}-pitch`}
-          onChange={(event) => set("pitch", event.target.value)}
+          onChange={(event) => {
+            set("pitch", event.target.value);
+            if (event.target.value.trim()) setPitchError(false);
+          }}
           placeholder="What should the swarm build or discover, and what does better look like?"
           ref={pitchRef}
           rows={3}
           value={state.pitch}
         />
+        {pitchError && !pitchReady ? (
+          <p className="wiz-error" id={`${base}-pitch-error`} role="alert">
+            Write a sentence or two, or pick a goal from the gallery below, to continue.
+          </p>
+        ) : null}
 
         <details className="wiz-gallery">
           <summary>Need inspiration? 100 goals in 10 categories</summary>
@@ -218,15 +373,15 @@ export function SwarmWizard() {
             ))}
           </ul>
         </details>
+        <p className="wiz-divider">
+          Everything after the pitch is optional. Skip any step and genesis fills it from your pitch.
+        </p>
       </fieldset>
+      ) : null}
 
-      <p className="wiz-divider">
-        Everything below is optional. Leave a field empty and genesis fills it from your pitch.
-      </p>
-
-      {/* 2 · Goal */}
+      {step === 1 ? (
       <fieldset className="wiz-step">
-        <legend>
+        <legend data-step-heading tabIndex={-1}>
           <span className="step-index">2</span> Your goal <Decide />
         </legend>
         <div className="wiz-grid">
@@ -255,10 +410,11 @@ export function SwarmWizard() {
           </div>
         </div>
       </fieldset>
+      ) : null}
 
-      {/* 3 · Measure */}
+      {step === 2 ? (
       <fieldset className="wiz-step">
-        <legend>
+        <legend data-step-heading tabIndex={-1}>
           <span className="step-index">3</span> How the referee judges a change <Decide />
         </legend>
         <div className="wiz-radios" role="radiogroup" aria-label="Measure mode">
@@ -496,10 +652,11 @@ export function SwarmWizard() {
           </p>
         ) : null}
       </fieldset>
+      ) : null}
 
-      {/* 4 · Targets */}
+      {step === 3 ? (
       <fieldset className="wiz-step">
-        <legend>
+        <legend data-step-heading tabIndex={-1}>
           <span className="step-index">4</span> Targets <Decide />
         </legend>
         <p className="wiz-hint">
@@ -597,10 +754,11 @@ export function SwarmWizard() {
           </button>
         </div>
       </fieldset>
+      ) : null}
 
-      {/* 5 · UI and vocabulary */}
+      {step === 4 ? (
       <fieldset className="wiz-step">
-        <legend>
+        <legend data-step-heading tabIndex={-1}>
           <span className="step-index">5</span> The swarm UI and its words <Decide />
         </legend>
         <div className="wiz-radios" role="radiogroup" aria-label="UI shape">
@@ -699,10 +857,11 @@ export function SwarmWizard() {
           ))}
         </div>
       </fieldset>
+      ) : null}
 
-      {/* 6 · Conductor */}
+      {step === 5 ? (
       <fieldset className="wiz-step">
-        <legend>
+        <legend data-step-heading tabIndex={-1}>
           <span className="step-index">6</span> The conductor <Decide />
         </legend>
         <div className="wiz-grid wiz-grid-3">
@@ -763,41 +922,68 @@ export function SwarmWizard() {
           </div>
         </div>
       </fieldset>
+      ) : null}
 
-      {/* Output */}
+      {step === lastStep ? (
       <section aria-labelledby={`${base}-out`} className="wiz-output" id="output">
-        <h2 id={`${base}-out`}>Your setup</h2>
+        <h2 data-step-heading id={`${base}-out`} tabIndex={-1}>
+          Your setup
+        </h2>
+        <dl className="wiz-summary">
+          {summary.map((row) => (
+            <div key={row.label}>
+              <dt>{row.label}</dt>
+              <dd>{row.value}</dd>
+              <dd className="wiz-summary-edit">
+                <button className="btn btn-quiet wiz-btn" onClick={() => go(row.step)} type="button">
+                  <Pencil aria-hidden="true" /> Edit<span className="sr-only"> {row.label.toLowerCase()}</span>
+                </button>
+              </dd>
+            </div>
+          ))}
+        </dl>
         <p className="wiz-hint">
           Generated in your browser as you type. Nothing on this page is sent anywhere.
         </p>
 
-        <div className="wiz-out-block">
-          <h3>Genesis prompt</h3>
+        <div className="wiz-out-block wiz-out-agentic">
+          <p className="wiz-out-kicker">Fastest · agentic</p>
+          <h3>Let an agent do the whole setup</h3>
           <p className="install-detail">
-            After <code>{swarmCommands.addSwarm}</code>, paste this into a coding agent on your repository.
-            Genesis turns the pitch into targets, the measure and its referee script, the completed{" "}
-            <code>swarm.json</code>, the UI’s <code>swarm.config.ts</code> and the first plan of issues, as
-            one pull request for independent review.
+            One prompt for a coding agent on your repository. It installs the loop and Swarm, writes your{" "}
+            <code>swarm.json</code>, runs <code>doctor</code> and genesis, and opens one pull request. It
+            stops to ask you only for Supabase and the secret, and never merges its own work.
           </p>
-          <CommandCopy command={genesis} id="wiz-genesis" label="genesis prompt" shell={false} />
+          <CommandCopy className="command-block command-json command-tall" command={agentSetup} id="wiz-agentic" label="agentic setup prompt" shell={false} />
         </div>
 
         <div className="wiz-out-block">
-          <h3>
-            <code>.rallypoint/swarm.json</code>
-          </h3>
-          <CommandCopy className="command-block command-json" command={config} id="wiz-config" label="swarm.json" shell={false} />
-        </div>
-
-        <div className="wiz-out-block">
-          <h3>Commands, in order</h3>
+          <div className="wiz-out-head">
+            <div>
+              <p className="wiz-out-kicker">Or by hand</p>
+              <h3>Commands, in order</h3>
+            </div>
+            <CommandCopy
+              className="wiz-copy-all"
+              command={allCommands}
+              id="wiz-copy-all"
+              label="all commands, as one annotated script"
+              shell={false}
+            />
+          </div>
           <ol className="setup-steps wiz-sequence">
             {commands.map((step, index) => (
               <li key={step.title}>
                 <p className="step-title">{step.title}</p>
                 {step.command ? (
                   <CommandCopy
-                    className={step.command.includes("\n") ? "command-block" : undefined}
+                    className={
+                      step.command.includes("\n")
+                        ? step.command.split("\n").length > 12
+                          ? "command-block command-json command-tall"
+                          : "command-block"
+                        : undefined
+                    }
                     command={step.command}
                     id={`wiz-cmd-${index}`}
                     label={step.title.toLowerCase()}
@@ -810,12 +996,63 @@ export function SwarmWizard() {
           </ol>
         </div>
 
+        <details className="wiz-out-block wiz-config-peek">
+          <summary>
+            See the <code>.rallypoint/swarm.json</code> inside these prompts
+          </summary>
+          <CommandCopy className="command-block command-json" command={config} id="wiz-config" label="swarm.json" shell={false} />
+        </details>
+
         <div className="wiz-out-block">
-          <h3>Conductor prompt</h3>
-          <p className="install-detail">For Claude Code with remote session tools, after genesis is merged.</p>
-          <CommandCopy className="command-block" command={conductor} id="wiz-conductor" label="conductor prompt" shell={false} />
+          <p className="wiz-out-kicker">After genesis merges</p>
+          <h3>Prompts to keep it running</h3>
+          <div className="wiz-prompt">
+            <p className="step-title">Leave it running: the conductor</p>
+            <p className="install-detail">For Claude Code with remote session tools. Stop the loop to stop the swarm.</p>
+            <CommandCopy className="command-block" command={conductor} id="wiz-conductor" label="conductor prompt" shell={false} />
+          </div>
+          {prompts.map((item) => (
+            <div className="wiz-prompt" key={item.id}>
+              <p className="step-title">{item.title}</p>
+              <p className="install-detail">{item.when}</p>
+              <CommandCopy command={item.prompt} id={`wiz-prompt-${item.id}`} label={`${item.title.toLowerCase()} prompt`} shell={false} />
+            </div>
+          ))}
         </div>
       </section>
+      ) : null}
+      </div>
+
+      <div className="wiz-nav">
+        {step > 0 ? (
+          <button className="btn btn-secondary wiz-nav-back" onClick={() => go(step - 1)} type="button">
+            <ArrowLeft aria-hidden="true" /> Back
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="wiz-nav-forward">
+          {step === 0 ? (
+            <button className="btn btn-quiet wiz-btn" onClick={() => go(lastStep)} type="button">
+              Skip the rest: let genesis decide
+            </button>
+          ) : null}
+          {steps[step].optional ? (
+            <button className="btn btn-quiet wiz-btn" onClick={() => go(lastStep)} type="button">
+              Jump to your setup
+            </button>
+          ) : null}
+          {step < lastStep ? (
+            <button className="btn btn-primary wiz-nav-next" type="submit">
+              Next: {steps[step + 1].title} <ArrowRight aria-hidden="true" />
+            </button>
+          ) : (
+            <button className="btn btn-secondary wiz-nav-next" onClick={() => go(0)} type="button">
+              Back to the pitch
+            </button>
+          )}
+        </div>
+      </div>
     </form>
   );
 }

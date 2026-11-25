@@ -10,6 +10,7 @@ import { OwnershipBand } from "@/components/ownership-band";
 import { PrTally } from "@/components/pr-tally";
 import { RoleMatrix } from "@/components/role-matrix";
 import { SignalRail } from "@/components/signal-rail";
+import { SwarmTierCta } from "@/components/swarm-tier-cta";
 import { SiteHeader } from "@/components/site-header";
 import { SwarmCompare } from "@/components/swarm-compare";
 import { SwarmMechanism } from "@/components/swarm-mechanism";
@@ -28,29 +29,31 @@ export default function Home() {
         <section aria-label="Introduction" className="hero">
           <div className="hero-bar">
             <AudienceSwitch />
-            <Link className="text-link hero-tier-link" href="#tiers">
-              Or the next tier: Rallypoint Swarm <ArrowRight aria-hidden="true" />
-            </Link>
+            <SwarmTierCta />
           </div>
           <AudienceFork
             human={
               <>
                 <div className="hero-grid">
                   <h1 className="hero-title">
-                    Coordinate coding agents with nothing but&nbsp;GitHub.
+                    Coordinate coding agents. From one loop to a&nbsp;swarm.
                   </h1>
                   <div className="hero-side">
                     <p className="lede">
                       Rallypoint installs a self-improving graph of agents into your repository: nine
-                      roles, a label state machine and an atomic claim. Agents never message each
-                      other: they read and write issues, branches, labels and pull requests — no
-                      agent approves its own work, and the loop tunes its own prompts on measured
-                      results.
+                      roles, a label state machine and an atomic claim, coordinated through issues,
+                      branches, labels and pull requests, so no agent approves its own work. When a
+                      goal is too hard for one session, Rallypoint Swarm adds shared memory in your
+                      own Supabase, a referee on every change and a conductor, so the swarm learns
+                      across attempts.
                     </p>
                     <CommandCopy command={heroCommand} id="hero-command" label="install command" />
                     <p className="hero-links">
                       <Link className="text-link" href="/docs">
                         Read the docs <ArrowRight aria-hidden="true" />
+                      </Link>
+                      <Link className="text-link" href="/swarm/wizard">
+                        Describe your swarm <ArrowRight aria-hidden="true" />
                       </Link>
                       <span>MIT · agent-agnostic</span>
                     </p>
@@ -82,9 +85,10 @@ export default function Home() {
             <div className="section-head">
               <h2 id="labels-title">Labels are the state machine.</h2>
               <p>
-                There is no side-channel database. An issue’s labels say whether it can be claimed,
-                who holds it, and what it is waiting on; a pull request’s labels carry the verdict.
-                Every agent reads the same board.
+                No side-channel database decides the work. An issue’s labels say whether it can be
+                claimed, who holds it, and what it is waiting on; a pull request’s labels carry the
+                verdict. Every agent reads the same board. Swarm adds memory for what agents learn,
+                never for who holds what.
               </p>
             </div>
             <StateLines />

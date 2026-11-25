@@ -1,16 +1,19 @@
 import Link from "next/link";
 
 import { MobileNav } from "@/components/mobile-nav";
+import { SwarmMark } from "@/components/swarm-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Wordmark } from "@/components/wordmark";
 
-export const siteLinks = [
+export type SiteLink = { href: string; label: string; featured?: boolean };
+
+export const siteLinks: SiteLink[] = [
+  { href: "/swarm", label: "Swarm", featured: true },
   { href: "/#loop", label: "The loop" },
   { href: "/#labels", label: "Labels" },
   { href: "/#roles", label: "Roles" },
   { href: "/#improve", label: "Self-improving" },
   { href: "/#install", label: "Install" },
-  { href: "/swarm", label: "Swarm" },
   { href: "/docs", label: "Docs" },
 ];
 
@@ -23,10 +26,13 @@ export function SiteHeader({ current }: { current?: string }) {
           {siteLinks.map((link) => (
             <Link
               aria-current={current === link.href ? "page" : undefined}
+              className={link.featured ? "nav-featured swarm-mark-trigger" : undefined}
               href={link.href}
               key={link.href}
             >
+              {link.featured ? <SwarmMark className="nav-featured-mark" /> : null}
               {link.label}
+              {link.featured ? <span className="nav-featured-tag">Next tier</span> : null}
             </Link>
           ))}
         </nav>

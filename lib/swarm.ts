@@ -20,10 +20,118 @@ export const swarmCommands = {
   conductor: "/loop /swarm-conductor",
 } as const;
 
-export function genesisPrompt(pitch: string) {
+const sentence = (pitch: string) => {
   const raw = pitch.trim().replace(/\s+/g, " ") || "<your pitch>";
-  const text = /[.!?]$/.test(raw) ? raw : `${raw}.`;
-  return `Run swarm genesis. Follow .claude/skills/swarm-genesis/SKILL.md. Pitch: ${text} Use the choices already in .rallypoint/swarm.json and decide the rest.`;
+  return /[.!?]$/.test(raw) ? raw : `${raw}.`;
+};
+
+/**
+ * One copy-paste: the genesis instruction, the pitch, and the swarm.json the
+ * wizard produced, so nothing has to be pasted into a file first.
+ */
+export function genesisPrompt(pitch: string, configJson?: string) {
+  const lines = [
+    "Run swarm genesis. Follow .claude/skills/swarm-genesis/SKILL.md.",
+    `Pitch: ${sentence(pitch)}`,
+  ];
+  if (configJson) {
+    lines.push(
+      "",
+      "First write this to .rallypoint/swarm.json. Keep every non-empty value; decide everything left empty from the pitch:",
+      "",
+      configJson,
+    );
+  } else {
+    lines.push("Use the choices already in .rallypoint/swarm.json and decide the rest.");
+  }
+  return lines.join("\n");
+}
+
+/**
+ * The agentic path: one prompt that has a coding agent do the whole setup and
+ * genesis, stopping only for what needs a person (Supabase, the secret, the
+ * independent merge).
+ */
+export function agentSetupPrompt(pitch: string, configJson: string, uiShape: "product" | "dashboard" | "none") {
+  const ui =
+    uiShape === "product"
+      ? [`Add the swarm UI to the existing Next.js app: \`${swarmCommands.addUi}\`.`]
+      : uiShape === "dashboard"
+        ? [`Add the standalone dashboard: \`${swarmCommands.addDashboard}\`.`]
+        : [];
+  const steps = [
+    `If .rallypoint/config.json is missing, install the loop: \`${swarmCommands.addLoop}\`, then \`${swarmCommands.init}\`.`,
+    `Install Swarm: \`${swarmCommands.addSwarm}\`.`,
+    "Write the swarm.json below to .rallypoint/swarm.json, replacing the default.",
+    ...ui,
+    "Memory lives in my Supabase project. If you have Supabase access (an MCP server or the supabase CLI), apply .rallypoint/swarm/schema.sql to the project I name; otherwise stop and ask me to run it in the SQL editor. Ask me to run `select swarm_set_secret('…');` myself and to give your environment RALLYPOINT_SUPABASE_URL, RALLYPOINT_SUPABASE_KEY and RALLYPOINT_SWARM_SECRET. Never print, log or commit the secret.",
+    `Run \`${swarmCommands.doctor}\` until it reports Ready. Warnings about the goal are expected before genesis.`,
+    "Run swarm genesis: follow .claude/skills/swarm-genesis/SKILL.md with the pitch below. Open one pull request and do not merge it yourself.",
+    `Report what you did, what is waiting on me, and the pull request link. After someone else merges it, run \`${swarmCommands.swarmInit}\` and \`npx rallypoint@latest swarm plan plan.json\`.`,
+  ];
+  return [
+    "Set up Rallypoint Swarm in this repository, then run genesis. Work in order, and stop to ask me only where a step says so.",
+    "",
+    ...steps.map((step, index) => `${index + 1}. ${step}`),
+    "",
+    `Pitch: ${sentence(pitch)}`,
+    "",
+    ".rallypoint/swarm.json:",
+    "",
+    configJson,
+  ].join("\n");
+}
+
+export type SwarmPrompt = { id: string; title: string; when: string; prompt: string };
+
+/** Ready-to-paste prompts for running the swarm, after genesis has merged. */
+export function swarmPrompts(targetId?: string): SwarmPrompt[] {
+  const t = targetId || "<target>";
+  const swarm = "npx rallypoint@latest swarm";
+  return [
+    {
+      id: "agent",
+      title: "Run one swarm agent",
+      when: "The default. The session picks its own role from the board.",
+      prompt: `Run a swarm agent. Follow .claude/skills/swarm-agent/SKILL.md exactly: \`${swarm} doctor\`, \`${swarm} prepare\`, take your role with \`${swarm} next\`, do that one role, log progress with \`${swarm} log\` as you go, and leave a retro with \`${swarm} retro\` before you end.`,
+    },
+    {
+      id: "target",
+      title: "Work one target",
+      when: "Point a session at one part of the goal.",
+      prompt: `Run a swarm agent on the ${t} target. Follow .claude/skills/swarm-agent/SKILL.md, but take your role with \`${swarm} next ${t}\`. Read .rallypoint/swarm/playbooks/${t}.md and \`${swarm} brief\` before you change anything, log progress, referee before you open a pull request, and leave a retro.`,
+    },
+    {
+      id: "queue",
+      title: "Clear the review queue",
+      when: "Pull requests are piling up. Finishing work beats starting it.",
+      prompt: `Clear the Rallypoint queue. Repeat \`${swarm} next --only merger,fixer,reviewer\` and do each role it gives you, one at a time, following .claude/skills/swarm-agent/SKILL.md and the matching .rallypoint/roles/<role>.md. Never review or merge work this session wrote. Stop when it prints ROLE none. Leave one retro at the end.`,
+    },
+    {
+      id: "plan",
+      title: "Plan the next experiments",
+      when: "The backlog is empty, or the strategy needs a fresh look.",
+      prompt: `Run the swarm strategist. Follow .claude/skills/swarm-strategist/SKILL.md: read \`${swarm} brief\`, the playbooks and .rallypoint/swarm/skills/concepts.md, then open the next tasks with \`${swarm} plan plan.json\` (dry-run first). Give every task a target, a type and a concept, and prefer porting a concept that already gained on one target.`,
+    },
+    {
+      id: "port",
+      title: "Port a concept across targets",
+      when: "Something worked on one target. Try it on the others.",
+      prompt: `Run the swarm strategist with one goal: find the concept with the best evidence in \`${swarm} brief\`, and open one task per target that has not tried it (concept set, type experiment, a body saying what should differ for that target). Then run \`${swarm} next\` once and do the role it gives you.`,
+    },
+    {
+      id: "improve",
+      title: "Improve the protocol",
+      when: "Retros point at friction, or the metrics stall.",
+      prompt: `Act as the swarm improver. Follow .claude/skills/swarm-steward/SKILL.md: read \`${swarm} retros --since-change\` and \`${swarm} metrics\`, pick one change the evidence supports inside the tunable paths, open an issue labelled loop:improvement, and deliver it as one pull request for independent review. Leave a retro.`,
+    },
+    {
+      id: "tidy",
+      title: "Tidy coordination state",
+      when: "Claims or leases look stuck, or the fleet shows sessions not heard from.",
+      prompt: "Act as the Rallypoint janitor. Read .rallypoint/roles/janitor.md, run `node .rallypoint/scripts/report.mjs`, and repair only what the report proves is stale: old claims, orphaned leases, released tasks still marked claimed. Change nothing else. Leave a retro.",
+    },
+  ];
 }
 
 export const swarmEnvLines = [

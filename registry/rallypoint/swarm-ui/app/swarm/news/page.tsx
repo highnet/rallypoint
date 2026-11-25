@@ -61,7 +61,11 @@ export default async function NewsPage() {
         </Panel>
       ) : null}
       {items.length === 0 ? (
-        <Empty>Nothing has happened yet.</Empty>
+        <Empty>
+          Nothing has happened yet. News collects every {word("version")} {word("shipped")}, every {word("idea")}{" "}
+          {word("buried")}, protocol changes and merged pull requests. The first item usually lands after the first
+          referee run, once <code>npx rallypoint swarm plan plan.json</code> has opened issues to work on.
+        </Empty>
       ) : (
         <ol className="rp-feed">
           {items.map((item) => (

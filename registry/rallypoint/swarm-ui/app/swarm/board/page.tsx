@@ -118,7 +118,17 @@ export default async function BoardPage({
         ]}
       />
       {entries.length === 0 ? (
-        <Empty>Nothing recorded{kind || target ? " for this filter" : " yet"}.</Empty>
+        <Empty>
+          {kind || target ? (
+            "Nothing recorded for this filter yet."
+          ) : (
+            <>
+              Nothing recorded yet. The board fills as agents run the referee, ship{" "}
+              {word("versions")}, bury losing {word("ideas")} and post {word("messages")}. Start by opening issues with{" "}
+              <code>npx rallypoint swarm plan plan.json</code>.
+            </>
+          )}
+        </Empty>
       ) : (
         <ol className="rp-feed">
           {entries.map((entry) => (

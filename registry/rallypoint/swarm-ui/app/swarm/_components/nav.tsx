@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import type { SwarmNavItem } from "../_lib/config-types";
+import type { SwarmNavItem, SwarmTarget } from "../_lib/config-types";
+import { NavIcon, TargetMark } from "./icons";
 
 function isCurrent(pathname: string, href: string): boolean {
   if (href === "/swarm") return pathname === "/swarm";
@@ -15,7 +16,17 @@ function isCurrent(pathname: string, href: string): boolean {
  * The swarm's navigation, grouped by section. Wide screens get a sticky
  * sidebar; narrow screens a disclosure menu that closes on navigation.
  */
-export function SwarmNav({ items, title }: { items: SwarmNavItem[]; title: string }) {
+export function SwarmNav({
+  items,
+  title,
+  targets,
+  targetsLabel,
+}: {
+  items: SwarmNavItem[];
+  title: string;
+  targets: SwarmTarget[];
+  targetsLabel: string;
+}) {
   const pathname = usePathname() ?? "/swarm";
   const menu = useRef<HTMLDetailsElement>(null);
 
@@ -29,7 +40,11 @@ export function SwarmNav({ items, title }: { items: SwarmNavItem[]; title: strin
     if (section) section.items.push(item);
     else sections.push({ name: item.section, items: [item] });
   }
-  const current = items.find((item) => isCurrent(pathname, item.href));
+  // The most specific match wins, so /swarm/targets/x names its target.
+  const current =
+    targets
+      .map((target) => ({ href: `/swarm/targets/${encodeURIComponent(target.id)}`, label: target.name }))
+      .find((entry) => isCurrent(pathname, entry.href)) ?? items.find((item) => isCurrent(pathname, item.href));
 
   const list = (
     <div className="rp-nav-sections">
@@ -40,13 +55,32 @@ export function SwarmNav({ items, title }: { items: SwarmNavItem[]; title: strin
             {section.items.map((item) => (
               <li key={item.href}>
                 <Link aria-current={isCurrent(pathname, item.href) ? "page" : undefined} href={item.href}>
-                  {item.label}
+                  <NavIcon href={item.href} />
+                  <span>{item.label}</span>
                 </Link>
               </li>
             ))}
           </ul>
         </div>
       ))}
+      {targets.length > 0 ? (
+        <div className="rp-nav-section rp-nav-targets">
+          <h2 className="rp-nav-heading">{targetsLabel}</h2>
+          <ul>
+            {targets.map((target) => {
+              const href = `/swarm/targets/${encodeURIComponent(target.id)}`;
+              return (
+                <li key={target.id}>
+                  <Link aria-current={isCurrent(pathname, href) ? "page" : undefined} href={href}>
+                    <TargetMark size="s" target={target} />
+                    <span>{target.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 

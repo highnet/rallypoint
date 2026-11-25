@@ -344,7 +344,7 @@
     },
     {
       "name": "swarm-ui",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "requires": [
         "swarm"
       ],
@@ -358,8 +358,16 @@
       "description": "The swarm UI route scaffold, installed into an existing Next.js App Router app (the UI is the product): Progress, News, Targets, Results, Versions, Ideas buried, Fleet, Sessions, Rallypoint, Board, Messages, How it works, Protocol, Concepts, Skills. Read-only. Generates a project-owned app/swarm/swarm.config.ts.",
       "files": [
         {
+          "source": "swarm-ui/app/swarm/_components/bands.tsx",
+          "target": "app/swarm/_components/bands.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/charts.tsx",
           "target": "app/swarm/_components/charts.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/icons.tsx",
+          "target": "app/swarm/_components/icons.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/chips.tsx",
@@ -505,7 +513,7 @@
     },
     {
       "name": "swarm-dashboard",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "requires": [
         "swarm"
       ],
@@ -516,8 +524,16 @@
       "description": "The same swarm UI scaffold as a standalone Next.js app in swarm-ui/, for projects without a Next.js app or that keep the dashboard separate. Read-only. Generates a project-owned swarm-ui/app/swarm/swarm.config.ts.",
       "files": [
         {
+          "source": "swarm-ui/app/swarm/_components/bands.tsx",
+          "target": "swarm-ui/app/swarm/_components/bands.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/charts.tsx",
           "target": "swarm-ui/app/swarm/_components/charts.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/icons.tsx",
+          "target": "swarm-ui/app/swarm/_components/icons.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/chips.tsx",

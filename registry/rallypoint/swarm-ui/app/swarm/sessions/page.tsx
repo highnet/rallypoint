@@ -42,7 +42,12 @@ export default async function SessionsPage({
         ]}
       />
       {sessions.length === 0 ? (
-        <Empty>No {word("sessions")} yet.</Empty>
+        <Empty>
+          {status ? `No ${status} ${word("sessions")}.` : `No ${word("sessions")} yet.`} An {word("agent")} appears here once
+          it runs <code>npx rallypoint swarm doctor</code> to check its setup and{" "}
+          <code>npx rallypoint swarm prepare</code> to open a {word("session")}; its progress notes and retro follow as it
+          works.
+        </Empty>
       ) : (
         <ol className="rp-cards">
           {sessions.map((session) => (

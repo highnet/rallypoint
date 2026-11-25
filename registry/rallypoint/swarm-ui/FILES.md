@@ -15,8 +15,10 @@ Notes for the manifest:
 
 ## swarm-ui
 
+swarm-ui/app/swarm/_components/bands.tsx -> app/swarm/_components/bands.tsx
 swarm-ui/app/swarm/_components/charts.tsx -> app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> app/swarm/_components/chips.tsx
+swarm-ui/app/swarm/_components/icons.tsx -> app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> app/swarm/_components/nav.tsx
 swarm-ui/app/swarm/_components/results.tsx -> app/swarm/_components/results.tsx
 swarm-ui/app/swarm/_components/role.tsx -> app/swarm/_components/role.tsx
@@ -55,8 +57,10 @@ swarm-ui/app/swarm/versions/page.tsx -> app/swarm/versions/page.tsx
 
 ## swarm-dashboard
 
+swarm-ui/app/swarm/_components/bands.tsx -> swarm-ui/app/swarm/_components/bands.tsx
 swarm-ui/app/swarm/_components/charts.tsx -> swarm-ui/app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> swarm-ui/app/swarm/_components/chips.tsx
+swarm-ui/app/swarm/_components/icons.tsx -> swarm-ui/app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> swarm-ui/app/swarm/_components/nav.tsx
 swarm-ui/app/swarm/_components/results.tsx -> swarm-ui/app/swarm/_components/results.tsx
 swarm-ui/app/swarm/_components/role.tsx -> swarm-ui/app/swarm/_components/role.tsx

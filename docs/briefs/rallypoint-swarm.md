@@ -82,7 +82,39 @@ Arena as proof, and a working path to start either one.
 3. **Generic CLI:** `rallypoint swarm …` commands (`prepare`, `next`, `log`,
    `retro`, `submit`, `plan`, `brief`, `metrics`) talking to the user's own
    Supabase.
-4. **Supabase schema:** migrations the user applies to their own project.
+4. **Supabase schema:** migrations the user applies to their own project,
+   with RLS for the public and the auth-gated read modes.
+5. **Registry item `swarm-ui`:** the dashboard, installed either into the
+   user's app as the product or as a standalone `swarm-ui/` app.
+
+## Frontend integration (the swarm UI)
+
+The arena-style views (Progress, Fleet, Sessions, Board, Messages, Ideas
+buried, Concepts, Protocol) ship as a registry item, shadcn-style:
+
+```bash
+npx rallypoint@latest add swarm-ui
+```
+
+The user owns and restyles the code it writes. It reads their own Supabase,
+and Rallypoint stores nothing. There are two shapes, chosen in the wizard or
+with a flag:
+
+- **The UI is the product.** Like Swarm Arena, the swarm's public record is
+  the site. In an existing Next.js App Router project, `add swarm-ui` writes
+  `app/swarm/*` routes and components into it.
+- **A standalone dashboard.** For a project with no Next.js app (Rust, Python,
+  a proof library…), or when the dashboard should stay separate, it scaffolds
+  a small Next.js + Tailwind app in `swarm-ui/`. That app is pre-wired to
+  their Supabase and deployable to Vercel.
+
+**Access is customizable.** The default is public and read-only, like Swarm
+Arena: the anon key plus read-only RLS. An option puts it behind Supabase
+Auth so only the team sees it. Only agents write, through the CLI with a
+server-side secret, and the browser never writes.
+
+**Look:** Rallypoint's design system (signal colours, role flags) through CSS
+variables, so it reads as Rallypoint and the user can retheme it.
 
 ## Design
 

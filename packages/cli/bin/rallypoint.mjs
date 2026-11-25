@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   access,
   chmod,
@@ -10,6 +10,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const VERSION = "0.7.0"; // x-release-please-version
@@ -40,6 +41,7 @@ ${strong("Usage")}
   rallypoint view <item>
   rallypoint add <item> [--dry-run] [--force] [--cwd <path>]
   rallypoint init [--dry-run] [--cwd <path>]
+  rallypoint swarm connect [--url <url>] [--key <key>] [--generate] [--no-db]
   rallypoint swarm <command> [...]      (after "add swarm"; try "swarm help")
 
 ${strong("Registry")}
@@ -52,6 +54,14 @@ ${strong("Swarm")}
   Supabase, a referee, retros and a conductor. "add swarm-ui" scaffolds the
   swarm's routes into an existing Next.js app; "add swarm-dashboard" creates
   a standalone swarm-ui/ app. Both generate a project-owned swarm.config.ts.
+
+${strong("Connect")}
+  Run after "add swarm" and applying schema.sql. Asks for the Supabase URL,
+  the publishable (anon) key, the service-role key (hidden, used once, never
+  saved) and the swarm secret (hidden, or generated). Sets the secret in the
+  database, verifies it, and writes gitignored env files: agents read
+  .rallypoint/swarm/.env.local, the dashboard reads its own .env.local.
+  Real environment variables still win over the files.
 
 ${strong("Init")}
   Run after "add loop". Confirms the GitHub CLI is installed and
@@ -303,26 +313,63 @@ function forwardToSwarm() {
   process.exitCode = result.status;
 }
 
-function requiredLabels(labels) {
-  return [
-    { name: labels.task, color: "1d76db", description: "Actionable work" },
-    { name: labels.ready, color: "0e8a16", description: "Scoped and available" },
-    { name: labels.claimed, color: "fbca04", description: "Reserved by one worker" },
-    { name: labels.blocked, color: "d93f0b", description: "Cannot proceed" },
-    { name: labels.human, color: "5319e7", description: "Requires an owner decision or protected action" },
-    { name: labels.approved, color: "0e8a16", description: "Reviewer verdict on a pull request" },
+// The labels the installed loop reads. Names come from config.labels, so a
+// project that renamed one gets its own name; the fallbacks are the loop's
+// defaults. `task` and `ready` are gone: the claimable pool is the absence of
+// a hold label (see registry/rallypoint/.rallypoint/scripts/lib/config.mjs),
+// and asking for them created a label literally named "undefined".
+function requiredLabels(labels = {}) {
+  const wanted = [
+    { name: labels.claimed ?? "status:claimed", color: "fbca04", description: "Reserved by one worker" },
+    { name: labels.blocked ?? "status:blocked", color: "d93f0b", description: "Cannot proceed" },
+    { name: labels.deferred ?? "status:deferred", color: "c2e0c6", description: "Deliberately postponed" },
+    { name: labels.human ?? "needs:human", color: "5319e7", description: "Requires an owner decision or protected action" },
+    { name: labels.approved ?? "review:approved", color: "0e8a16", description: "Reviewer verdict on a pull request" },
+    { name: labels.changesRequested ?? "status:changes-requested", color: "e99695", description: "Reviewer asked for changes" },
+    { name: labels.mergedUnreviewed ?? "merged:unreviewed", color: "f9d0c4", description: "Merged before an independent review" },
     { name: labels.improvement ?? "loop:improvement", color: "c5def5", description: "A measured change to the loop's own prompts" },
     { name: "prio:p0", color: "b60205", description: "Priority: highest" },
     { name: "prio:p1", color: "d93f0b", description: "Priority: high" },
     { name: "prio:p2", color: "fbca04", description: "Priority: normal" },
+    { name: "prio:p3", color: "c2e0c6", description: "Priority: low" },
   ];
+  const seen = new Set();
+  return wanted.filter((label) => {
+    if (typeof label.name !== "string" || label.name.trim() === "" || seen.has(label.name)) return false;
+    seen.add(label.name);
+    return true;
+  });
 }
 
+// RALLYPOINT_GH_SCRIPT swaps "gh" for a Node script, as the Swarm runtime
+// does, so tests can drive init against a fake GitHub.
 function gh(...command) {
-  return execFileSync("gh", command, {
+  const script = process.env.RALLYPOINT_GH_SCRIPT;
+  return execFileSync(script ? process.execPath : "gh", script ? [script, ...command] : command, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   }).trim();
+}
+
+function branchProtection(nameWithOwner, branch) {
+  try {
+    gh("api", `repos/${nameWithOwner}/branches/${branch}/protection`);
+    return "protected";
+  } catch (error) {
+    return /404/.test(error.message) ? "unprotected" : "unknown";
+  }
+}
+
+function localBranch(cwd) {
+  try {
+    return execFileSync("git", ["symbolic-ref", "--short", "HEAD"], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
 }
 
 async function initRepo() {
@@ -359,12 +406,24 @@ async function initRepo() {
   }
   console.log(`  ${green("ok")}    repository ${repository.nameWithOwner}`);
 
-  const defaultBranch = repository.defaultBranchRef.name;
+  // An empty repository (no commits yet) has no default branch: gh reports
+  // defaultBranchRef as null or with an empty name. Syncing that would write
+  // integrationBranch: "", so keep what the config already says, or fall back
+  // to the local branch, and say the branch still has to be pushed.
+  const remoteDefault = repository.defaultBranchRef?.name?.trim() || "";
+  const emptyRepository = remoteDefault === "";
+  const defaultBranch = emptyRepository
+    ? config.integrationBranch?.trim() || localBranch(cwd) || "main"
+    : remoteDefault;
+  if (emptyRepository) {
+    console.log(`  ${amber("warn")}  ${repository.nameWithOwner} has no commits yet; using integrationBranch ${defaultBranch} (push it, then re-run “rallypoint init”)`);
+  }
   if (config.integrationBranch !== defaultBranch) {
-    console.log(`  ${amber("sync")}  integrationBranch ${config.integrationBranch} -> ${defaultBranch}`);
+    console.log(`  ${amber("sync")}  integrationBranch ${config.integrationBranch || "(blank)"} -> ${defaultBranch}`);
     config.integrationBranch = defaultBranch;
     if (!dryRun) {
-      await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+      await writeFile(configPath, `${JSON.stringify(config, null, 2)}
+`, "utf8");
     }
   } else {
     console.log(`  ${green("ok")}    integrationBranch already ${defaultBranch}`);
@@ -398,17 +457,13 @@ async function initRepo() {
     }
   }
 
-  let protection = "unknown";
-  try {
-    gh("api", `repos/${repository.nameWithOwner}/branches/${defaultBranch}/protection`);
-    protection = "protected";
-  } catch (error) {
-    protection = /404/.test(error.message) ? "unprotected" : "unknown";
-  }
+  const protection = emptyRepository ? "empty" : branchProtection(repository.nameWithOwner, defaultBranch);
   if (protection === "protected") {
     console.log(`  ${green("ok")}    ${defaultBranch} has branch protection`);
   } else if (protection === "unprotected") {
     console.log(`  ${amber("warn")}  ${defaultBranch} has no branch protection rules`);
+  } else if (protection === "empty") {
+    console.log(`  ${muted("skip")}  branch protection: ${defaultBranch} does not exist on GitHub yet`);
   } else {
     console.log(`  ${muted("skip")}  could not read branch protection for ${defaultBranch} (needs admin scope)`);
   }
@@ -424,10 +479,285 @@ async function initRepo() {
   console.log(`\n${dryRun ? muted("Dry run complete · no changes written") : green("Rallypoint is ready.")}`);
 }
 
+// ---------------------------------------------------------------------------
+// swarm connect: prompt for the Supabase settings and the swarm secret, set
+// the secret in the database, and write the gitignored env files. Secrets are
+// read without echo and never printed.
+// ---------------------------------------------------------------------------
+
+const AGENT_ENV = ".rallypoint/swarm/.env.local";
+const MIN_SECRET = 16; // schema.sql's swarm_set_secret rejects anything shorter
+
+function parseEnv(text) {
+  const values = new Map();
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+    if (match) values.set(match[1], match[2].replace(/^(['"])(.*)\1$/, "$2"));
+  }
+  return values;
+}
+
+// Replace KEY=… lines in place and append the rest, keeping comments and
+// unrelated keys the operator wrote by hand.
+function mergeEnv(text, updates, header) {
+  const pending = new Map(Object.entries(updates));
+  const lines = text ? text.replace(/\r?\n$/, "").split(/\r?\n/) : header.slice();
+  const merged = lines.map((line) => {
+    const key = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1];
+    if (key && pending.has(key)) {
+      const next = pending.get(key);
+      pending.delete(key);
+      return `${key}=${next}`;
+    }
+    return line;
+  });
+  for (const [key, next] of pending) merged.push(`${key}=${next}`);
+  return `${merged.join("\n")}\n`;
+}
+
+async function readText(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+// Interactive terminals get readline for visible answers and raw mode for
+// hidden ones. Piped stdin (scripts, tests) is read line by line instead, so
+// `printf '%s\n' … | rallypoint swarm connect` works without a TTY.
+function createPrompter() {
+  const interactive = Boolean(process.stdin.isTTY);
+  let lines = null;
+  const nextLine = async () => {
+    if (!lines) {
+      const chunks = [];
+      for await (const chunk of process.stdin) chunks.push(chunk);
+      lines = Buffer.concat(chunks).toString("utf8").split(/\r?\n/);
+    }
+    return lines.length ? lines.shift() : "";
+  };
+
+  const visible = async (question) => {
+    if (!interactive) {
+      process.stdout.write(question);
+      const answer = await nextLine();
+      process.stdout.write("\n");
+      return answer.trim();
+    }
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      return (await rl.question(question)).trim();
+    } finally {
+      rl.close();
+    }
+  };
+
+  const hidden = async (question) => {
+    process.stdout.write(question);
+    if (!interactive) {
+      const answer = await nextLine();
+      process.stdout.write("\n");
+      return answer;
+    }
+    return new Promise((done, fail) => {
+      const stdin = process.stdin;
+      let typed = "";
+      const cleanup = () => {
+        stdin.off("data", onData);
+        stdin.setRawMode(false);
+        stdin.pause();
+        process.stdout.write("\n");
+      };
+      const onData = (chunk) => {
+        for (const char of String(chunk)) {
+          if (char === "\r" || char === "\n") {
+            cleanup();
+            done(typed);
+            return;
+          }
+          if (char === "\u0003") {
+            cleanup();
+            fail(new Error("cancelled; nothing was changed"));
+            return;
+          }
+          if (char === "\u007f" || char === "\b") typed = typed.slice(0, -1);
+          else if (char >= " ") typed += char;
+        }
+      };
+      stdin.setRawMode(true);
+      stdin.setEncoding("utf8");
+      stdin.resume();
+      stdin.on("data", onData);
+    });
+  };
+
+  return { interactive, visible, hidden };
+}
+
+const authHeaders = (key) => ({
+  apikey: key,
+  // Legacy keys are JWTs and also go in Authorization; the newer
+  // sb_publishable_/sb_secret_ keys are not JWTs and only go in apikey.
+  ...(key.startsWith("eyJ") ? { Authorization: `Bearer ${key}` } : {}),
+  "Content-Type": "application/json",
+  Accept: "application/json",
+});
+
+async function rpc(url, key, fn, body) {
+  let response;
+  try {
+    response = await fetch(`${url}/rest/v1/rpc/${fn}`, { method: "POST", headers: authHeaders(key), body: JSON.stringify(body) });
+  } catch (error) {
+    throw new Error(`could not reach ${url}: ${error.cause?.message ?? error.message}`);
+  }
+  const text = await response.text();
+  if (!response.ok) {
+    let message = text;
+    try {
+      message = JSON.parse(text).message ?? text;
+    } catch {
+      // not JSON; keep the raw body
+    }
+    const error = new Error(`${fn} failed (${response.status}): ${message}`);
+    error.status = response.status;
+    throw error;
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+// "ignored", "add" (tracked or not ignored yet) or "no-git".
+function ignoreState(cwd, path) {
+  const check = spawnSync("git", ["check-ignore", "-q", path], { cwd });
+  if (check.status === 0) return "ignored";
+  if (check.status === 1) return "add";
+  return "no-git";
+}
+
+function githubRepo() {
+  try {
+    return gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner");
+  } catch {
+    return "";
+  }
+}
+
+async function connectSwarm() {
+  const cwd = resolve(value("--cwd") || process.cwd());
+  if (!(await exists(resolve(cwd, ".rallypoint/swarm/swarm.mjs")))) {
+    throw new Error(`Rallypoint Swarm is not installed here. Run “rallypoint add swarm” after “rallypoint add loop”.`);
+  }
+  const agentPath = resolve(cwd, AGENT_ENV);
+  const agentText = await readText(agentPath);
+  const saved = parseEnv(agentText);
+  const known = (name) => process.env[name] || saved.get(name) || "";
+  const ask = createPrompter();
+  const withDefault = (label, current) => (current ? `${label} [${current}]: ` : `${label}: `);
+
+  console.log(`${strong("Connect Swarm memory")}\n`);
+
+  const knownUrl = known("RALLYPOINT_SUPABASE_URL");
+  const url = (value("--url") || (await ask.visible(withDefault("Supabase project URL", knownUrl))) || knownUrl).replace(/\/+$/, "");
+  if (!/^https?:\/\/\S+$/.test(url)) throw new Error(`“${url || "(empty)"}” is not a URL like https://<project>.supabase.co; nothing was changed`);
+
+  const knownKey = known("RALLYPOINT_SUPABASE_KEY");
+  const key = value("--key") || (await ask.visible(withDefault("Publishable (anon) key", knownKey ? "keep current" : ""))) || knownKey;
+  if (!key) throw new Error("the publishable (anon) key is required (Project settings > API keys); nothing was changed");
+
+  let secret = "";
+  if (!has("--generate")) {
+    secret = await ask.hidden(`Swarm secret (${MIN_SECRET}+ characters, hidden; leave empty to generate one): `);
+    if (secret && ask.interactive) {
+      const again = await ask.hidden("Repeat the swarm secret: ");
+      if (again !== secret) throw new Error("the two entries did not match; nothing was changed");
+    }
+  }
+  const generated = !secret;
+  if (generated) secret = randomBytes(32).toString("base64url");
+  if (secret.length < MIN_SECRET) {
+    throw new Error(`the swarm secret must be at least ${MIN_SECRET} characters (the schema refuses shorter ones); nothing was changed`);
+  }
+
+  if (has("--no-db")) {
+    console.log(`  ${muted("skip")}  database: --no-db (the secret must already be set there)`);
+  } else {
+    const serviceKey = process.env.RALLYPOINT_SUPABASE_SERVICE_KEY
+      || (await ask.hidden("Service-role key (hidden; used once to set the secret, never saved): "));
+    if (!serviceKey) throw new Error("the service-role key is required to set the secret (or pass --no-db); nothing was changed");
+    try {
+      await rpc(url, serviceKey, "swarm_set_secret", { p_secret: secret });
+    } catch (error) {
+      const hint = [401, 403, 404].includes(error.status) || /permission denied/i.test(error.message)
+        ? " Re-apply .rallypoint/swarm/schema.sql (it lets service_role set the secret) and check that the key is the service-role key."
+        : "";
+      throw new Error(`${error.message}.${hint} Nothing was written.`);
+    }
+    console.log(`  ${green("ok")}    secret set in ${url}`);
+  }
+
+  try {
+    await rpc(url, key, "swarm_check", { p_secret: secret });
+    console.log(`  ${green("ok")}    the publishable key and this secret can write`);
+  } catch (error) {
+    throw new Error(`the secret did not verify: ${error.message}. Nothing was written.`);
+  }
+
+  const written = [];
+  await mkdir(dirname(agentPath), { recursive: true });
+  await writeFile(agentPath, mergeEnv(agentText, {
+    RALLYPOINT_SUPABASE_URL: url,
+    RALLYPOINT_SUPABASE_KEY: key,
+    RALLYPOINT_SWARM_SECRET: secret,
+  }, [
+    "# Rallypoint Swarm agents' environment, written by “rallypoint swarm connect”.",
+    "# It holds the swarm secret: never commit, share or print it.",
+  ]), "utf8");
+  await chmod(agentPath, 0o600).catch(() => {});
+  written.push(AGENT_ENV);
+
+  // The dashboard only reads, so it gets the URL and the publishable key,
+  // never the secret. Standalone dashboards live in swarm-ui/; "add swarm-ui"
+  // puts the routes in the project's own Next.js app.
+  const dashboardDir = (await exists(resolve(cwd, "swarm-ui/package.json")))
+    ? "swarm-ui"
+    : (await exists(resolve(cwd, "app/swarm"))) ? "." : null;
+  if (dashboardDir) {
+    const dashboardPath = resolve(cwd, dashboardDir, ".env.local");
+    const dashboardText = await readText(dashboardPath);
+    const repo = parseEnv(dashboardText).get("RALLYPOINT_GITHUB_REPO") || githubRepo();
+    await writeFile(dashboardPath, mergeEnv(dashboardText, {
+      NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL: url,
+      NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY: key,
+      ...(repo ? { RALLYPOINT_GITHUB_REPO: repo } : {}),
+    }, ["# Rallypoint Swarm dashboard, written by “rallypoint swarm connect”. Read-only keys only."]), "utf8");
+    written.push(relative(cwd, dashboardPath).replace(/\\/g, "/"));
+  }
+
+  const gitignore = resolve(cwd, ".gitignore");
+  for (const path of written) {
+    const state = ignoreState(cwd, path);
+    if (state === "add") {
+      const current = await readText(gitignore);
+      await writeFile(gitignore, `${current}${current && !current.endsWith("\n") ? "\n" : ""}/${path}\n`, "utf8");
+      console.log(`  ${green("add ")}  /${path} to .gitignore`);
+    } else if (state === "no-git") {
+      console.log(`  ${amber("warn")}  not a git repository: make sure ${path} is never committed`);
+    }
+    console.log(`  ${green("wrote")} ${path}`);
+  }
+
+  console.log(`\n${green("Swarm memory connected.")} ${generated
+    ? `A new ${secret.length}-character secret was generated and saved to ${AGENT_ENV}; it is not shown here.`
+    : `The secret is saved in ${AGENT_ENV}.`}`);
+  console.log(`Next: ${strong("npx rallypoint@latest swarm doctor")}`);
+}
+
 try {
   // `swarm` forwards everything after it (including --version, --help) to the
   // installed runtime, so it is dispatched before any global flag.
-  if (command === "swarm") {
+  if (command === "swarm" && args[1] === "connect") {
+    await connectSwarm();
+  } else if (command === "swarm") {
     if (!(await exists(resolve(value("--cwd") || process.cwd(), ".rallypoint/swarm/swarm.mjs")))) {
       throw new Error(`Rallypoint Swarm is not installed here. Run “rallypoint add swarm” after “rallypoint add loop”.`);
     }

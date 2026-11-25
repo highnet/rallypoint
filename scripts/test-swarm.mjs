@@ -12,11 +12,11 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const cli = resolve(root, "packages/cli/bin/rallypoint.mjs");
-const lib = (name) => import(resolve(root, "registry/rallypoint/swarm/lib", name));
+const lib = (name) => import(pathToFileURL(resolve(root, "registry/rallypoint/swarm/lib", name)).href);
 
 const { computeQueues, pickRole, referencedIssues } = await lib("roles.mjs");
 const { parseScore, compareScores, referee, validateMeasure } = await lib("referee.mjs");
@@ -169,6 +169,7 @@ const SECRET = "correct-horse-battery-staple";
 const db = { swarm_sessions: [], swarm_progress: [], swarm_retros: [], swarm_messages: [], swarm_results: [], swarm_versions: [], swarm_buried: [], swarm_concepts: [], swarm_concept_trials: [], swarm_protocol_changes: [], swarm_settings: [] };
 let nextId = 1;
 const reads = [];
+const secretsSet = [];
 const metricsRow = () => [{ protocol_version: "p1", shipped: db.swarm_versions.length, buried: db.swarm_buried.length, ship_rate: null, median_claim_to_close_minutes: null, progress_per_session: null, retros_since_change: db.swarm_retros.length, sessions_working: 0 }];
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
@@ -179,6 +180,11 @@ const server = createServer(async (req, res) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(data));
   };
+  if (req.headers.apikey === "service-key" && url.pathname === "/rest/v1/rpc/swarm_set_secret") {
+    if (String(body.p_secret ?? "").length < 16) return send(400, { message: "the swarm secret must be at least 16 characters" });
+    secretsSet.push(body.p_secret);
+    return send(200, null);
+  }
   if (req.headers.apikey !== "anon-key") return send(401, { message: "no apikey" });
   const path = url.pathname.replace("/rest/v1/", "");
   if (path.startsWith("rpc/")) {
@@ -261,15 +267,17 @@ const env = {
 
 // spawnSync would block this process's event loop, and with it the fake
 // server; run the CLI asynchronously instead.
-const rp = (args, { expect = 0, extraEnv = {} } = {}) =>
+const rp = (args, { expect = 0, extraEnv = {}, input = "" } = {}) =>
   new Promise((done, fail) => {
-    const child = spawn(process.execPath, [cli, ...args], { cwd: fixture, env: { ...env, ...extraEnv } });
+    const childEnv = Object.fromEntries(Object.entries({ ...env, ...extraEnv }).filter(([, v]) => v !== undefined));
+    const child = spawn(process.execPath, [cli, ...args], { cwd: fixture, env: childEnv });
+    child.stdin.end(input);
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d));
     child.stderr.on("data", (d) => (stderr += d));
     child.on("close", (status) => {
-      if (status !== expect) fail(new Error(`rallypoint ${args.join(" ")} exited ${status}, expected ${expect}\n${stdout}\n${stderr}`));
+      if (expect !== null && status !== expect) fail(new Error(`rallypoint ${args.join(" ")} exited ${status}, expected ${expect}\n${stdout}\n${stderr}`));
       else done(`${stdout}${stderr}`);
     });
   });
@@ -391,6 +399,57 @@ try {
     assert.ok(created.at(-1).some((a) => a.includes("Concept: reuse")));
   });
 
+  await test("plan creates missing priority and target labels before opening issues", async () => {
+    await writeFile(resolve(fixture, "plan.json"), JSON.stringify([{ title: "Polish", body: "AC: …", target: "web", prio: "p3" }]));
+    const dry = await rp(["swarm", "plan", "plan.json", "--dry-run"]);
+    assert.match(dry, /add +label prio:p3/);
+    assert.match(dry, /add +label target:web/);
+    const before = (await readFile(ghLog, "utf8")).trim().split("\n").length;
+    await rp(["swarm", "plan", "plan.json"]);
+    const calls = (await readFile(ghLog, "utf8")).trim().split("\n").slice(before).map((l) => JSON.parse(l));
+    const firstIssue = calls.findIndex((a) => a[0] === "issue" && a[1] === "create");
+    const labelCreates = calls.map((a, i) => (a[0] === "label" && a[1] === "create" ? [a[2], i] : null)).filter(Boolean);
+    assert.deepEqual(labelCreates.map(([name]) => name).sort(), ["prio:p3", "target:web"]);
+    assert.ok(labelCreates.every(([, i]) => i < firstIssue), "labels exist before the first issue");
+    await writeFile(resolve(fixture, "plan.json"), JSON.stringify([{ title: "X", body: "AC", labels: ["needs:design"] }]));
+    assert.match(await rp(["swarm", "plan", "plan.json"], { expect: 2 }), /needs:design/);
+  });
+
+  await test("connect prompts, sets the secret, and writes gitignored env files", async () => {
+    await mkdir(resolve(fixture, "swarm-ui"), { recursive: true });
+    await writeFile(resolve(fixture, "swarm-ui/package.json"), "{}\n");
+    const short = await rp(["swarm", "connect"], { expect: 1, input: `${memoryUrl}\nanon-key\nshort\n` });
+    assert.match(short, /at least 16 characters/);
+    assert.equal(secretsSet.length, 0);
+
+    const wrongKey = await rp(["swarm", "connect"], { expect: 1, input: `${memoryUrl}\nanon-key\n${SECRET}\nnot-the-service-key\n` });
+    assert.match(wrongKey, /Re-apply .rallypoint\/swarm\/schema.sql/);
+    assert.match(wrongKey, /Nothing was written/);
+
+    const out = await rp(["swarm", "connect"], { input: `${memoryUrl}\nanon-key\n${SECRET}\nservice-key\n` });
+    assert.deepEqual(secretsSet, [SECRET]);
+    assert.ok(!out.includes(SECRET), "connect never prints the secret");
+    assert.ok(!out.includes("service-key\n"), "connect never prints the service-role key");
+    const agentEnv = await readFile(resolve(fixture, ".rallypoint/swarm/.env.local"), "utf8");
+    assert.match(agentEnv, new RegExp(`^RALLYPOINT_SWARM_SECRET=${SECRET}$`, "m"));
+    assert.match(agentEnv, /^RALLYPOINT_SUPABASE_KEY=anon-key$/m);
+    assert.ok(!agentEnv.includes("service-key"), "the service-role key is never saved");
+    const uiEnv = await readFile(resolve(fixture, "swarm-ui/.env.local"), "utf8");
+    assert.match(uiEnv, /^NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY=anon-key$/m);
+    assert.match(uiEnv, /^RALLYPOINT_GITHUB_REPO=acme\/app$/m);
+    assert.ok(!uiEnv.includes(SECRET), "the dashboard never gets the secret");
+    assert.match(await readFile(resolve(fixture, ".gitignore"), "utf8"), /^\/\.rallypoint\/swarm\/\.env\.local$/m);
+    sh("git", "check-ignore", "-q", ".rallypoint/swarm/.env.local");
+    sh("git", "check-ignore", "-q", "swarm-ui/.env.local");
+
+    // The runtime reads the file when the environment does not set a value.
+    const withoutEnv = { RALLYPOINT_SUPABASE_URL: undefined, RALLYPOINT_SUPABASE_KEY: undefined, RALLYPOINT_SWARM_SECRET: undefined };
+    const doctor = await rp(["swarm", "doctor", "--json"], { extraEnv: withoutEnv, expect: null });
+    assert.match(doctor, /set \(agents only\)/);
+
+    await rm(resolve(fixture, "swarm-ui"), { recursive: true, force: true });
+  });
+
   await test("brief, metrics, retros, protocol change and concepts", async () => {
     await rp(["swarm", "concept", "add", "reuse", "Reuse work", "Keep results between steps"]);
     await rp(["swarm", "concept", "trial", "reuse", "--target", "api", "--outcome", "gained", "--delta", "12"]);
@@ -441,7 +500,7 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, install, session, score/checks modes, plan, learning, UI generation).`);
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, install, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

@@ -92,8 +92,25 @@ RPCs (execute granted to `anon, authenticated`; all check the secret first):
 - `swarm_check(p_secret text) returns jsonb`: `{ok, schema_version}`, used by
   `doctor`.
 
-Admin only (no grant to anon or authenticated):
-- `swarm_set_secret(p_secret text)`: run once in the SQL editor.
+Admin only (no grant to anon or authenticated; granted to `service_role`):
+- `swarm_set_secret(p_secret text)`: at least 16 characters. Set once with
+  `rallypoint swarm connect` (which calls it with the service-role key) or in
+  the SQL editor.
+
+## Connect (`rallypoint swarm connect`)
+
+Part of the npm CLI, not the installed runtime. It prompts for the project
+URL, the publishable key, the service-role key (hidden, used once, never
+saved) and the swarm secret (hidden and typed twice, or generated when left
+empty). It calls `swarm_set_secret` with the service-role key, verifies with
+`swarm_check` and the publishable key, then writes gitignored env files:
+`.rallypoint/swarm/.env.local` (URL, key, secret) for agents, and the
+dashboard's `.env.local` (`NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL`,
+`NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY`, `RALLYPOINT_GITHUB_REPO`; never the
+secret). Flags: `--url`, `--key`, `--generate`, `--no-db`;
+`RALLYPOINT_SUPABASE_SERVICE_KEY` skips the service-key prompt. The runtime
+loads `.rallypoint/swarm/.env.local` at start; variables already in the
+environment win.
 
 `swarm_schema_version()` returns `1` and is granted to everyone.
 

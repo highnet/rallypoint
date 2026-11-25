@@ -16,6 +16,7 @@ export const swarmCommands = {
   doctor: "npx rallypoint@latest swarm doctor",
   swarmInit: "npx rallypoint@latest swarm init",
   setSecret: "select swarm_set_secret('<your-swarm-secret>');",
+  connect: "npx rallypoint@latest swarm connect",
   agentPrompt: "Run a swarm agent. Follow .claude/skills/swarm-agent/SKILL.md exactly.",
   conductor: "/loop /swarm-conductor",
 } as const;
@@ -65,7 +66,7 @@ export function agentSetupPrompt(pitch: string, configJson: string, uiShape: "pr
     `Install Swarm: \`${swarmCommands.addSwarm}\`.`,
     "Write the swarm.json below to .rallypoint/swarm.json, replacing the default.",
     ...ui,
-    "Memory lives in my Supabase project. If you have Supabase access (an MCP server or the supabase CLI), apply .rallypoint/swarm/schema.sql to the project I name; otherwise stop and ask me to run it in the SQL editor. Ask me to run `select swarm_set_secret('…');` myself and to give your environment RALLYPOINT_SUPABASE_URL, RALLYPOINT_SUPABASE_KEY and RALLYPOINT_SWARM_SECRET. Never print, log or commit the secret.",
+    "Memory lives in my Supabase project. If you have Supabase access (an MCP server or the supabase CLI), apply .rallypoint/swarm/schema.sql to the project I name; otherwise stop and ask me to run it in the SQL editor. Then ask me to run `npx rallypoint@latest swarm connect` myself in a terminal: it prompts me for the keys and the swarm secret without echoing them, sets the secret and writes the gitignored env files. Never ask me for the secret or a key in chat, and never print, log or commit them.",
     `Run \`${swarmCommands.doctor}\` until it reports Ready. Warnings about the goal are expected before genesis.`,
     "Run swarm genesis: follow .claude/skills/swarm-genesis/SKILL.md with the pitch below. It starts by interviewing me with interview-me (https://interviewme.at) until I confirm the brief, then initializes Impeccable (https://impeccable.style) for PRODUCT.md and DESIGN.md. Open one pull request and do not merge it yourself.",
     `Report what you did, what is waiting on me, and the pull request link. After someone else merges it, run \`${swarmCommands.swarmInit}\` and \`npx rallypoint@latest swarm plan plan.json\`.`,

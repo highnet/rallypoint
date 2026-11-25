@@ -124,12 +124,65 @@ try {
     if (initNoGh.status !== 1 || !initNoGh.stderr.includes("GitHub CLI")) {
       throw new Error("init did not report a missing GitHub CLI");
     }
+
+    // init against a fake GitHub (RALLYPOINT_GH_SCRIPT): the labels it
+    // creates come from config.labels, and an empty repository keeps the
+    // configured integration branch instead of writing "".
+    const ghLog = resolve(initFixture, ".gh-log.jsonl");
+    const fakeGh = resolve(initFixture, "..", `fake-gh-init-${process.pid}.mjs`);
+    await writeFile(fakeGh, `
+import { appendFileSync } from "node:fs";
+const args = process.argv.slice(2);
+appendFileSync(${JSON.stringify(ghLog)}, JSON.stringify(args) + "\\n");
+const key = args.slice(0, 2).join(" ");
+const empty = process.env.FAKE_GH_EMPTY === "1";
+if (args[0] === "--version") console.log("gh version 2.0.0");
+else if (key === "api user") console.log("octo");
+else if (key === "repo view") console.log(JSON.stringify({ nameWithOwner: "acme/app", defaultBranchRef: empty ? null : { name: "trunk" } }));
+else if (key === "label list") console.log(JSON.stringify([{ name: "status:claimed" }]));
+else if (key === "label create") console.log("");
+else if (args[0] === "api" && args[1].endsWith("/protection")) { console.error("HTTP 404: Branch not protected"); process.exit(1); }
+else { console.error("fake gh: unhandled " + args.join(" ")); process.exit(1); }
+`);
+    const initWithFakeGh = (extraEnv) =>
+      spawnSync(process.execPath, [cli, "init"], {
+        cwd: initFixture,
+        encoding: "utf8",
+        env: { ...process.env, RALLYPOINT_GH_SCRIPT: fakeGh, ...extraEnv },
+      });
+    const readConfig = async () => JSON.parse(await readFile(resolve(initFixture, ".rallypoint/config.json"), "utf8"));
+    try {
+      const empty = initWithFakeGh({ FAKE_GH_EMPTY: "1" });
+      const emptyOut = `${empty.stdout}${empty.stderr}`;
+      if (empty.status !== 0) throw new Error(`init on an empty repository failed\n${emptyOut}`);
+      if (/undefined/.test(emptyOut)) throw new Error(`init tried to create an undefined label\n${emptyOut}`);
+      if ((await readConfig()).integrationBranch !== "main") {
+        throw new Error(`init on an empty repository did not keep integrationBranch "main"\n${emptyOut}`);
+      }
+      if (!/no commits yet/.test(emptyOut) || !/does not exist on GitHub yet/.test(emptyOut)) {
+        throw new Error(`init did not explain the empty repository\n${emptyOut}`);
+      }
+      const created = (await readFile(ghLog, "utf8")).trim().split("\n").map((line) => JSON.parse(line))
+        .filter((args) => args[0] === "label" && args[1] === "create").map((args) => args[2]);
+      for (const name of ["status:deferred", "status:changes-requested", "merged:unreviewed", "prio:p3"]) {
+        if (!created.includes(name)) throw new Error(`init did not create label ${name}: ${created.join(", ")}`);
+      }
+      if (created.includes("status:claimed")) throw new Error("init recreated a label that already existed");
+      if (created.some((name) => !name || name === "undefined")) throw new Error(`init created a nameless label: ${created.join(", ")}`);
+
+      const synced = initWithFakeGh({});
+      if (synced.status !== 0 || (await readConfig()).integrationBranch !== "trunk") {
+        throw new Error(`init did not sync integrationBranch to the default branch\n${synced.stdout}${synced.stderr}`);
+      }
+    } finally {
+      await rm(fakeGh, { force: true });
+    }
   } finally {
     await rm(initFixture, { recursive: true, force: true });
   }
 
   console.log(
-    "CLI smoke test passed: inspect, dry-run, install, repeat, hard conflict, AGENTS.md soft conflict, init preconditions.",
+    "CLI smoke test passed: inspect, dry-run, install, repeat, hard conflict, AGENTS.md soft conflict, init preconditions, init labels and empty repositories.",
   );
 } finally {
   await rm(fixture, { recursive: true, force: true });

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.8.0...rallypoint-v0.9.0) (2026-11-25)
+
+
+### Features
+
+* **swarm-ui:** give the dashboard a results-site overview out of the box ([#67](https://github.com/highnet/rallypoint/issues/67)) ([1885b51](https://github.com/highnet/rallypoint/commit/1885b5133a85083e2526d0bca707bfe42120acea))
+
 ## [0.8.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.7.0...rallypoint-v0.8.0) (2026-11-25)
 
 

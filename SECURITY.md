@@ -17,7 +17,7 @@ separately.
 Please do not open a public GitHub issue for security vulnerabilities.
 
 Instead, report it privately using
-[GitHub's private vulnerability reporting](https://github.com/highnet/highnet-agentic-loop/security/advisories/new)
+[GitHub's private vulnerability reporting](https://github.com/highnet/rallypoint/security/advisories/new)
 for this repository. If that option is unavailable to you, contact the
 maintainers directly through GitHub.
 

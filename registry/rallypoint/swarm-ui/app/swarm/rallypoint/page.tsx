@@ -51,7 +51,7 @@ export default async function RallypointPage() {
           {lanes.map((lane) => (
             <Section key={lane.id} lede={lane.description} title={`${lane.label} (${lane.items.length})`}>
               {lane.items.length === 0 ? (
-                <Empty>Nothing here.</Empty>
+                <Empty>Nothing in this lane.</Empty>
               ) : (
                 <ul className="rp-list">
                   {lane.items.slice(0, LANE_PREVIEW).map((item) => (

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { TargetChip } from "../_components/chips";
+import { TargetCard } from "../_components/target-card";
 import { Empty, Gate, PageHead, QueryErrors } from "../_components/states";
-import { cap, formatPercent, formatScore, word } from "../_lib/format";
-import { getSwarmContext, getTargets } from "../_lib/queries";
+import { cap, word } from "../_lib/format";
+import { getOverview, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: cap(word("targets")) };
 export const dynamic = "force-dynamic";
@@ -12,60 +11,38 @@ export const dynamic = "force-dynamic";
 export default async function TargetsPage() {
   const context = await getSwarmContext();
   if (context.state !== "ok") return <Gate context={context} />;
-  const { targets, errors } = await getTargets();
+  const data = await getOverview(context.settings);
 
   return (
     <>
       <PageHead
+        eyebrow="Results"
         title={cap(word("targets"))}
-        lede={`The parts of the goal the swarm works on. Issues carry a target:<id> label.`}
+        lede={`The parts of the goal the swarm works on, each with its own history. Issues carry a target:<id> label.`}
       />
-      <QueryErrors errors={errors} />
-      {targets.length === 0 ? (
-        <Empty>No {word("targets")} configured. Add them in swarm.config.ts.</Empty>
+      <QueryErrors errors={data.errors} />
+      {data.cards.length === 0 ? (
+        <Empty
+          next={
+            <>
+              List them under <code>targets</code> in <code>.rallypoint/swarm.json</code>, then run{" "}
+              <code>npx rallypoint swarm ui-config --force</code> (or edit <code>swarm.config.ts</code> directly).
+            </>
+          }
+        >
+          No {word("targets")} yet.
+        </Empty>
       ) : (
-        <table className="rp-table rp-reflow">
-          <thead>
-            <tr>
-              <th scope="col">{cap(word("target"))}</th>
-              <th scope="col">Latest {word("version")}</th>
-              <th scope="col">{cap(word("results"))}</th>
-              <th scope="col">{cap(word("buried"))}</th>
-              <th scope="col">Issues merged</th>
-            </tr>
-          </thead>
-          <tbody>
-            {targets.map((entry) => (
-              <tr key={entry.target.id}>
-                <td data-label={cap(word("target"))}>
-                  <Link className="rp-row-link" href={`/swarm/targets/${encodeURIComponent(entry.target.id)}`}>
-                    <TargetChip id={entry.target.id} />
-                  </Link>
-                  {entry.target.description ? <p className="rp-soft">{entry.target.description}</p> : null}
-                </td>
-                <td data-label={`Latest ${word("version")}`}>
-                  {entry.latest ? (
-                    <>
-                      <span className="rp-mono">{entry.latest.version}</span>
-                      {entry.latest.score !== null ? <> · {formatScore(entry.latest.score)}</> : null}
-                    </>
-                  ) : (
-                    <span className="rp-soft">—</span>
-                  )}
-                </td>
-                <td data-label={cap(word("results"))}>
-                  {entry.results} ({entry.passed} passed)
-                </td>
-                <td data-label={cap(word("buried"))}>{entry.buried}</td>
-                <td data-label="Issues merged">
-                  {entry.delivery && entry.delivery.total > 0
-                    ? `${entry.delivery.merged} of ${entry.delivery.total} (${formatPercent(entry.delivery.merged / entry.delivery.total)})`
-                    : "—"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="rp-cards-grid">
+          {data.cards.map((entry) => (
+            <TargetCard
+              entry={entry}
+              key={entry.target.id}
+              lastRun={data.results.find((row) => row.target === entry.target.id) ?? null}
+              mode={data.mode}
+            />
+          ))}
+        </ul>
       )}
     </>
   );

@@ -118,7 +118,15 @@ export default async function BoardPage({
         ]}
       />
       {entries.length === 0 ? (
-        <Empty>Nothing recorded{kind || target ? " for this filter" : " yet"}.</Empty>
+        <Empty
+          next={
+            kind || target
+              ? "Clear the filters to see everything."
+              : "Entries appear as agents work: referee runs, versions shipped, ideas buried, protocol changes and messages."
+          }
+        >
+          Nothing recorded{kind || target ? " for this filter" : " yet"}.
+        </Empty>
       ) : (
         <ol className="rp-feed">
           {entries.map((entry) => (

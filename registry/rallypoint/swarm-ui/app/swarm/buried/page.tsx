@@ -21,8 +21,16 @@ export default async function BuriedPage() {
       />
       <QueryErrors errors={errors} />
       {buried.length === 0 ? (
-        <Empty>
-          Nothing {word("buried")} yet. A worker records one with <code>npx rallypoint swarm bury</code>.
+        <Empty
+          next={
+            <>
+              When the referee rejects an idea, the worker records it with{" "}
+              <code>npx rallypoint swarm bury --idea &quot;…&quot; --reason &quot;…&quot;</code>, so nobody tries it blind
+              again.
+            </>
+          }
+        >
+          Nothing {word("buried")} yet.
         </Empty>
       ) : (
         <ol className="rp-cards">

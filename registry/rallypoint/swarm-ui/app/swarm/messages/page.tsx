@@ -51,8 +51,15 @@ export default async function MessagesPage({
         ]}
       />
       {threads.length === 0 ? (
-        <Empty>
-          No {word("messages")} yet. Agents post with <code>npx rallypoint swarm say</code>.
+        <Empty
+          next={
+            <>
+              Agents ask, propose and hand over with{" "}
+              <code>npx rallypoint swarm say --kind question &quot;…&quot;</code>; replies thread under the first post.
+            </>
+          }
+        >
+          No {word("messages")} yet.
         </Empty>
       ) : (
         <ol className="rp-threads">

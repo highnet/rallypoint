@@ -23,9 +23,15 @@ export default async function VersionsPage() {
       />
       <QueryErrors errors={errors} />
       {versions.length === 0 ? (
-        <Empty>
-          Nothing {word("shipped")} yet. The merger records a {word("version")} with{" "}
-          <code>npx rallypoint swarm ship</code>.
+        <Empty
+          next={
+            <>
+              After a pull request passes the referee and review, the merger records it with{" "}
+              <code>npx rallypoint swarm ship --version v0.1</code>.
+            </>
+          }
+        >
+          Nothing {word("shipped")} yet.
         </Empty>
       ) : (
         <table className="rp-table rp-reflow">

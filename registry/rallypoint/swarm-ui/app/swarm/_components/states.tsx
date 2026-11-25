@@ -2,12 +2,25 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { formatDate, timeAgo } from "../_lib/format";
+import { ArrowRight } from "./icons";
 import type { SwarmContext } from "../_lib/queries";
 import type { ReadError } from "../_lib/supabase";
 
-export function PageHead({ title, lede, children }: { title: string; lede?: ReactNode; children?: ReactNode }) {
+export function PageHead({
+  title,
+  lede,
+  eyebrow,
+  children,
+}: {
+  title: string;
+  lede?: ReactNode;
+  /** A short label above the title, e.g. the section the page belongs to. */
+  eyebrow?: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <header className="rp-head">
+      {eyebrow ? <p className="rp-eyebrow">{eyebrow}</p> : null}
       <h1>{title}</h1>
       {lede ? <p className="rp-lede">{lede}</p> : null}
       {children}
@@ -19,25 +32,47 @@ export function Section({
   title,
   lede,
   id,
+  band,
+  more,
   children,
 }: {
   title: string;
   lede?: ReactNode;
   id?: string;
+  /** A full-bleed tinted band, to alternate the rhythm of a long page. */
+  band?: boolean;
+  /** A trailing link under the lede, e.g. { href: "/swarm/news", label: "All stories" }. */
+  more?: { href: string; label: string };
   children: ReactNode;
 }) {
   const headingId = id ?? `s-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
-    <section aria-labelledby={headingId} className="rp-section">
+    <section aria-labelledby={headingId} className={band ? "rp-section rp-band" : "rp-section"}>
       <h2 id={headingId}>{title}</h2>
       {lede ? <p className="rp-section-lede">{lede}</p> : null}
+      {more ? (
+        <p className="rp-more">
+          <Link href={more.href}>
+            {more.label} <ArrowRight />
+          </Link>
+        </p>
+      ) : null}
       {children}
     </section>
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <p className="rp-empty">{children}</p>;
+/**
+ * An empty state that says what fills it, and how. `next` names the step
+ * that makes the first row appear.
+ */
+export function Empty({ children, next }: { children: ReactNode; next?: ReactNode }) {
+  return (
+    <div className="rp-empty">
+      <p>{children}</p>
+      {next ? <p className="rp-empty-next">{next}</p> : null}
+    </div>
+  );
 }
 
 export function Panel({ title, tone, children }: { title: string; tone?: "warn"; children: ReactNode }) {

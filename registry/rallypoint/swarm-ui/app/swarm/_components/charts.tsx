@@ -40,7 +40,7 @@ function niceTicks(min: number, max: number, count: number): number[] {
 }
 
 function Plot({ series, width, height, label }: { series: Series[]; width: number; height: number; label: string }) {
-  const pad = { top: 16, right: width < 500 ? 16 : 120, bottom: 32, left: 52 };
+  const pad = { top: 20, right: width < 500 ? 16 : 170, bottom: 34, left: 56 };
   const all = series.flatMap((s) => s.points);
   const now = Date.now();
   const t0 = Math.min(...all.map((p) => p.t));
@@ -57,6 +57,17 @@ function Plot({ series, width, height, label }: { series: Series[]; width: numbe
   const x = (t: number) => pad.left + ((t - t0) / Math.max(1, t1 - t0)) * (width - pad.left - pad.right);
   const y = (v: number) => pad.top + (1 - (v - lo) / (hi - lo)) * (height - pad.top - pad.bottom);
   const xTicks = [t0, t0 + (t1 - t0) / 2, t1];
+  // End labels: in score order, nudged apart so they never overprint.
+  const labelY = new Map<string, number>();
+  const ends = series
+    .map((s) => ({ id: s.target.id, y: y(s.points[s.points.length - 1]!.score) }))
+    .sort((a, b) => a.y - b.y);
+  let floor = -Infinity;
+  for (const end of ends) {
+    const placed = Math.max(end.y, floor + 16);
+    labelY.set(end.id, placed);
+    floor = placed;
+  }
 
   return (
     <svg className="rp-plot" role="img" aria-label={label} viewBox={`0 0 ${width} ${height}`}>
@@ -94,9 +105,12 @@ function Plot({ series, width, height, label }: { series: Series[]; width: numbe
               <Marker key={p.row.id} kind={s.marker} x={x(p.t)} y={y(p.score)} />
             ))}
             {pad.right > 40 ? (
-              <text className="rp-plot-label" x={x(t1) + 8} y={y(last.score) + 4}>
-                {s.target.name}
-              </text>
+              <g className="rp-plot-end">
+                <circle cx={x(t1) + 10} cy={labelY.get(s.target.id) ?? y(last.score)} r={3.5} />
+                <text className="rp-plot-label" x={x(t1) + 20} y={(labelY.get(s.target.id) ?? y(last.score)) + 4}>
+                  {s.target.name} <tspan className="rp-plot-value">{formatNumber(last.score)}</tspan>
+                </text>
+              </g>
             ) : null}
           </g>
         );
@@ -145,10 +159,10 @@ export function ScoreChart({
         ))}
       </ul>
       <div className="rp-plot-wide">
-        <Plot height={300} label={summary} series={series} width={760} />
+        <Plot height={360} label={summary} series={series} width={1040} />
       </div>
       <div className="rp-plot-narrow">
-        <Plot height={240} label={summary} series={series} width={360} />
+        <Plot height={260} label={summary} series={series} width={360} />
       </div>
       <details className="rp-details">
         <summary>Show the data as a table</summary>
@@ -178,6 +192,28 @@ export function ScoreChart({
         </div>
       </details>
     </figure>
+  );
+}
+
+/** A small step line for one target, drawn in its colour. Decorative. */
+export function Sparkline({ values, color }: { values: number[]; color: string }) {
+  if (values.length < 2) return null;
+  const width = 96;
+  const height = 28;
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const span = hi - lo || 1;
+  const step = width / (values.length - 1);
+  const y = (v: number) => 3 + (1 - (v - lo) / span) * (height - 6);
+  let d = `M0 ${y(values[0]!)}`;
+  values.slice(1).forEach((v, index) => {
+    d += `H${(index + 1) * step}V${y(v)}`;
+  });
+  return (
+    <svg aria-hidden="true" className="rp-spark" height={height} viewBox={`0 0 ${width} ${height}`} width={width}>
+      <path d={d} style={{ stroke: color }} />
+      <circle cx={width} cy={y(values[values.length - 1]!)} r={2.5} style={{ fill: color }} />
+    </svg>
   );
 }
 

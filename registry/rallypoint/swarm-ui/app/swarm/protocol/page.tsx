@@ -72,7 +72,16 @@ export default async function ProtocolPage() {
         lede="The improver turns retros into one protocol change at a time. Each is kept or reverted on the metrics."
       >
         {data.changes.length === 0 ? (
-          <Empty>No protocol changes yet.</Empty>
+          <Empty
+            next={
+              <>
+                The improver records one with <code>npx rallypoint swarm protocol change --summary &quot;…&quot;</code> after
+                enough retros point at the same friction.
+              </>
+            }
+          >
+            No protocol changes yet.
+          </Empty>
         ) : (
           <table className="rp-table rp-reflow">
             <thead>

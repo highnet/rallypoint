@@ -49,8 +49,15 @@ export default async function ConceptsPage() {
       />
       <QueryErrors errors={errors} />
       {concepts.length === 0 ? (
-        <Empty>
-          No {word("concepts")} yet. Add one with <code>npx rallypoint swarm concept add</code>.
+        <Empty
+          next={
+            <>
+              The planner names one with <code>npx rallypoint swarm concept add &lt;id&gt; &quot;&lt;name&gt;&quot;</code>; each{" "}
+              <code>swarm concept trial</code> then records how it did on a {word("target")}.
+            </>
+          }
+        >
+          No {word("concepts")} yet.
         </Empty>
       ) : (
         <>

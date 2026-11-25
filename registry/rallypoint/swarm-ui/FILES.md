@@ -17,10 +17,13 @@ Notes for the manifest:
 
 swarm-ui/app/swarm/_components/charts.tsx -> app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> app/swarm/_components/chips.tsx
+swarm-ui/app/swarm/_components/icons.tsx -> app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> app/swarm/_components/nav.tsx
+swarm-ui/app/swarm/_components/news.tsx -> app/swarm/_components/news.tsx
 swarm-ui/app/swarm/_components/results.tsx -> app/swarm/_components/results.tsx
 swarm-ui/app/swarm/_components/role.tsx -> app/swarm/_components/role.tsx
 swarm-ui/app/swarm/_components/states.tsx -> app/swarm/_components/states.tsx
+swarm-ui/app/swarm/_components/target-card.tsx -> app/swarm/_components/target-card.tsx
 swarm-ui/app/swarm/_lib/config-types.ts -> app/swarm/_lib/config-types.ts
 swarm-ui/app/swarm/_lib/format.ts -> app/swarm/_lib/format.ts
 swarm-ui/app/swarm/_lib/github.ts -> app/swarm/_lib/github.ts
@@ -57,10 +60,13 @@ swarm-ui/app/swarm/versions/page.tsx -> app/swarm/versions/page.tsx
 
 swarm-ui/app/swarm/_components/charts.tsx -> swarm-ui/app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> swarm-ui/app/swarm/_components/chips.tsx
+swarm-ui/app/swarm/_components/icons.tsx -> swarm-ui/app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> swarm-ui/app/swarm/_components/nav.tsx
+swarm-ui/app/swarm/_components/news.tsx -> swarm-ui/app/swarm/_components/news.tsx
 swarm-ui/app/swarm/_components/results.tsx -> swarm-ui/app/swarm/_components/results.tsx
 swarm-ui/app/swarm/_components/role.tsx -> swarm-ui/app/swarm/_components/role.tsx
 swarm-ui/app/swarm/_components/states.tsx -> swarm-ui/app/swarm/_components/states.tsx
+swarm-ui/app/swarm/_components/target-card.tsx -> swarm-ui/app/swarm/_components/target-card.tsx
 swarm-ui/app/swarm/_lib/config-types.ts -> swarm-ui/app/swarm/_lib/config-types.ts
 swarm-ui/app/swarm/_lib/format.ts -> swarm-ui/app/swarm/_lib/format.ts
 swarm-ui/app/swarm/_lib/github.ts -> swarm-ui/app/swarm/_lib/github.ts

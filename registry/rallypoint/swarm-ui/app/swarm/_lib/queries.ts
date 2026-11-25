@@ -226,6 +226,83 @@ export async function getProgress(settings: SwarmSettings): Promise<ProgressData
   };
 }
 
+/* ───────────────────────── Shell (every page) ───────────────────────── */
+
+export type ShellData = {
+  /** Sessions working now, or null when memory cannot be read. */
+  working: number | null;
+  /** The newest version shipped or idea buried, for the "Just in" strip. */
+  latest: NewsItem | null;
+};
+
+/**
+ * What the frame around every page prints: the live status in the top bar
+ * and the newest event. Never throws and never blocks a page on an error.
+ */
+export const getShell = cache(async (): Promise<ShellData> => {
+  const context = await getSwarmContext();
+  if (context.state !== "ok") return { working: null, latest: null };
+  const [metrics, version, buried] = await Promise.all([
+    selectRows("swarm_metrics", { limit: 1 }),
+    selectRows("swarm_versions", { order: "created_at.desc", limit: 1 }),
+    selectRows("swarm_buried", { order: "created_at.desc", limit: 1 }),
+  ]);
+  const ignored: Errors = [];
+  const candidates: NewsItem[] = [
+    ...take(version, [], ignored).map((row): NewsItem => ({ kind: "version", at: row.created_at, row })),
+    ...take(buried, [], ignored).map((row): NewsItem => ({ kind: "buried", at: row.created_at, row })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+  return {
+    working: first(metrics, ignored)?.sessions_working ?? (metrics.ok ? 0 : null),
+    latest: candidates[0] ?? null,
+  };
+});
+
+/* ───────────────────────── Overview (/swarm) ───────────────────────── */
+
+export type OverviewData = ProgressData & {
+  fleet: FleetRow[];
+  news: NewsItem[];
+  cards: TargetSummary[];
+  /** Open, unclaimed issues from GitHub, newest first (empty without GitHub). */
+  upNext: GithubItem[];
+  totals: { results: number | null; shipped: number | null; buried: number | null };
+};
+
+/** Everything the overview prints, read in parallel. */
+export async function getOverview(settings: SwarmSettings): Promise<OverviewData> {
+  const [progress, fleet, news, cards, github, resultCount] = await Promise.all([
+    getProgress(settings),
+    getFleet(),
+    getNews(),
+    getTargets(),
+    getGithubItems(),
+    countRows("swarm_results"),
+  ]);
+  const errors = [...progress.errors, ...fleet.errors, ...news.errors, ...cards.errors];
+  const upNext = github.ok
+    ? github.items
+        .filter((item) => laneOf(item) === "backlog")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 3)
+    : [];
+  return {
+    ...progress,
+    errors: errors.filter(
+      (error, index) => errors.findIndex((other) => other.table === error.table) === index,
+    ),
+    fleet: fleet.fleet,
+    news: news.items,
+    cards: cards.targets,
+    upNext,
+    totals: {
+      results: resultCount.ok ? resultCount.data : null,
+      shipped: progress.metrics?.shipped ?? null,
+      buried: progress.metrics?.buried ?? null,
+    },
+  };
+}
+
 /* ───────────────────────── News ───────────────────────── */
 
 export type NewsItem =

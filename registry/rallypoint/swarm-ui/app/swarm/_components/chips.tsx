@@ -119,3 +119,16 @@ export function IssuePr({ issue, pr }: { issue: number | null; pr: number | null
     </span>
   );
 }
+
+/**
+ * A target's mark: a tile in its colour carrying its initial. Decorative;
+ * always placed beside the target's name.
+ */
+export function TargetMark({ name, color, size = "m" }: { name: string; color: string; size?: "s" | "m" | "l" }) {
+  const style = { "--rp-target": color } as CSSProperties;
+  return (
+    <span aria-hidden="true" className={`rp-mark rp-mark-${size}`} style={style}>
+      {Array.from(name.trim())[0]?.toUpperCase() ?? "·"}
+    </span>
+  );
+}

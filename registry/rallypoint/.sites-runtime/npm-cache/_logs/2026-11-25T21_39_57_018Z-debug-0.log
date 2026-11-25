@@ -1,0 +1,19 @@
+0 verbose cli /opt/node22/bin/node /opt/node22/bin/npm
+1 info using npm@10.9.9
+2 info using node@v22.23.5
+3 silly config load:file:/opt/node22/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/user/rallypoint/.npmrc
+5 silly config load:file:/root/.npmrc
+6 silly config load:file:/opt/node22/etc/npmrc
+7 verbose title npm view geist version time.modified peerDependencies
+8 verbose argv "view" "geist" "version" "time.modified" "peerDependencies"
+9 verbose logfile logs-max:10 dir:/home/user/rallypoint/registry/rallypoint/.sites-runtime/npm-cache/_logs/2026-11-25T21_39_57_018Z-
+10 verbose logfile /home/user/rallypoint/registry/rallypoint/.sites-runtime/npm-cache/_logs/2026-11-25T21_39_57_018Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET 200 https://registry.npmjs.org/geist 122ms (cache miss)
+13 verbose cwd /home/user/rallypoint/registry/rallypoint
+14 verbose os Linux 6.18.44-fc-v880
+15 verbose node v22.23.5
+16 verbose npm  v10.9.9
+17 verbose exit 0
+18 info ok

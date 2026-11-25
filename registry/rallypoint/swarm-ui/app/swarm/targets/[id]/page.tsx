@@ -41,7 +41,9 @@ export default async function TargetPage({ params }: Props) {
           {data.versions.some((row) => row.score !== null) ? (
             <ScoreChart label={`${data.target.name} ${word("score")}`} targets={[data.target]} versions={data.versions} />
           ) : (
-            <Empty>Nothing {word("shipped")} with a {word("score")} yet.</Empty>
+            <Empty next={<>The merger records one with <code>npx rallypoint swarm ship --target {data.target.id} --score &lt;n&gt;</code>.</>}>
+              Nothing {word("shipped")} with a {word("score")} yet.
+            </Empty>
           )}
         </Section>
       ) : (
@@ -94,7 +96,16 @@ export default async function TargetPage({ params }: Props) {
 
       <Section title="Open issues">
         {data.openIssues.length === 0 ? (
-          <Empty>No open issues with the target:{data.target.id} label.</Empty>
+          <Empty
+            next={
+              <>
+                Give issues the <code>target:{data.target.id}</code> label, or open them from a plan with{" "}
+                <code>npx rallypoint swarm plan plan.json</code>.
+              </>
+            }
+          >
+            No open issues for this {word("target")}.
+          </Empty>
         ) : (
           <ul className="rp-list">
             {data.openIssues.map((item) => (

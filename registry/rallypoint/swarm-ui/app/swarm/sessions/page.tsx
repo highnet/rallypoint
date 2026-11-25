@@ -42,7 +42,17 @@ export default async function SessionsPage({
         ]}
       />
       {sessions.length === 0 ? (
-        <Empty>No {word("sessions")} yet.</Empty>
+        <Empty
+          next={
+            <>
+              A row appears when an {word("agent")} opens a {word("session")}: run{" "}
+              <code>npx rallypoint swarm doctor</code> once to check the setup, then{" "}
+              <code>npx rallypoint swarm prepare</code>. Its notes and retro land here as it works.
+            </>
+          }
+        >
+          No {word("sessions")} yet.
+        </Empty>
       ) : (
         <ol className="rp-cards">
           {sessions.map((session) => (

@@ -187,7 +187,10 @@ The wizard's main input is a **pitch** of one or two sentences, stored in
 `goal.pitch`. The `swarm-genesis` skill
 (`.claude/skills/swarm-genesis/SKILL.md`, body in
 `.rallypoint/swarm/skills/swarm-genesis.md`) runs once in a coding agent. It
-turns the pitch plus any wizard choices into: targets, the measure and a
+first interviews the operator with interview-me (https://interviewme.at) until
+a brief in `docs/briefs/<slug>.md` is confirmed, and initializes Impeccable
+(https://impeccable.style) so that `PRODUCT.md` and `DESIGN.md` come from that
+brief. Then it turns the pitch, the brief and any wizard choices into: targets, the measure and a
 referee script, a completed `.rallypoint/swarm.json`, the project's
 `app/swarm/swarm.config.ts` (when a UI is installed), per-target playbooks,
 and the first `plan.json`, including UI issues when `ui.includeUiTarget` is

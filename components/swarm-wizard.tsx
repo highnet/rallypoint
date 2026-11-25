@@ -181,7 +181,7 @@ export function SwarmWizard() {
       command: genesis,
       shell: false,
       detail:
-        "One prompt: it writes your swarm.json, decides what you left open, and opens one pull request. Review and merge it like any other.",
+        "One prompt: it interviews you (interview-me) until you confirm a brief, initializes Impeccable for PRODUCT.md and DESIGN.md, writes your swarm.json, decides what you left open, and opens one pull request. Review and merge it like any other.",
     },
     { title: "Create target labels and store the goal", command: swarmCommands.swarmInit },
     { title: "Start one session by hand", command: swarmCommands.agentPrompt, shell: false },
@@ -951,8 +951,10 @@ export function SwarmWizard() {
           <h3>Let an agent do the whole setup</h3>
           <p className="install-detail">
             One prompt for a coding agent on your repository. It installs the loop and Swarm, writes your{" "}
-            <code>swarm.json</code>, runs <code>doctor</code> and genesis, and opens one pull request. It
-            stops to ask you only for Supabase and the secret, and never merges its own work.
+            <code>swarm.json</code>, runs <code>doctor</code>, then genesis: it interviews you with
+            interview-me until you confirm a brief, initializes Impeccable for <code>PRODUCT.md</code> and{" "}
+            <code>DESIGN.md</code>, and opens one pull request. Otherwise it stops only for Supabase and the
+            secret, and never merges its own work.
           </p>
           <CommandCopy className="command-block command-json command-tall" command={agentSetup} id="wiz-agentic" label="agentic setup prompt" shell={false} />
         </div>

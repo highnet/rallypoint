@@ -69,8 +69,11 @@ requests, labels, reviews, merges. Swarm adds:
 
    > Run swarm genesis. Follow .claude/skills/swarm-genesis/SKILL.md. Pitch: <your pitch>.
 
-   It opens one pull request with your targets, measure, referee, playbooks,
-   UI config and first plan. Have it reviewed and merged by someone else.
+   It first interviews you with interview-me (https://interviewme.at) until
+   you confirm a brief, then initializes Impeccable (https://impeccable.style)
+   so `PRODUCT.md` and `DESIGN.md` come from that brief. Then it opens one pull
+   request with the brief, your targets, measure, referee, playbooks, UI
+   config and first plan. Have it reviewed and merged by someone else.
 6. `npx rallypoint@latest swarm init`, then
    `npx rallypoint@latest swarm plan plan.json`.
 7. Start working. Either one session at a time:

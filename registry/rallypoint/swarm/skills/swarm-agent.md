@@ -28,6 +28,12 @@ The order is finish-first: merger → fixer → reviewer → improver → worker
 planner → janitor. Exit code `4` means nothing waits for you: leave a retro
 and stop.
 
+Read the confirmed brief in `docs/briefs/` and `PRODUCT.md` before you change
+what the product does. Read `DESIGN.md` too before you change how it looks.
+After a UI change, run `/impeccable critique` on what you touched and fix what
+it flags before you referee. Genesis set these up, so build against them
+rather than re-deciding them.
+
 Before changing anything for a target, read its playbook
 (`.rallypoint/swarm/playbooks/<target>.md`) and run `swarm brief`. The
 playbook and the buried ideas are what earlier sessions learned. Do not retry

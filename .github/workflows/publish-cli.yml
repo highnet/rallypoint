@@ -53,6 +53,9 @@ jobs:
       - name: Run the CLI test gate
         run: npm run cli:test
 
+      - name: Run the Swarm test gate
+        run: npm run swarm:test
+
       # Authenticates via OIDC trusted publishing (npm's Trusted Publisher
       # setting for this repo + workflow filename) — no NPM_TOKEN secret.
       - name: Publish to npm

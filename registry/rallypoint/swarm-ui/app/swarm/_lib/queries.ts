@@ -4,6 +4,7 @@ import { swarmConfig } from "../swarm.config";
 import type { MeasureMode, SwarmTarget } from "./config-types";
 import {
   deliveryOf,
+  githubRepoUrl,
   laneOf,
   LANES,
   listDirectory,
@@ -521,7 +522,7 @@ export async function getProtocol(settings: SwarmSettings) {
     metrics: metricsRow,
     protocolVersion: metricsRow?.protocol_version ?? settings.protocol_version ?? null,
     changes: take(changes, [], errors),
-    repo: readGithubRepo(),
+    repoUrl: githubRepoUrl(),
     errors,
   };
 }

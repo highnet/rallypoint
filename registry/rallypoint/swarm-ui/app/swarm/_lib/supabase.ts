@@ -19,9 +19,10 @@ export const ENV_KEY = "NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY";
 export type SupabaseEnv = { url: string; key: string };
 
 export function readSupabaseEnv(): { env: SupabaseEnv | null; missing: string[] } {
-  // Read with literal names so Next can inline NEXT_PUBLIC_* values at build.
-  const url = process.env.NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL?.trim() ?? "";
-  const key = process.env.NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY?.trim() ?? "";
+  // Read at runtime (indexed access is not inlined at build), so a deploy can
+  // change these without a rebuild. Only server code reads them.
+  const url = process.env[ENV_URL]?.trim() ?? "";
+  const key = process.env[ENV_KEY]?.trim() ?? "";
   const missing: string[] = [];
   if (!url) missing.push(ENV_URL);
   if (!key) missing.push(ENV_KEY);

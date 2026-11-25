@@ -42,7 +42,7 @@ export default async function ProtocolPage() {
             <li key={prompt.title}>
               <h3>{prompt.title}</h3>
               <p className="rp-soft">{prompt.when}</p>
-              <pre className="rp-code">{data.repo ? `Repository: github.com/${data.repo}\n${prompt.prompt}` : prompt.prompt}</pre>
+              <pre className="rp-code">{data.repoUrl ? `Repository: ${data.repoUrl}\n${prompt.prompt}` : prompt.prompt}</pre>
             </li>
           ))}
         </ul>

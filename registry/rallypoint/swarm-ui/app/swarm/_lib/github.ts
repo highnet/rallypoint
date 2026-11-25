@@ -3,13 +3,16 @@
  * labels and pull requests. Reads `RALLYPOINT_GITHUB_REPO` ("owner/name")
  * and the optional `RALLYPOINT_GITHUB_TOKEN` (raises rate limits, reads
  * private repositories). The token never reaches the browser. Responses are
- * cached for 120 seconds.
+ * cached for 120 seconds. `RALLYPOINT_GITHUB_API_URL` (optional) points at a
+ * GitHub Enterprise Server API, e.g. https://ghe.example.com/api/v3.
  */
 
 export const ENV_REPO = "RALLYPOINT_GITHUB_REPO";
 export const ENV_TOKEN = "RALLYPOINT_GITHUB_TOKEN";
 
-const API = "https://api.github.com";
+const API = (process.env.RALLYPOINT_GITHUB_API_URL?.trim() || "https://api.github.com").replace(/\/+$/, "");
+/** The web host for links: github.com, or the Enterprise host of the API URL. */
+const WEB = API === "https://api.github.com" ? "https://github.com" : API.replace(/\/api\/v3$/, "");
 const REVALIDATE_SECONDS = 120;
 /** Pages of 100 issues/PRs read per request (most recently updated first). */
 const MAX_PAGES = 3;
@@ -65,12 +68,12 @@ export function githubRefUrl(ref: number | string | null | undefined): string | 
   if (!repo || ref === null || ref === undefined) return null;
   const number = typeof ref === "number" ? ref : Number(String(ref).replace(/^#/, ""));
   if (!Number.isInteger(number) || number <= 0) return null;
-  return `https://github.com/${repo}/issues/${number}`;
+  return `${WEB}/${repo}/issues/${number}`;
 }
 
 export function githubRepoUrl(path = ""): string | null {
   const repo = readGithubRepo();
-  return repo ? `https://github.com/${repo}${path}` : null;
+  return repo ? `${WEB}/${repo}${path}` : null;
 }
 
 function githubHeaders(accept = "application/vnd.github+json"): Record<string, string> {

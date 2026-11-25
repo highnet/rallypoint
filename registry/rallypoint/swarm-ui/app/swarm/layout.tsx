@@ -24,25 +24,27 @@ export default async function SwarmLayout({ children }: { children: ReactNode })
         Skip to the content
       </a>
       <aside className="rp-sidebar">
-        <div className="rp-brand">
-          <svg aria-hidden="true" className="rp-flag" height="22" viewBox="0 0 24 24" width="22">
-            <path className="sf-r" d="M0 0h24L12 12z" />
-            <path className="sf-y" d="M24 0v24L12 12z" />
-            <path className="sf-b" d="M24 24H0l12-12z" />
-            <path className="sf-k" d="M0 24V0l12 12z" />
-            <rect className="sf-edge" height="23" width="23" x="0.5" y="0.5" />
-          </svg>
-          <Link href="/swarm">{swarmConfig.project.name}</Link>
+        <div className="rp-sidebar-inner">
+          <div className="rp-brand">
+            <svg aria-hidden="true" className="rp-flag" height="22" viewBox="0 0 24 24" width="22">
+              <path className="sf-r" d="M0 0h24L12 12z" />
+              <path className="sf-y" d="M24 0v24L12 12z" />
+              <path className="sf-b" d="M24 24H0l12-12z" />
+              <path className="sf-k" d="M0 24V0l12 12z" />
+              <rect className="sf-edge" height="23" width="23" x="0.5" y="0.5" />
+            </svg>
+            <Link href="/swarm">{swarmConfig.project.name}</Link>
+          </div>
+          <SwarmNav items={swarmConfig.nav} title={swarmConfig.project.name} />
+          {signedIn ? (
+            <form action={signOut} className="rp-session">
+              <span>Signed in</span>
+              <button className="rp-linkish" type="submit">
+                Sign out
+              </button>
+            </form>
+          ) : null}
         </div>
-        <SwarmNav items={swarmConfig.nav} title={swarmConfig.project.name} />
-        {signedIn ? (
-          <form action={signOut} className="rp-session">
-            <span>Signed in</span>
-            <button className="rp-linkish" type="submit">
-              Sign out
-            </button>
-          </form>
-        ) : null}
       </aside>
       <main className="rp-main" id="rp-main">
         {children}

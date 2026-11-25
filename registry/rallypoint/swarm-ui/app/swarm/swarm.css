@@ -222,9 +222,11 @@
 /* ───────────────────────── Frame and navigation ───────────────────────── */
 
 .rp-sidebar {
-  align-self: start;
   background: var(--rp-paper-sunk);
   border-right: 1px solid var(--rp-rule);
+}
+
+.rp-sidebar-inner {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -327,16 +329,21 @@
   }
 
   .rp-sidebar {
-    align-items: center;
     border-bottom: 1px solid var(--rp-rule);
     border-right: 0;
+    position: relative;
+    z-index: 5;
+  }
+
+  .rp-sidebar-inner {
+    align-items: center;
     flex-direction: row;
     flex-wrap: wrap;
     height: auto;
     justify-content: space-between;
     overflow: visible;
     padding: 10px 16px;
-    z-index: 5;
+    position: static;
   }
 
   .rp-nav-wide {
@@ -459,6 +466,11 @@
   margin: 0 0 8px;
 }
 
+.rp-head + .rp-figures {
+  border-top: 0;
+  margin-top: -12px;
+}
+
 .rp-figures > div {
   padding: 16px 16px 16px 0;
 }
@@ -558,6 +570,7 @@
 }
 
 .rp-cell {
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -583,8 +596,10 @@
   }
 
   .rp-reflow td {
+    align-items: start;
     border: 0;
     display: grid;
+    justify-items: start;
     gap: 12px;
     grid-template-columns: 7.5rem minmax(0, 1fr);
     padding: 3px 0;

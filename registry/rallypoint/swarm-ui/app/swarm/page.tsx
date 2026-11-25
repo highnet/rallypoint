@@ -64,12 +64,12 @@ export default async function ProgressPage() {
 
       {data.mode === "score" ? (
         <Section
-          title={`${cap(word("score"))} over time`}
+          title={`${measure.label || cap(word("score"))} over time`}
           lede={`Each step is a ${word("version")} ${word("shipped")} after it beat the baseline.`}
         >
           {data.versions.some((row) => row.score !== null) ? (
             <ScoreChart
-              label={`${cap(word("score"))} of ${word("shipped")} ${word("versions")}`}
+              label={`${measure.label || cap(word("score"))} of ${word("shipped")} ${word("versions")}`}
               targets={data.targets}
               versions={data.versions}
             />

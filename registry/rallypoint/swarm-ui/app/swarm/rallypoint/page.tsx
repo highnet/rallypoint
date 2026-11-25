@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { LabelChip, Ref, TargetChip } from "../_components/chips";
 import { Empty, Figures, Gate, PageHead, Panel, Section, TimeAgo } from "../_components/states";
-import { targetsOf } from "../_lib/github";
+import { githubRepoUrl, targetsOf } from "../_lib/github";
 import { getLanes, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Rallypoint" };
@@ -23,11 +23,11 @@ export default async function RallypointPage() {
       >
         {repo ? (
           <p>
-            <a href={`https://github.com/${repo}/issues`} rel="noreferrer" target="_blank">
+            <a href={githubRepoUrl("/issues") ?? "#"} rel="noreferrer" target="_blank">
               Issues on GitHub
             </a>{" "}
             ·{" "}
-            <a href={`https://github.com/${repo}/pulls`} rel="noreferrer" target="_blank">
+            <a href={githubRepoUrl("/pulls") ?? "#"} rel="noreferrer" target="_blank">
               Pull requests
             </a>
           </p>

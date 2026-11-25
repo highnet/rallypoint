@@ -6,6 +6,7 @@ import { IssuePr, LabelChip, Ref, TargetChip } from "../../_components/chips";
 import { ResultsTable } from "../../_components/results";
 import { Empty, Gate, PageHead, Panel, QueryErrors, Section, TimeAgo } from "../../_components/states";
 import { cap, formatScore, word } from "../../_lib/format";
+import { swarmConfig } from "../../swarm.config";
 import { findTarget, getSwarmContext, getTarget, measureMode } from "../../_lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export default async function TargetPage({ params }: Props) {
       <QueryErrors errors={data.errors} />
 
       {mode === "score" ? (
-        <Section title={`${cap(word("score"))} over time`}>
+        <Section title={`${swarmConfig.measure.label || cap(word("score"))} over time`}>
           {data.versions.some((row) => row.score !== null) ? (
             <ScoreChart label={`${data.target.name} ${word("score")}`} targets={[data.target]} versions={data.versions} />
           ) : (

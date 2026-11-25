@@ -21,11 +21,11 @@ requests, labels, reviews, merges. Swarm adds:
 | | Vanilla | Swarm |
 | --- | --- | --- |
 | Memory | GitHub history | Your own Supabase project: sessions, progress, retros, messages, results, versions, buried ideas, concepts |
-| Role choice | You paste a role prompt | `swarm next` picks it, finish-first: merger → fixer → reviewer → improver → worker → planner → janitor |
+| Role choice | The orchestrator names the next role; each session takes one | `swarm next` picks it, finish-first: merger → fixer → reviewer → improver → worker → planner → janitor |
 | Quality gate | Independent review | A referee first (`score`, `checks` or `review` mode), then independent review |
 | Learning | Improver on delivery metrics | Plus a retro from every session, buried ideas, and concepts ported across targets |
 | Talking | None | Public messages in memory: questions, proposals, hand-offs. No private channels |
-| Running it | One prompt per role | A conductor `/loop` dispatching one session per role and target |
+| Running a fleet | The orchestrator dispatches one session per role | The orchestrator runs as the conductor `/loop`: one session per role and target, with memory, concurrency, budget and escalation |
 | Watching it | GitHub | Optional swarm UI: a route scaffold your project grows into its own frontend |
 
 ## Files

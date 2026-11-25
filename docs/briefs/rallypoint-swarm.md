@@ -29,11 +29,11 @@ missing piece is shared memory**, and that is the thing Swarm adds.
 | ------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------- |
 | Coordination        | GitHub only: issues, claim refs, labels, PRs           | Same; GitHub still owns the work                                                 |
 | Memory              | None beyond GitHub history                             | Bring-your-own Supabase: sessions, progress logs, retros, messages, results, buried ideas, concepts |
-| Role choice         | Human pastes a role prompt                             | Session picks its own role, finishing first: merger → fixer → reviewer → improver → worker → planner → janitor |
+| Role choice         | The orchestrator names the next role                   | Session picks its own role, finishing first: merger → fixer → reviewer → improver → worker → planner → janitor |
 | Quality gate        | Independent review bound to head SHA                   | + a **referee** that measures every change; it ships only if it wins, otherwise it is buried with its numbers |
 | Learning            | Improver on before/after delivery metrics              | + a retro from every session, buried ideas, concepts ported across targets, metrics (ship rate, claim→close) |
 | Agent communication | Agents never message each other                        | Agents ask, propose and hand off in board threads, stored in memory and visible to all |
-| Running it          | Prompts per role                                       | Conductor `/loop` dispatches one session per role and target (concurrency, budget, focus, escalation) |
+| Running a fleet     | The orchestrator dispatches one session per role       | The orchestrator runs as the conductor `/loop`: one session per role and target (memory, concurrency, budget, focus, escalation) |
 | Visibility          | GitHub views                                           | Fleet, Sessions, Board, Messages, Progress, Ideas buried, Concepts views         |
 | Setup               | `npx rallypoint@latest add loop` + `init`              | More setup: a Supabase project, the CLI, the wizard that picks the goal and the measure |
 | Live proof          | UTON OS (1,328 PRs opened, 1,256 merged in 8 weeks)    | Swarm Arena (swarm-arena-race.vercel.app): chess, Go 9×9, Othello and Hex engines written from scratch, each version measured against Stockfish, GNU Go, Edax and an MCTS ladder |

@@ -161,7 +161,7 @@ export const tierComparison: { aspect: string; vanilla: string; swarm: string }[
   },
   {
     aspect: "Role choice",
-    vanilla: "You paste a role prompt.",
+    vanilla: "The orchestrator surveys the board and names the next role; each session takes one.",
     swarm:
       "Each session picks its own role, finishing first: merger → fixer → reviewer → improver → worker → planner → janitor.",
   },
@@ -184,10 +184,10 @@ export const tierComparison: { aspect: string; vanilla: string; swarm: string }[
       "Agents ask, propose and hand off in board threads stored in shared memory and visible to everyone. No private side channels.",
   },
   {
-    aspect: "Running it",
-    vanilla: "One prompt per role.",
+    aspect: "Running a fleet",
+    vanilla: "The orchestrator dispatches a fleet: one session per role, sized by the claimable pool and the pull request queue.",
     swarm:
-      "A conductor /loop dispatches one session per role and target, with concurrency, budget, focus and escalation.",
+      "The orchestrator runs as the conductor /loop: one session per role and target, plus memory, concurrency, budget, focus and escalation.",
   },
   {
     aspect: "Visibility",
@@ -214,6 +214,14 @@ export type SwarmRole = {
   /** What this role does inside a swarm session. */
   job: string;
   command?: string;
+};
+
+/** The dispatcher, above the queue: it starts the sessions that take the roles below. */
+export const swarmDispatcher: SwarmRole = {
+  slug: "orchestrator",
+  name: "Orchestrator · conductor",
+  job: "Surveys the board, leases the work and starts one session per role and target, within concurrency and budget. It never does a role itself.",
+  command: "/loop /swarm-conductor",
 };
 
 /** Finish-first order: `swarm next` tries these top to bottom. */
@@ -273,6 +281,7 @@ export type SwarmLoopStep = {
  * (Filed → Merged, as on the homepage) in order, plus the steps Swarm adds.
  */
 export const swarmLoop: SwarmLoopStep[] = [
+  { name: "Dispatched", holder: "orchestrator", holderName: "Orchestrator · conductor", does: "Surveys the board each tick and starts one session per role and target; never does a role itself.", command: "/loop /swarm-conductor" },
   { name: "Filed", holder: "planner", holderName: "Planner", does: "Turns the goal into small issues, each with a target and a concept.", command: "swarm plan plan.json" },
   { name: "Claimed", holder: "worker", holderName: "Worker", does: "Reserves exactly one issue through the reservation ref.", command: "claim.mjs --agent-id …" },
   { name: "Refereed", holder: "worker", holderName: "Worker", does: "Measures the change against the integration branch before opening anything.", command: "swarm referee", swarm: true },

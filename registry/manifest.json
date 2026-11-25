@@ -246,6 +246,101 @@
           "executable": true
         }
       ]
+    },
+    {
+      "name": "swarm",
+      "version": "0.1.0",
+      "requires": [
+        "loop"
+      ],
+      "description": "Rallypoint Swarm: shared memory in your own Supabase, self-picking roles, a referee (score, checks or review), retros, buried ideas, concepts, genesis and a conductor loop. Install after loop.",
+      "files": [
+        {
+          "source": "swarm/SWARM.md",
+          "target": "SWARM.md"
+        },
+        {
+          "source": "swarm/swarm.json",
+          "target": ".rallypoint/swarm.json"
+        },
+        {
+          "source": "swarm/swarm.mjs",
+          "target": ".rallypoint/swarm/swarm.mjs",
+          "executable": true
+        },
+        {
+          "source": "swarm/lib/config.mjs",
+          "target": ".rallypoint/swarm/lib/config.mjs"
+        },
+        {
+          "source": "swarm/lib/memory.mjs",
+          "target": ".rallypoint/swarm/lib/memory.mjs"
+        },
+        {
+          "source": "swarm/lib/referee.mjs",
+          "target": ".rallypoint/swarm/lib/referee.mjs"
+        },
+        {
+          "source": "swarm/lib/roles.mjs",
+          "target": ".rallypoint/swarm/lib/roles.mjs"
+        },
+        {
+          "source": "swarm/lib/ui-config.mjs",
+          "target": ".rallypoint/swarm/lib/ui-config.mjs"
+        },
+        {
+          "source": "swarm/schema.sql",
+          "target": ".rallypoint/swarm/schema.sql"
+        },
+        {
+          "source": "swarm/skills/swarm-agent.md",
+          "target": ".rallypoint/swarm/skills/swarm-agent.md"
+        },
+        {
+          "source": "swarm/skills/swarm-conductor.md",
+          "target": ".rallypoint/swarm/skills/swarm-conductor.md"
+        },
+        {
+          "source": "swarm/skills/swarm-strategist.md",
+          "target": ".rallypoint/swarm/skills/swarm-strategist.md"
+        },
+        {
+          "source": "swarm/skills/swarm-steward.md",
+          "target": ".rallypoint/swarm/skills/swarm-steward.md"
+        },
+        {
+          "source": "swarm/skills/swarm-genesis.md",
+          "target": ".rallypoint/swarm/skills/swarm-genesis.md"
+        },
+        {
+          "source": "swarm/skills/concepts.md",
+          "target": ".rallypoint/swarm/skills/concepts.md"
+        },
+        {
+          "source": "swarm/playbooks/README.md",
+          "target": ".rallypoint/swarm/playbooks/README.md"
+        },
+        {
+          "source": "swarm/claude/swarm-agent/SKILL.md",
+          "target": ".claude/skills/swarm-agent/SKILL.md"
+        },
+        {
+          "source": "swarm/claude/swarm-conductor/SKILL.md",
+          "target": ".claude/skills/swarm-conductor/SKILL.md"
+        },
+        {
+          "source": "swarm/claude/swarm-strategist/SKILL.md",
+          "target": ".claude/skills/swarm-strategist/SKILL.md"
+        },
+        {
+          "source": "swarm/claude/swarm-steward/SKILL.md",
+          "target": ".claude/skills/swarm-steward/SKILL.md"
+        },
+        {
+          "source": "swarm/claude/swarm-genesis/SKILL.md",
+          "target": ".claude/skills/swarm-genesis/SKILL.md"
+        }
+      ]
     }
   ]
 }

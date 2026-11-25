@@ -31,6 +31,9 @@ for (const item of manifest.items) {
     name: item.name,
     version: item.version,
     description: item.description,
+    ...(item.requires ? { requires: item.requires } : {}),
+    ...(item.detect ? { detect: item.detect } : {}),
+    ...(item.generate ? { generate: item.generate } : {}),
     files,
   });
 }
@@ -38,10 +41,11 @@ for (const item of manifest.items) {
 const index = {
   schemaVersion: manifest.schemaVersion,
   name: manifest.name,
-  items: builtItems.map(({ name, version, description, files }) => ({
+  items: builtItems.map(({ name, version, description, requires, files }) => ({
     name,
     version,
     description,
+    ...(requires ? { requires } : {}),
     fileCount: files.length,
   })),
 };
@@ -66,5 +70,7 @@ for (const target of targets) {
 }
 
 console.log(
-  `Built ${builtItems.length} Rallypoint registry item (${builtItems[0].files.length} files).`,
+  `Built ${builtItems.length} Rallypoint registry item${builtItems.length === 1 ? "" : "s"}: ${builtItems
+    .map((item) => `${item.name} (${item.files.length} files)`)
+    .join(", ")}.`,
 );

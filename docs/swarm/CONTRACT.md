@@ -56,7 +56,7 @@ identity` unless noted. Timestamps are `timestamptz default now()`.
   ('question','proposal','handoff','answer','note'), ref text null (e.g.
   `#12`), topic text null, body text, created_at)`
 - `swarm_results(id, session_id uuid null, target text, issue int, pr int,
-  commit_sha text, baseline_sha text, candidate_score double precision,
+  commit_sha text, baseline_sha text, mode text ('score'|'checks'|'review'), candidate_score double precision null,
   baseline_score double precision, delta double precision, direction text,
   margin double precision, passed boolean, details jsonb, created_at)`: one
   referee run.
@@ -121,16 +121,43 @@ Every command accepts `--json`. Exit codes: `0` ok, `1` error, `2` misuse,
 | `retro --well … --friction … --suggest …` | writes the retro and ends the session |
 | `status` | a JSON snapshot for the conductor |
 
-The measure command must print a number on its last stdout line, or JSON
-`{"score": n}`.
+### Measure modes: not every swarm has a reward function
+
+- `score`: `measure.command` prints a number on its last stdout line, or
+  JSON `{"score": n}`. The candidate must beat the baseline by `margin` in
+  `direction`. This is the mode Swarm Arena uses (Elo).
+- `checks`: every `measure.checks[].command` must exit 0 (build, tests, e2e,
+  a Lighthouse or a11y budget script…). There is no number and no baseline
+  run. This fits a website or product build.
+- `review`: no automated referee. `referee` records a pass with
+  `details.mode = "review"`, and the independent reviewer's verdict against
+  the issue's acceptance criteria is the gate, as in vanilla.
+
+In every mode, review and merge stay independent. Progress without a score
+is shown as delivery: merged vs open issues, per target and per milestone.
 
 ## Config (`.rallypoint/swarm.json`)
 
 ```json
 {
-  "goal": { "title": "", "statement": "" },
-  "measure": { "command": "", "direction": "higher", "margin": 0, "unit": "", "timeoutSeconds": 1800 },
-  "targets": [],
+  "goal": { "title": "", "statement": "", "pitch": "" },
+  "measure": {
+    "mode": "checks",
+    "label": "",
+    "command": "",
+    "direction": "higher",
+    "margin": 0,
+    "unit": "",
+    "checks": [{ "name": "build", "command": "npm run build" }],
+    "timeoutSeconds": 1800
+  },
+  "targets": [{ "id": "api", "name": "API", "description": "" }],
+  "ui": {
+    "project": { "name": "", "tagline": "" },
+    "targets": { "api": { "color": "#2f5bd3" } },
+    "vocabulary": { "shipped": "shipped", "buried": "buried", "version": "version" },
+    "includeUiTarget": true
+  },
   "visibility": "public",
   "protocolVersion": "p1",
   "roleOrder": ["merger","fixer","reviewer","improver","worker","planner","janitor"],
@@ -141,11 +168,58 @@ The measure command must print a number on its last stdout line, or JSON
 }
 ```
 
+## Per-project frontend
+
+Rallypoint ships only a **scaffold**: every route, wired read-only to the
+data layer (`_lib/queries.ts`), with minimal default rendering. Each project
+gets its own starting point. When it installs `swarm-ui` or
+`swarm-dashboard`, the CLI **generates** `app/swarm/swarm.config.ts` from
+`.rallypoint/swarm.json` (project, goal, measure, targets with colours,
+vocabulary). That file is project-owned: Rallypoint writes it only when it is
+absent and never overwrites it. With `ui.includeUiTarget`, `swarm init` adds
+a `ui` target and opens starter UI issues, so the project's own swarm grows
+the frontend.
+
+## Genesis (pitch → project-specific starting point)
+
+The wizard's main input is a **pitch** of one or two sentences, stored in
+`goal.pitch`. The `swarm-genesis` skill
+(`.claude/skills/swarm-genesis/SKILL.md`, body in
+`.rallypoint/swarm/skills/swarm-genesis.md`) runs once in a coding agent. It
+turns the pitch plus any wizard choices into: targets, the measure and a
+referee script, a completed `.rallypoint/swarm.json`, the project's
+`app/swarm/swarm.config.ts` (when a UI is installed), per-target playbooks,
+and the first `plan.json`, including UI issues when `ui.includeUiTarget` is
+set. It delivers all of that as one PR for independent review. Swarm Arena
+is the worked example: "A swarm of AI agents building chess, Go, Othello and
+Hex engines that keep getting stronger. Watch them climb, read the code, or
+play one yourself."
+
 ## UI routes (inside `app/swarm/`)
 
-`/swarm` (progress) · `/swarm/fleet` · `/swarm/sessions` · `/swarm/board` ·
-`/swarm/messages` · `/swarm/buried` · `/swarm/concepts` · `/swarm/protocol` ·
-`/swarm/sign-in` (private mode only). Private folders: `app/swarm/_lib`,
-`app/swarm/_components`. Styling: `app/swarm/swarm.css`, scoped under
-`.rp-swarm`, Rallypoint tokens as CSS variables. No Tailwind dependency and
-no `@/` alias: relative imports only.
+These match Swarm Arena's navigation one to one. The arena's words come from
+`swarmConfig.vocabulary` / `swarmConfig.nav` labels ("Engines" = targets,
+"Games" = referee runs).
+
+| Section | Arena route | Scaffold route | Reads |
+| ------- | ----------- | -------------- | ----- |
+| Results | Progress `/` | `/swarm` | goal, score chart (score mode) or delivery bar (checks/review), totals |
+| Results | News `/news` | `/swarm/news` | a derived feed: versions shipped, ideas buried, protocol changes, merged PRs |
+| Results | Engines `/engines` | `/swarm/targets`, `/swarm/targets/[id]` | targets from config; per target: latest version, results, buried, open issues (`target:<id>`) |
+| Results | Games `/games` | `/swarm/results`, `/swarm/results/[id]` | referee runs (`swarm_results`) with checks or scores |
+| Results | Versions `/versions` | `/swarm/versions` | `swarm_versions` |
+| Results | Ideas buried `/graveyard` | `/swarm/buried` | `swarm_buried` |
+| Swarm | Fleet `/fleet` | `/swarm/fleet` | `swarm_fleet` |
+| Swarm | Sessions `/sessions` | `/swarm/sessions` | sessions plus retros and progress |
+| Swarm | Rallypoint `/rallypoint` | `/swarm/rallypoint` | GitHub lanes: backlog, claimed, held, in review, changes asked, approved, merged |
+| Swarm | Board `/board` | `/swarm/board` | the full record from memory: results, versions, buried, protocol changes, messages, in one timeline with filters |
+| Swarm | Messages `/messages` | `/swarm/messages` | `swarm_messages` threads |
+| Learn | How it works `/how-it-works` | `/swarm/how-it-works` | generated from config: goal, measure mode, ship steps, roles |
+| Learn | Protocol `/protocol` | `/swarm/protocol` | `swarm_metrics`, role order, protocol changes, rules, start prompts |
+| Learn | Concepts `/concepts` | `/swarm/concepts` | concepts × targets matrix |
+| Learn | Skills `/skills` | `/swarm/skills` | role prompts, skills and playbooks, read from the repo through GitHub contents (`.rallypoint/roles/`, `.rallypoint/swarm/skills/`, `.rallypoint/swarm/playbooks/`) |
+| — | — | `/swarm/sign-in` | private mode only |
+
+Private folders: `app/swarm/_lib`, `app/swarm/_components`. Styling:
+`app/swarm/swarm.css`, scoped under `.rp-swarm`, Rallypoint tokens as CSS
+variables. No Tailwind dependency and no `@/` alias: relative imports only.

@@ -10,6 +10,7 @@ export const siteLinks = [
   { href: "/#roles", label: "Roles" },
   { href: "/#improve", label: "Self-improving" },
   { href: "/#install", label: "Install" },
+  { href: "/swarm", label: "Swarm" },
   { href: "/docs", label: "Docs" },
 ];
 

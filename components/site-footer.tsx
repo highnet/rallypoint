@@ -35,6 +35,12 @@ export function SiteFooter() {
               <Link href="/#install">Install</Link>
             </li>
             <li>
+              <Link href="/swarm">Rallypoint Swarm</Link>
+            </li>
+            <li>
+              <Link href="/swarm/wizard">Swarm wizard</Link>
+            </li>
+            <li>
               <a href="https://www.npmjs.com/package/rallypoint">npm package</a>
             </li>
           </ul>

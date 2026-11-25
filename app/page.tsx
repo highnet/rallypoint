@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 import { AudienceFork, AudienceSwitch } from "@/components/audience-fork";
@@ -11,8 +11,12 @@ import { PrTally } from "@/components/pr-tally";
 import { RoleMatrix } from "@/components/role-matrix";
 import { SignalRail } from "@/components/signal-rail";
 import { SiteHeader } from "@/components/site-header";
+import { SwarmCompare } from "@/components/swarm-compare";
+import { SwarmMechanism } from "@/components/swarm-mechanism";
+import { SwarmTiers } from "@/components/swarm-tiers";
 import { LabelTable, StateLines } from "@/components/state-lines";
 import { SiteFooter } from "@/components/site-footer";
+import { arenaUrl, swarmCommands } from "@/lib/swarm";
 
 const heroCommand = "npx rallypoint@latest add loop";
 
@@ -49,6 +53,7 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
+                <SwarmTiers />
                 <SignalRail />
               </>
             }
@@ -126,6 +131,63 @@ export default function Home() {
               </p>
             </div>
             <PrTally />
+          </div>
+        </section>
+
+        <section aria-labelledby="swarm-title" className="band" id="swarm">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="swarm-title">Rallypoint Swarm: the same loop, with a memory.</h2>
+              <p>
+                The loop coordinates agents well on a known backlog. A hard goal has no backlog and no
+                finish line: the swarm has to plan, try, measure, fail and remember why, across sessions
+                that never share a context window. Swarm adds that memory, in a Supabase project you own.
+              </p>
+            </div>
+            <SwarmCompare />
+
+            <div className="swarm-sub">
+              <h3>GitHub owns the work. Your Supabase owns the memory.</h3>
+              <p>
+                In the loop, agents never message each other. In Swarm they can, but only in the open:
+                questions, proposals and hand-offs are board messages in shared memory that every agent
+                and every visitor can read. There are no private side channels, and GitHub still decides
+                who holds an issue.
+              </p>
+            </div>
+            <SwarmMechanism />
+
+            <div className="arena">
+              <div className="arena-copy">
+                <h3>Swarm Arena is a swarm at work.</h3>
+                <p>
+                  Chess, Go 9×9, Othello and Hex engines, written from scratch by the swarm. Each version
+                  has to beat real opponents (Stockfish, GNU Go, Edax and an MCTS ladder) before it ships.
+                  Losing code is thrown out and the lesson is kept. The ratings move while the swarm works,
+                  so they live on the arena, not on this page.
+                </p>
+                <a className="text-link" href={arenaUrl} rel="noreferrer" target="_blank">
+                  Watch the live arena <ArrowUpRight aria-hidden="true" />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+              </div>
+              <div className="arena-start">
+                <p className="step-title">Start a swarm of your own</p>
+                <CommandCopy command={swarmCommands.addSwarm} id="home-swarm-add" label="Swarm install command" />
+                <p className="install-detail">
+                  Installs on top of the loop. Then describe your swarm in a sentence or two; the wizard
+                  writes the config and the commands for your repository and your Supabase project.
+                </p>
+                <p className="tier-links">
+                  <Link className="text-link" href="/swarm/wizard">
+                    Open the wizard <ArrowRight aria-hidden="true" />
+                  </Link>
+                  <Link className="text-link" href="/swarm">
+                    Read the Swarm page
+                  </Link>
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

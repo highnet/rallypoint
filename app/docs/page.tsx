@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { LabelTable } from "@/components/state-lines";
 import { agents } from "@/lib/agents";
+import { swarmCliCommands, swarmCommands } from "@/lib/swarm";
 
 export const metadata: Metadata = {
   title: "Docs",
@@ -71,6 +72,7 @@ const toc = [
   { href: "#self-improvement", label: "Self-improvement" },
   { href: "#install", label: "Install" },
   { href: "#prompting", label: "Prompting" },
+  { href: "#swarm", label: "Swarm" },
 ];
 
 export default function DocsPage() {
@@ -257,6 +259,49 @@ export default function DocsPage() {
                   </li>
                 ))}
               </ul>
+            </section>
+
+            <section aria-labelledby="swarm-title" className="docs-section" id="swarm">
+              <h2 id="swarm-title">Swarm</h2>
+              <p>
+                Rallypoint Swarm is the next tier, installed on top of the loop. GitHub still owns the
+                work; a Supabase project you own holds the memory (sessions, progress, retros, messages,
+                referee results, buried ideas and concepts). Sessions pick their own role, finishing
+                first, and a referee gates every change: a score that must beat main, checks that must
+                pass, or independent review alone when there is nothing to measure. The full picture,
+                requirements and setup are on <Link className="text-link" href="/swarm">the Swarm page</Link>
+                ; the <Link className="text-link" href="/swarm/wizard">wizard</Link> writes your config.
+              </p>
+              <div className="docs-commands">
+                <CommandCopy command={swarmCommands.addSwarm} id="docs-swarm-add" label="Swarm install command" />
+                <CommandCopy command={swarmCommands.doctor} id="docs-swarm-doctor" label="doctor command" />
+              </div>
+              <p>
+                Every command runs as <code>npx rallypoint swarm &lt;command&gt;</code>, accepts{" "}
+                <code>--json</code>, and exits <code>0</code> ok, <code>1</code> error, <code>2</code>{" "}
+                misuse, <code>3</code> referee failed, <code>4</code> nothing to do.
+              </p>
+              <div className="table-wrap">
+                <table className="code-table prompt-table cli-table">
+                  <caption className="sr-only">The rallypoint swarm commands</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Command</th>
+                      <th scope="col">What it does</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {swarmCliCommands.map((row) => (
+                      <tr key={row.command}>
+                        <th scope="row">
+                          <code>{row.command}</code>
+                        </th>
+                        <td data-label="What it does">{row.does}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           </article>
         </div>

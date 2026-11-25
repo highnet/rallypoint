@@ -16,6 +16,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: `${siteUrl}/swarm`,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/swarm/wizard`,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
     ...agents.map((agent) => ({
       url: `${siteUrl}/agents/${agent.slug}`,
       changeFrequency: "monthly" as const,

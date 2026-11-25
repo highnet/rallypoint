@@ -15,8 +15,8 @@
 export const MODES = ["score", "checks", "review"];
 
 /**
- * Reads a score from command output: JSON `{"score": n}` anywhere on the last
- * non-empty line, or a bare number as the last token of that line.
+ * Reads a score from command output: JSON `{"score": n}` on the last
+ * non-empty line, or else the first number on that line.
  * @param {string} stdout
  * @returns {number|null}
  */
@@ -34,9 +34,10 @@ export const parseScore = (stdout) => {
   } catch {
     // not JSON — fall through to the last token
   }
-  const token = last.split(/\s+/).at(-1);
-  const value = Number(token);
-  return token !== "" && Number.isFinite(value) ? value : null;
+  // The FIRST number on the last line: "elo 1530 ± 40" is 1530, not the
+  // error bar.
+  const match = /[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/i.exec(last);
+  return match ? Number(match[0]) : null;
 };
 
 /**
@@ -90,9 +91,14 @@ export const validateMeasure = (measure) => {
  *   runCommand: (command: string, options: {cwd: string, timeoutSeconds: number}) => {status:number|null, stdout:string, stderr:string, durationMs:number},
  *   cwd: string,
  *   baselineCwd?: string|null,
+ *   requireBaseline?: boolean,
  * }} input
+ *
+ * Score mode fails closed: when a baseline is required (the default) and it
+ * could not be measured, the candidate does not pass. Only the very first
+ * measured version may skip it, explicitly (`requireBaseline: false`).
  */
-export const referee = ({ measure, runCommand, cwd, baselineCwd = null }) => {
+export const referee = ({ measure, runCommand, cwd, baselineCwd = null, requireBaseline = true }) => {
   const mode = measure?.mode ?? "review";
   const timeoutSeconds = Number(measure?.timeoutSeconds ?? 1800);
 
@@ -145,7 +151,15 @@ export const referee = ({ measure, runCommand, cwd, baselineCwd = null }) => {
   const verdict =
     candidateRun.status !== 0
       ? { passed: false, delta: null, reason: `the measure exited ${candidateRun.status} on the candidate` }
-      : compareScores({ candidate, baseline, direction, margin });
+      : requireBaseline && baseline === null
+        ? {
+            passed: false,
+            delta: null,
+            reason: baselineRun
+              ? `the baseline could not be measured (exit ${baselineRun.status}); nothing to beat, so nothing passes`
+              : "no baseline was available to measure; pass --first only for the very first version",
+          }
+        : compareScores({ candidate, baseline, direction, margin });
   return {
     mode,
     passed: verdict.passed,

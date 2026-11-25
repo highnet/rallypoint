@@ -524,7 +524,7 @@ export function SwarmWizard() {
                     />
                     {target.name.trim() ? (
                       <p className="wiz-hint">
-                        id <code>{targetId(target.name)}</code>
+                        id <code>{target.id?.trim() || targetId(target.name)}</code>
                       </p>
                     ) : null}
                   </div>

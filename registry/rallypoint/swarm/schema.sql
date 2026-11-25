@@ -462,6 +462,73 @@ begin
 end;
 $$;
 
+-- Agents read through this when the swarm is private: RLS hides every table
+-- from the anon key then, and agents must still see their own memory.
+-- Filters are {"column": "eq.value" | "gt.value"} on real columns only.
+create or replace function public.swarm_read(
+  p_secret text,
+  p_table text,
+  p_filters jsonb default '{}'::jsonb,
+  p_order text default null,
+  p_limit int default null
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+  conditions text := '';
+  col text;
+  cond text;
+  op text;
+  order_sql text := '';
+  result jsonb;
+begin
+  perform public.swarm_assert_secret(p_secret);
+  if not (public.swarm_writable(p_table) or p_table in ('swarm_settings', 'swarm_fleet', 'swarm_metrics')) then
+    raise exception 'table % is not readable', p_table using errcode = '42501';
+  end if;
+  for col, cond in select key, value #>> '{}' from jsonb_each(coalesce(p_filters, '{}'::jsonb)) loop
+    if not exists (
+      select 1 from information_schema.columns c
+      where c.table_schema = 'public' and c.table_name = p_table and c.column_name = col
+    ) then
+      raise exception 'unknown column % on %', col, p_table using errcode = '42703';
+    end if;
+    op := split_part(cond, '.', 1);
+    if op not in ('eq', 'gt') then
+      raise exception 'filter % must be eq.<value> or gt.<value>', col using errcode = '22023';
+    end if;
+    conditions := conditions || format(
+      ' and %I::text %s %L',
+      col,
+      case op when 'eq' then '=' else '>' end,
+      substr(cond, length(op) + 2)
+    );
+  end loop;
+  if p_order is not null then
+    col := split_part(p_order, '.', 1);
+    if not exists (
+      select 1 from information_schema.columns c
+      where c.table_schema = 'public' and c.table_name = p_table and c.column_name = col
+    ) then
+      raise exception 'unknown order column % on %', col, p_table using errcode = '42703';
+    end if;
+    order_sql := format(' order by %I %s', col, case when p_order like '%.desc' then 'desc' else 'asc' end);
+  end if;
+  execute format(
+    'select coalesce(jsonb_agg(to_jsonb(t)), ''[]''::jsonb) from (select * from public.%I where true%s%s%s) t',
+    p_table,
+    conditions,
+    order_sql,
+    case when p_limit is not null then format(' limit %s', greatest(p_limit, 0)) else '' end
+  ) into result;
+  return result;
+end;
+$$;
+
 create or replace function public.swarm_check(p_secret text)
 returns jsonb
 language plpgsql
@@ -482,6 +549,8 @@ revoke all on function public.swarm_write(text, text, jsonb) from public;
 revoke all on function public.swarm_update(text, text, text, jsonb) from public;
 revoke all on function public.swarm_set_setting(text, text, jsonb) from public;
 revoke all on function public.swarm_check(text) from public;
+revoke all on function public.swarm_read(text, text, jsonb, text, int) from public;
+grant execute on function public.swarm_read(text, text, jsonb, text, int) to anon, authenticated;
 grant execute on function public.swarm_write(text, text, jsonb) to anon, authenticated;
 grant execute on function public.swarm_update(text, text, text, jsonb) to anon, authenticated;
 grant execute on function public.swarm_set_setting(text, text, jsonb) to anon, authenticated;

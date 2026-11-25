@@ -94,6 +94,7 @@ await test("parseScore reads JSON or the last number", () => {
   assert.equal(parseScore('noise\n{"score": 1530}\n'), 1530);
   assert.equal(parseScore("games: 40\nelo 1412.5"), 1412.5);
   assert.equal(parseScore("42"), 42);
+  assert.equal(parseScore("elo 1530 ± 40"), 1530, "the first number, not the error bar");
   assert.equal(parseScore("no number here"), null);
   assert.equal(parseScore(""), null);
 });
@@ -117,6 +118,11 @@ await test("referee modes: review passes, checks need every command, score compa
   const score = referee({ measure: { mode: "score", command: "new", margin: 1 }, runCommand: (cmd, { cwd }) => runCommand(cwd === "base" ? "old" : "new"), cwd: "head", baselineCwd: "base" });
   assert.equal(score.passed, true);
   assert.equal(score.delta, 2);
+  const noBaseline = referee({ measure: { mode: "score", command: "new" }, runCommand, cwd: "head" });
+  assert.equal(noBaseline.passed, false, "score mode fails closed without a baseline");
+  assert.equal(referee({ measure: { mode: "score", command: "new" }, runCommand, cwd: "head", requireBaseline: false }).passed, true, "--first");
+  const brokenBaseline = referee({ measure: { mode: "score", command: "new" }, runCommand: (cmd, { cwd }) => (cwd === "base" ? { status: 2, stdout: "", stderr: "boom", durationMs: 1 } : runCommand("new")), cwd: "head", baselineCwd: "base" });
+  assert.equal(brokenBaseline.passed, false, "a baseline that cannot be measured is not beaten");
 });
 
 await test("measure validation", () => {
@@ -162,6 +168,8 @@ await test("ui-config generation follows the documented mapping", () => {
 const SECRET = "correct-horse-battery-staple";
 const db = { swarm_sessions: [], swarm_progress: [], swarm_retros: [], swarm_messages: [], swarm_results: [], swarm_versions: [], swarm_buried: [], swarm_concepts: [], swarm_concept_trials: [], swarm_protocol_changes: [], swarm_settings: [] };
 let nextId = 1;
+const reads = [];
+const metricsRow = () => [{ protocol_version: "p1", shipped: db.swarm_versions.length, buried: db.swarm_buried.length, ship_rate: null, median_claim_to_close_minutes: null, progress_per_session: null, retros_since_change: db.swarm_retros.length, sessions_working: 0 }];
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   const chunks = [];
@@ -190,15 +198,25 @@ const server = createServer(async (req, res) => {
       Object.assign(row, body.p_patch);
       return send(200, row);
     }
+    if (fn === "swarm_read") {
+      if (body.p_table === "swarm_metrics") return send(200, metricsRow());
+      let rows = [...(db[body.p_table] ?? [])];
+      for (const [column, condition] of Object.entries(body.p_filters ?? {})) {
+        const [op, value] = condition.split(/\.(.*)/s);
+        rows = rows.filter((row) => (op === "gt" ? String(row[column]) > value : String(row[column]) === value));
+      }
+      if (body.p_order?.endsWith(".desc")) rows.reverse();
+      if (body.p_limit) rows = rows.slice(0, body.p_limit);
+      reads.push(body.p_table);
+      return send(200, rows);
+    }
     if (fn === "swarm_set_setting") {
       db.swarm_settings = db.swarm_settings.filter((s) => s.key !== body.p_key).concat({ key: body.p_key, value: body.p_value });
       return send(200, { key: body.p_key, value: body.p_value });
     }
     return send(404, { message: `unknown rpc ${fn}` });
   }
-  if (path === "swarm_metrics") {
-    return send(200, [{ protocol_version: "p1", shipped: db.swarm_versions.length, buried: db.swarm_buried.length, ship_rate: null, median_claim_to_close_minutes: null, progress_per_session: null, retros_since_change: db.swarm_retros.length, sessions_working: 0 }]);
-  }
+  if (path === "swarm_metrics") return send(200, metricsRow());
   if (path === "swarm_fleet") return send(200, []);
   let rows = [...(db[path] ?? [])];
   for (const [column, condition] of url.searchParams) {
@@ -321,6 +339,7 @@ try {
     await rp(["swarm", "log", "claimed #5"]);
     await rp(["swarm", "say", "--kind", "handoff", "--ref", "#5", "hero copy is in the issue"]);
     assert.match(await rp(["swarm", "inbox"]), /hero copy/);
+    assert.ok(reads.includes("swarm_messages"), "with the secret, reads go through swarm_read (private-mode safe)");
     const ref = await rp(["swarm", "referee", "--target", "web", "--issue", "5"]);
     assert.match(ref, /PASS/);
     assert.equal(db.swarm_results.at(-1).mode, "checks");
@@ -356,6 +375,9 @@ try {
     sh("git", "commit", "-qam", "big gain");
     assert.match(await rp(["swarm", "referee", "--baseline", "HEAD~2"]), /PASS/);
     assert.equal(db.swarm_results.at(-1).delta, 20);
+    assert.match(await rp(["swarm", "referee", "--baseline", "HEAD"], { expect: 3 }), /FAIL/, "HEAD cannot beat itself");
+    assert.match(await rp(["swarm", "referee", "--baseline", "no-such-ref"], { expect: 3 }), /FAIL/, "no baseline, no pass");
+    assert.match(await rp(["swarm", "referee", "--baseline", "no-such-ref", "--first", "--no-record"]), /PASS/);
     assert.equal(sh("git", "worktree", "list").trim().split("\n").length, 1, "baseline worktree removed");
   });
 
@@ -391,6 +413,17 @@ try {
       assert.match(await rp(["add", "swarm-dashboard"]), /kept/);
       assert.equal(await readFile(resolve(fixture, "swarm-ui/app/swarm/swarm.config.ts"), "utf8"), "// mine\n");
     }
+  });
+
+  await test("swarm-ui follows src/app instead of shadowing it with a root app/", async () => {
+    const pkgPath = resolve(fixture, "package.json");
+    await writeFile(pkgPath, JSON.stringify({ dependencies: { next: "16.2.6" } }));
+    await mkdir(resolve(fixture, "src/app"), { recursive: true });
+    const out = await rp(["add", "swarm-ui"]);
+    assert.match(out, /src\/app detected/);
+    await readFile(resolve(fixture, "src/app/swarm/page.tsx"));
+    await readFile(resolve(fixture, "src/app/swarm/swarm.config.ts"));
+    await assert.rejects(readFile(resolve(fixture, "app/swarm/page.tsx")), "no root app/ was created");
   });
 
   await test("ui-config never overwrites without --force", async () => {

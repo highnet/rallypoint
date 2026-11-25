@@ -55,7 +55,7 @@ const positionals = () => {
   }
   return out;
 };
-const BOOLEAN_FLAGS = new Set(["json", "dry-run", "force", "no-record", "help", "kept", "reverted", "abandon", "no-color", "since-change"]);
+const BOOLEAN_FLAGS = new Set(["json", "dry-run", "force", "no-record", "help", "kept", "reverted", "abandon", "no-color", "since-change", "first"]);
 
 const asJson = flag("json");
 const tty = process.stdout.isTTY && !flag("no-color") && !asJson;
@@ -183,10 +183,11 @@ ${strong("A session")}
   log "<note>"                   progress as you go
   say --kind question|proposal|handoff|answer|note [--ref #n] [--thread id] "<body>"
   inbox [--ref #n] [--limit n]   recent messages
-  referee [--target t] [--issue n] [--pr n] [--baseline <ref>] [--no-record]
-                                 measure HEAD (score, checks or review mode)
+  referee [--target t] [--issue n] [--pr n] [--baseline <ref>] [--first] [--no-record]
+                                 measure HEAD (score, checks or review mode); score
+                                 mode fails closed without a baseline unless --first
   bury --idea "…" --reason "…" [--lesson "…"] [--concept id] [--target t] [--issue n] [--pr n]
-  ship --version v… [--target t] [--pr n] [--score n] [--notes "…"]
+  ship --version v… [--target t] [--pr n] [--sha s] [--score n] [--notes "…"]
   retro --well "…" --friction "…" --suggest "…"   ends the session
 
 ${strong("Planning and learning")}
@@ -526,19 +527,22 @@ commands.referee = async () => {
     try {
       if (!option("baseline")) git("fetch", "--quiet", "origin", branch);
       baselineSha = git("rev-parse", baselineRef);
-      if (baselineSha !== head) {
+      if (baselineSha === head) {
+        // Measuring the baseline against itself: the candidate cannot beat it.
+        baselineCwd = cwd;
+      } else {
         worktree = mkdtempSync(join(tmpdir(), "rallypoint-baseline-"));
         git("worktree", "add", "--detach", "--force", worktree, baselineSha);
         baselineCwd = worktree;
       }
     } catch (error) {
-      console.error(amber(`baseline unavailable (${error.message.split("\n")[0]}); comparing against no baseline`));
+      console.error(amber(`baseline unavailable: ${error.message.split("\n")[0]}`));
     }
   }
 
   let result;
   try {
-    result = referee({ measure, runCommand, cwd, baselineCwd });
+    result = referee({ measure, runCommand, cwd, baselineCwd, requireBaseline: !flag("first") });
   } finally {
     if (worktree) {
       try {
@@ -639,16 +643,29 @@ commands.ship = async () => {
   const version = option("version");
   if (!version) throw new UsageError("usage: swarm ship --version v… [--target t] [--pr n] [--score n]");
   let score = option("score") !== undefined ? Number(option("score")) : null;
-  let sha = null;
-  try {
-    sha = git("rev-parse", "HEAD");
-  } catch {
-    sha = null;
+  const target = option("target") ?? session?.target ?? null;
+  const pr = intOrNull(option("pr"));
+  // The merge commit, not whatever this checkout's HEAD happens to be.
+  let sha = option("sha") ?? null;
+  if (!sha && pr) {
+    try {
+      sha = gh("pr", "view", String(pr), "--json", "mergeCommit", "--jq", ".mergeCommit.oid") || null;
+    } catch {
+      sha = null;
+    }
+  }
+  if (!sha) {
+    try {
+      sha = git("rev-parse", "HEAD");
+    } catch {
+      sha = null;
+    }
   }
   if (score === null) {
     try {
       const filters = { passed: "eq.true", mode: "eq.score" };
-      if (option("pr")) filters.pr = `eq.${intOrNull(option("pr"))}`;
+      if (pr) filters.pr = `eq.${pr}`;
+      if (target) filters.target = `eq.${target}`;
       const [latest] = await memory.select("swarm_results", { order: "created_at.desc", limit: 1, filters });
       score = latest?.candidate_score ?? null;
     } catch {
@@ -656,10 +673,10 @@ commands.ship = async () => {
     }
   }
   const row = await memory.insert("swarm_versions", {
-    target: option("target") ?? session?.target ?? null,
+    target,
     version,
     score,
-    pr: intOrNull(option("pr")),
+    pr,
     commit_sha: sha,
     notes: option("notes") ?? null,
   });

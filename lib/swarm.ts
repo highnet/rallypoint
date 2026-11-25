@@ -296,7 +296,13 @@ export const targetPalette = [
 export type UiShape = "product" | "dashboard" | "none";
 export type Focus = "balanced" | "finish-first" | "experiments" | "port-concepts";
 
-export type WizardTarget = { name: string; description: string; color: string };
+export type WizardTarget = {
+  name: string;
+  description: string;
+  color: string;
+  /** Optional explicit id; otherwise derived from the name. */
+  id?: string;
+};
 export type MeasureMode = "score" | "checks" | "review";
 export type WizardCheck = { name: string; command: string };
 
@@ -365,10 +371,10 @@ export const arenaExample: WizardState = {
   direction: "higher",
   unit: "Elo",
   targets: [
-    { name: "chess", description: "Chess engine, measured against Stockfish.", color: "#2f5bd3" },
-    { name: "go9", description: "Go 9×9 engine, measured against GNU Go.", color: "#1a7f37" },
-    { name: "othello", description: "Othello engine, measured against Edax.", color: "#c8312b" },
-    { name: "hex", description: "Hex engine, measured against an MCTS ladder.", color: "#8250df" },
+    { id: "chess", name: "Chess", description: "Chess engine, measured against Stockfish.", color: "#2f5bd3" },
+    { id: "go9", name: "Go 9×9", description: "Go 9×9 engine, measured against GNU Go.", color: "#1a7f37" },
+    { id: "othello", name: "Othello", description: "Othello engine, measured against Edax.", color: "#c8312b" },
+    { id: "hex", name: "Hex 11×11", description: "Hex engine, measured against an MCTS ladder.", color: "#8250df" },
   ],
   projectName: "Swarm Arena",
   tagline: "Watch them climb, read the code, or play one yourself.",
@@ -395,7 +401,7 @@ export function buildSwarmConfig(state: WizardState) {
   const targets = state.targets
     .filter((target) => target.name.trim())
     .map((target) => ({
-      id: targetId(target.name),
+      id: target.id?.trim() || targetId(target.name),
       name: target.name.trim(),
       description: target.description.trim(),
       color: target.color,
@@ -442,7 +448,7 @@ export function buildSwarmConfig(state: WizardState) {
 }
 
 export function conductorPrompt(state: WizardState) {
-  const names = state.targets.map((t) => targetId(t.name)).filter(Boolean);
+  const names = state.targets.map((t) => t.id?.trim() || targetId(t.name)).filter(Boolean);
   return [
     swarmCommands.conductor,
     `Concurrency: ${state.concurrency} sessions at a time.`,

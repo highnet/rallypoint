@@ -69,7 +69,20 @@ export const createMemory = ({ url, key, secret, fetchImpl = globalThis.fetch } 
    * @param {string} table
    * @param {{select?: string, order?: string, limit?: number, filters?: Record<string,string>}} query
    */
-  const select = (table, { select: columns = "*", order, limit, filters = {} } = {}) => {
+  // With the secret, read through `swarm_read` (works in private mode, where
+  // RLS hides everything from the anon key). Without it, plain PostgREST.
+  const select = (table, query = {}) =>
+    secret
+      ? rpc("swarm_read", {
+          p_secret: secret,
+          p_table: table,
+          p_filters: query.filters ?? {},
+          p_order: query.order ?? null,
+          p_limit: query.limit ?? null,
+        })
+      : restSelect(table, query);
+
+  const restSelect = (table, { select: columns = "*", order, limit, filters = {} } = {}) => {
     const params = new URLSearchParams({ select: columns });
     if (order) params.set("order", order);
     if (limit) params.set("limit", String(limit));

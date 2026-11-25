@@ -62,7 +62,10 @@ swarm referee --target <t> --issue <n>
   ```
 
 In `review` mode the referee always passes, and the independent review
-against the acceptance criteria is the gate.
+against the acceptance criteria is the gate. In `score` mode the referee
+fails closed. If the baseline cannot be measured, nothing passes. Only the
+very first measured version of a target may pass `--first`, and its pull
+request must say so.
 
 ### Reviewer
 

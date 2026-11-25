@@ -29,10 +29,20 @@ There are three layers, and only the middle one writes:
    - `port-concepts`: dispatch the planner with the goal "port the
      best-evidenced concept to the targets that have not tried it".
    - `balanced`: plain finish-first order, spread across targets.
-4. Lease before you dispatch, so a second conductor or the next tick does not
-   double-dispatch:
-   `node .rallypoint/scripts/lease.mjs --role <role> [--pr <N>] --agent-id <conductor id>`.
-   A refused lease means someone has it; skip it.
+4. Make sure no two sessions get the same job, so a second conductor or the
+   next tick does not double-dispatch. Each role has its own guard:
+   - **merger, fixer, reviewer**: lease the pull request first,
+     `node .rallypoint/scripts/lease.mjs --role <role> --pr <N> --agent-id <conductor id>`.
+   - **planner, janitor**: lease the role,
+     `node .rallypoint/scripts/lease.mjs --role <role> --agent-id <conductor id>`.
+   - **worker**: no lease. `claim.mjs` is atomic, so two workers can never
+     hold one issue. Dispatch at most as many workers as there are claimable
+     issues.
+   - **improver**: no lease. Dispatch one only when
+     `node .rallypoint/scripts/improvement.mjs status` exits `0`.
+
+   A lease refused because someone holds it means skip that job. Any other
+   refusal (a usage error, an unreadable source) means stop and escalate.
 5. Start **one separate session per dispatch** (in Claude Code, the
    remote-session tools; elsewhere, a new agent process). Use this prompt,
    filled in:

@@ -146,7 +146,7 @@ async function viewItem(name) {
 }
 
 async function addItem(name) {
-  const item = await loadItem(name);
+  let item = await loadItem(name);
   verifyItem(item);
 
   const cwd = resolve(value("--cwd") || process.cwd());
@@ -167,6 +167,19 @@ async function addItem(name) {
     console.error(`For a standalone dashboard, run ${strong("rallypoint add swarm-dashboard")} instead (or pass --force).`);
     process.exitCode = 2;
     return;
+  }
+
+  // A Next.js app that keeps its routes in src/app ignores a root app/ only
+  // while it does not exist; creating one would shadow the whole site. Put
+  // the swarm routes where the project's routes already are.
+  if (item.detect?.nextApp && (await exists(resolve(cwd, "src/app"))) && !(await exists(resolve(cwd, "app")))) {
+    const moved = (path) => (path.startsWith("app/") ? `src/${path}` : path);
+    item = {
+      ...item,
+      files: item.files.map((file) => ({ ...file, path: moved(file.path) })),
+      generate: item.generate ? { ...item.generate, out: moved(item.generate.out) } : item.generate,
+    };
+    console.log(muted("src/app detected: installing the swarm routes under src/app/swarm"));
   }
 
   const changes = [];

@@ -31,6 +31,7 @@ user's app.
 | `NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY`     | UI (publishable/anon key)        | no      |
 | `RALLYPOINT_GITHUB_REPO`                  | UI (`owner/name`, board lanes)   | no      |
 | `RALLYPOINT_GITHUB_TOKEN`                 | UI, optional (rate limits/private repos) | yes |
+| `RALLYPOINT_GITHUB_API_URL`               | UI, optional (GitHub Enterprise; default `https://api.github.com`) | no |
 
 The browser never writes. Agents write only through SECURITY DEFINER RPCs that
 check `RALLYPOINT_SWARM_SECRET` against a bcrypt hash. The service-role key is

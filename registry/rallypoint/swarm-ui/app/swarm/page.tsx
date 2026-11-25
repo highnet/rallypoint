@@ -22,7 +22,7 @@ export default async function ProgressPage() {
         <p className="rp-measure">
           {data.mode === "score" ? (
             <>
-              Measured by {measure.label.toLowerCase()}
+              Measured by {measure.label}
               {measure.unit ? ` (${measure.unit})` : ""}, {measure.direction} is better
             </>
           ) : data.mode === "checks" ? (

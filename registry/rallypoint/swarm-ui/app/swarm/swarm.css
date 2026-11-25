@@ -1024,6 +1024,11 @@
   overflow-wrap: anywhere;
 }
 
+.rp-code-nowrap {
+  overflow-wrap: normal;
+  white-space: pre;
+}
+
 .rp-file {
   max-height: 70vh;
   overflow-y: auto;

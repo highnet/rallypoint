@@ -88,7 +88,7 @@ export function Gate({ context }: { context: Exclude<SwarmContext, { state: "ok"
             </li>
           ))}
         </ul>
-        <pre className="rp-code">
+        <pre className="rp-code rp-code-nowrap" tabIndex={0}>
           {`NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY=<publishable or anon key>
 RALLYPOINT_GITHUB_REPO=<owner>/<name>      # Rallypoint lanes, delivery, skills

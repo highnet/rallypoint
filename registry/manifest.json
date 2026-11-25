@@ -341,6 +341,357 @@
           "target": ".claude/skills/swarm-genesis/SKILL.md"
         }
       ]
+    },
+    {
+      "name": "swarm-ui",
+      "version": "0.1.0",
+      "requires": [
+        "swarm"
+      ],
+      "detect": {
+        "nextApp": true
+      },
+      "generate": {
+        "command": "ui-config",
+        "out": "app/swarm/swarm.config.ts"
+      },
+      "description": "The swarm UI route scaffold, installed into an existing Next.js App Router app (the UI is the product): Progress, News, Targets, Results, Versions, Ideas buried, Fleet, Sessions, Rallypoint, Board, Messages, How it works, Protocol, Concepts, Skills. Read-only. Generates a project-owned app/swarm/swarm.config.ts.",
+      "files": [
+        {
+          "source": "swarm-ui/app/swarm/_components/charts.tsx",
+          "target": "app/swarm/_components/charts.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/chips.tsx",
+          "target": "app/swarm/_components/chips.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/nav.tsx",
+          "target": "app/swarm/_components/nav.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/results.tsx",
+          "target": "app/swarm/_components/results.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/role.tsx",
+          "target": "app/swarm/_components/role.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/states.tsx",
+          "target": "app/swarm/_components/states.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/config-types.ts",
+          "target": "app/swarm/_lib/config-types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/format.ts",
+          "target": "app/swarm/_lib/format.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/github.ts",
+          "target": "app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/protocol.ts",
+          "target": "app/swarm/_lib/protocol.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/queries.ts",
+          "target": "app/swarm/_lib/queries.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/supabase.ts",
+          "target": "app/swarm/_lib/supabase.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/types.ts",
+          "target": "app/swarm/_lib/types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/board/page.tsx",
+          "target": "app/swarm/board/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/buried/page.tsx",
+          "target": "app/swarm/buried/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/concepts/page.tsx",
+          "target": "app/swarm/concepts/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/fleet/page.tsx",
+          "target": "app/swarm/fleet/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/how-it-works/page.tsx",
+          "target": "app/swarm/how-it-works/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/layout.tsx",
+          "target": "app/swarm/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/page.tsx",
+          "target": "app/swarm/messages/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/news/page.tsx",
+          "target": "app/swarm/news/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/not-found.tsx",
+          "target": "app/swarm/not-found.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/page.tsx",
+          "target": "app/swarm/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/protocol/page.tsx",
+          "target": "app/swarm/protocol/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/rallypoint/page.tsx",
+          "target": "app/swarm/rallypoint/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/results/[id]/page.tsx",
+          "target": "app/swarm/results/[id]/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/results/page.tsx",
+          "target": "app/swarm/results/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sessions/page.tsx",
+          "target": "app/swarm/sessions/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/actions.ts",
+          "target": "app/swarm/sign-in/actions.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/page.tsx",
+          "target": "app/swarm/sign-in/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/token-from-link.tsx",
+          "target": "app/swarm/sign-in/token-from-link.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/skills/page.tsx",
+          "target": "app/swarm/skills/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/swarm.css",
+          "target": "app/swarm/swarm.css"
+        },
+        {
+          "source": "swarm-ui/app/swarm/targets/[id]/page.tsx",
+          "target": "app/swarm/targets/[id]/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/targets/page.tsx",
+          "target": "app/swarm/targets/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/versions/page.tsx",
+          "target": "app/swarm/versions/page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "swarm-dashboard",
+      "version": "0.1.0",
+      "requires": [
+        "swarm"
+      ],
+      "generate": {
+        "command": "ui-config",
+        "out": "swarm-ui/app/swarm/swarm.config.ts"
+      },
+      "description": "The same swarm UI scaffold as a standalone Next.js app in swarm-ui/, for projects without a Next.js app or that keep the dashboard separate. Read-only. Generates a project-owned swarm-ui/app/swarm/swarm.config.ts.",
+      "files": [
+        {
+          "source": "swarm-ui/app/swarm/_components/charts.tsx",
+          "target": "swarm-ui/app/swarm/_components/charts.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/chips.tsx",
+          "target": "swarm-ui/app/swarm/_components/chips.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/nav.tsx",
+          "target": "swarm-ui/app/swarm/_components/nav.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/results.tsx",
+          "target": "swarm-ui/app/swarm/_components/results.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/role.tsx",
+          "target": "swarm-ui/app/swarm/_components/role.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/states.tsx",
+          "target": "swarm-ui/app/swarm/_components/states.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/config-types.ts",
+          "target": "swarm-ui/app/swarm/_lib/config-types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/format.ts",
+          "target": "swarm-ui/app/swarm/_lib/format.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/github.ts",
+          "target": "swarm-ui/app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/protocol.ts",
+          "target": "swarm-ui/app/swarm/_lib/protocol.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/queries.ts",
+          "target": "swarm-ui/app/swarm/_lib/queries.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/supabase.ts",
+          "target": "swarm-ui/app/swarm/_lib/supabase.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/types.ts",
+          "target": "swarm-ui/app/swarm/_lib/types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/board/page.tsx",
+          "target": "swarm-ui/app/swarm/board/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/buried/page.tsx",
+          "target": "swarm-ui/app/swarm/buried/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/concepts/page.tsx",
+          "target": "swarm-ui/app/swarm/concepts/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/fleet/page.tsx",
+          "target": "swarm-ui/app/swarm/fleet/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/how-it-works/page.tsx",
+          "target": "swarm-ui/app/swarm/how-it-works/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/layout.tsx",
+          "target": "swarm-ui/app/swarm/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/page.tsx",
+          "target": "swarm-ui/app/swarm/messages/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/news/page.tsx",
+          "target": "swarm-ui/app/swarm/news/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/not-found.tsx",
+          "target": "swarm-ui/app/swarm/not-found.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/page.tsx",
+          "target": "swarm-ui/app/swarm/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/protocol/page.tsx",
+          "target": "swarm-ui/app/swarm/protocol/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/rallypoint/page.tsx",
+          "target": "swarm-ui/app/swarm/rallypoint/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/results/[id]/page.tsx",
+          "target": "swarm-ui/app/swarm/results/[id]/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/results/page.tsx",
+          "target": "swarm-ui/app/swarm/results/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sessions/page.tsx",
+          "target": "swarm-ui/app/swarm/sessions/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/actions.ts",
+          "target": "swarm-ui/app/swarm/sign-in/actions.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/page.tsx",
+          "target": "swarm-ui/app/swarm/sign-in/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/token-from-link.tsx",
+          "target": "swarm-ui/app/swarm/sign-in/token-from-link.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/skills/page.tsx",
+          "target": "swarm-ui/app/swarm/skills/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/swarm.css",
+          "target": "swarm-ui/app/swarm/swarm.css"
+        },
+        {
+          "source": "swarm-ui/app/swarm/targets/[id]/page.tsx",
+          "target": "swarm-ui/app/swarm/targets/[id]/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/targets/page.tsx",
+          "target": "swarm-ui/app/swarm/targets/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/versions/page.tsx",
+          "target": "swarm-ui/app/swarm/versions/page.tsx"
+        },
+        {
+          "source": "swarm-ui/standalone/.env.example",
+          "target": "swarm-ui/.env.example"
+        },
+        {
+          "source": "swarm-ui/standalone/README.md",
+          "target": "swarm-ui/README.md"
+        },
+        {
+          "source": "swarm-ui/standalone/app/layout.tsx",
+          "target": "swarm-ui/app/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/standalone/app/page.tsx",
+          "target": "swarm-ui/app/page.tsx"
+        },
+        {
+          "source": "swarm-ui/standalone/gitignore",
+          "target": "swarm-ui/.gitignore"
+        },
+        {
+          "source": "swarm-ui/standalone/next.config.ts",
+          "target": "swarm-ui/next.config.ts"
+        },
+        {
+          "source": "swarm-ui/standalone/package.json",
+          "target": "swarm-ui/package.json"
+        },
+        {
+          "source": "swarm-ui/standalone/tsconfig.json",
+          "target": "swarm-ui/tsconfig.json"
+        }
+      ]
     }
   ]
 }

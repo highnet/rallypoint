@@ -1,6 +1,6 @@
 # Brief: Rallypoint Swarm
 
-_Interview: 2026-11-25. Status: awaiting confirmation._
+_Interview: 2026-11-25. Status: confirmed ("LGTM, start building"). Built in this rally; see `docs/swarm/CONTRACT.md` for the exact names._
 
 ## Core
 
@@ -74,18 +74,42 @@ Arena as proof, and a working path to start either one.
 
 ## Scope of v1 (built in this rally)
 
-1. **Site:** a two-tier presentation on the homepage, a Swarm section, the
-   vanilla-vs-swarm comparison, Swarm Arena proof, and a **goal wizard** page
-   (100-goal gallery → your goal → your measure → generated setup).
-2. **Registry item `swarm`:** role prompts and skills for the self-picking
-   role, retro, referee, strategist (concepts) and conductor, layered on `loop`.
-3. **Generic CLI:** `rallypoint swarm …` commands (`prepare`, `next`, `log`,
-   `retro`, `submit`, `plan`, `brief`, `metrics`) talking to the user's own
-   Supabase.
-4. **Supabase schema:** migrations the user applies to their own project,
-   with RLS for the public and the auth-gated read modes.
-5. **Registry item `swarm-ui`:** the dashboard, installed either into the
-   user's app as the product or as a standalone `swarm-ui/` app.
+1. **Site:** a two-tier chooser under the homepage hero, a `#swarm` band
+   (the comparison table, the mechanism, Swarm Arena as proof), the `/swarm`
+   product page (requirements and setup), and the **pitch-first wizard** at
+   `/swarm/wizard`.
+2. **Registry item `swarm`** (requires `loop`): `SWARM.md`,
+   `.rallypoint/swarm.json`, the runtime (`npx rallypoint swarm …`), the
+   memory schema, and the skills (agent, conductor, strategist, steward,
+   genesis, concepts) plus playbooks.
+3. **Supabase schema:** the user applies it to their own project. Reads go
+   through RLS: public, or signed-in with an optional email allow-list.
+   Writes happen only through RPCs that check a bcrypt-hashed secret.
+4. **Registry items `swarm-ui` and `swarm-dashboard`:** the route scaffold,
+   installed into the user's Next.js app, or as a standalone `swarm-ui/`
+   app.
+
+## Decisions made after confirmation
+
+- **Not every swarm has a reward function.** `measure.mode` is `score` (a
+  number that must beat main, as in Swarm Arena's Elo), `checks` (named
+  commands must pass, for a website or product), or `review` (independent
+  review is the gate, as in vanilla). Without a score, progress is shown as
+  delivery: merged vs open issues.
+- **The wizard starts from a pitch.** One or two sentences, with Swarm Arena
+  as the worked example: "A swarm of AI agents building chess, Go, Othello
+  and Hex engines that keep getting stronger. Watch them climb, read the
+  code, or play one yourself." The 100 goals are inspiration only. Every
+  other choice is optional.
+- **Genesis** (`swarm-genesis` skill) turns the pitch into this project's
+  starting point: targets, measure and referee, playbooks, concepts, UI
+  config and the first plan. It delivers all of that as one pull request for
+  independent review.
+- **The frontend is custom per project.** Rallypoint ships only a scaffold
+  of every Swarm Arena route. Each project gets a generated, project-owned
+  `swarm.config.ts` (names, colours, vocabulary such as "Engines", "Games"
+  and "landed", nav and theme). The swarm can then grow the frontend itself
+  as a `ui` target.
 
 ## Frontend integration (the swarm UI)
 
@@ -104,8 +128,9 @@ with a flag:
   the site. In an existing Next.js App Router project, `add swarm-ui` writes
   `app/swarm/*` routes and components into it.
 - **A standalone dashboard.** For a project with no Next.js app (Rust, Python,
-  a proof library…), or when the dashboard should stay separate, it scaffolds
-  a small Next.js + Tailwind app in `swarm-ui/`. That app is pre-wired to
+  a proof library…), or when the dashboard should stay separate,
+  `add swarm-dashboard` scaffolds a small Next.js app in `swarm-ui/`
+  (plain CSS with Rallypoint tokens, no Tailwind). That app is pre-wired to
   their Supabase and deployable to Vercel.
 
 **Access is customizable.** The default is public and read-only, like Swarm
@@ -128,22 +153,15 @@ variables, so it reads as Rallypoint and the user can retheme it.
 - Each new surface (homepage tiers, Swarm section, wizard) gets an impeccable
   surface note and a critique pass under `.impeccable/`.
 
-## Assumptions (correct any)
+## Assumptions still open (correct any)
 
-- The referee is generic. The project supplies a command that prints a score,
-  and a change lands only if it beats main by the configured margin. The
-  wizard suggests forms such as tests, benchmarks, proof checks, eval scores or
-  simulations, but the user defines the measure.
-- Messages count as part of "memory". They are visible to everyone, with no
-  private side channels, so the spirit of "agents never talk in private" holds.
-- Arena numbers on the site link to the live arena rather than hard-coding Elo
-  figures that go stale.
-- The CLI ships in the same zero-dependency `rallypoint` npm package, and
-  Supabase access goes through its REST API, so no SDK dependency.
-- I could not read `highnet/swarm-arena` (attaching it was blocked), so the CLI
-  and schema are rebuilt from the public site, not copied.
-
-## Suggested first step
-
-Site first: the two-tier homepage plus the wizard. Then the `swarm` registry
-item, the CLI and the schema.
+- Arena numbers on the site link to the live arena instead of hard-coding
+  Elo figures that go stale.
+- The CLI ships in the same zero-dependency `rallypoint` npm package. Supabase
+  access goes through its REST API, with no SDK.
+- I could not read `highnet/swarm-arena` (attaching it was blocked), so the
+  runtime, schema and UI are rebuilt from the public site, not copied. The
+  arena's own `npm run arena -- …` commands map to `npx rallypoint swarm …`.
+- The schema is tested on a local Postgres 16 with Supabase's `auth` helpers
+  stubbed, and through a PostgREST-shaped shim, not on a live Supabase
+  project.

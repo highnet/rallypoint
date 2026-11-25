@@ -10,7 +10,7 @@
     },
     {
       "name": "swarm",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "Rallypoint Swarm: shared memory in your own Supabase, self-picking roles, a referee (score, checks or review), retros, buried ideas, concepts, genesis and a conductor loop. Install after loop.",
       "requires": [
         "loop"

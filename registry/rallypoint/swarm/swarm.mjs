@@ -77,6 +77,10 @@ class UsageError extends Error {}
 // ---------------------------------------------------------------------------
 
 const cwd = resolve(option("cwd") ?? process.cwd());
+// `rallypoint swarm connect` writes this gitignored file. Variables already
+// in the environment win: loadEnvFile never overwrites them.
+const LOCAL_ENV = join(cwd, ".rallypoint/swarm/.env.local");
+if (existsSync(LOCAL_ENV)) process.loadEnvFile(LOCAL_ENV);
 const memory = memoryFromEnv(process.env);
 
 const git = (...args) =>
@@ -247,12 +251,12 @@ commands.doctor = async () => {
     add("swarm.json", false, error.message);
   }
 
-  add("RALLYPOINT_SUPABASE_URL", Boolean(process.env.RALLYPOINT_SUPABASE_URL), process.env.RALLYPOINT_SUPABASE_URL ?? "unset");
-  add("RALLYPOINT_SUPABASE_KEY", Boolean(process.env.RALLYPOINT_SUPABASE_KEY), process.env.RALLYPOINT_SUPABASE_KEY ? "set" : "unset");
+  add("RALLYPOINT_SUPABASE_URL", Boolean(process.env.RALLYPOINT_SUPABASE_URL), process.env.RALLYPOINT_SUPABASE_URL ?? "unset: run “npx rallypoint swarm connect”");
+  add("RALLYPOINT_SUPABASE_KEY", Boolean(process.env.RALLYPOINT_SUPABASE_KEY), process.env.RALLYPOINT_SUPABASE_KEY ? "set" : "unset: run “npx rallypoint swarm connect”");
   add(
     "RALLYPOINT_SWARM_SECRET",
     Boolean(process.env.RALLYPOINT_SWARM_SECRET),
-    process.env.RALLYPOINT_SWARM_SECRET ? "set (agents only)" : "unset: sessions can read but not write",
+    process.env.RALLYPOINT_SWARM_SECRET ? "set (agents only)" : "unset: sessions can read but not write (run “npx rallypoint swarm connect”)",
     process.env.RALLYPOINT_SWARM_SECRET ? "ok" : "warn",
   );
 
@@ -736,6 +740,41 @@ commands.protocol = async () => {
 };
 
 const PRIORITIES = new Set(["p0", "p1", "p2", "p3"]);
+const PRIORITY_LABELS = {
+  p0: { color: "b60205", description: "Priority: highest" },
+  p1: { color: "d93f0b", description: "Priority: high" },
+  p2: { color: "fbca04", description: "Priority: normal" },
+  p3: { color: "c2e0c6", description: "Priority: low" },
+};
+
+// Every label a plan needs must exist before the first issue is opened:
+// `gh issue create --label x` fails on an unknown label, and a plan that dies
+// at task 9 leaves 8 issues behind. Priority and target labels have a known
+// shape, so plan creates them; any other label must already exist.
+const planLabels = (config, tasks, existing) => {
+  const wanted = new Map();
+  for (const task of tasks) {
+    const prio = task.prio ?? "p2";
+    wanted.set(`prio:${prio}`, { kind: "prio", ...PRIORITY_LABELS[prio] });
+    if (task.target) {
+      const target = allTargets(config).find((t) => t.id === task.target);
+      wanted.set(`target:${task.target}`, {
+        kind: "target",
+        color: (config.ui?.targets?.[task.target]?.color ?? "#6e7781").replace(/^#/, ""),
+        description: (target?.description || target?.name || task.target).slice(0, 100),
+      });
+    }
+    for (const label of task.labels ?? []) if (!wanted.has(label)) wanted.set(label, { kind: "custom" });
+  }
+  const create = [];
+  const unknown = [];
+  for (const [name, label] of wanted) {
+    if (existing.has(name)) continue;
+    if (label.kind === "custom") unknown.push(name);
+    else create.push({ name, color: label.color, description: label.description });
+  }
+  return { create, unknown };
+};
 
 commands.plan = async () => {
   const [file] = positionals();
@@ -755,6 +794,22 @@ commands.plan = async () => {
   });
   if (problems.length) throw new UsageError(problems.join("\n"));
 
+  let existing;
+  try {
+    existing = new Set(ghJson("label", "list", "--json", "name", "--limit", "500").map((label) => label.name));
+  } catch (error) {
+    throw new Error(`could not list labels (is gh authenticated?): ${error.message.split("\n")[0]}`);
+  }
+  const { create, unknown } = planLabels(config, tasks, existing);
+  if (unknown.length) {
+    throw new UsageError(`these labels do not exist yet; create them first: ${unknown.join(", ")}`);
+  }
+  const labelLines = [];
+  for (const label of create) {
+    if (!flag("dry-run")) gh("label", "create", label.name, "--color", label.color, "--description", label.description);
+    labelLines.push(`  ${green("add ")}  label ${label.name}`);
+  }
+
   const created = [];
   for (const task of tasks) {
     const trailer = [
@@ -773,7 +828,7 @@ commands.plan = async () => {
     const url = gh(...args);
     created.push({ title: task.title, labels, url });
   }
-  out({ created, dryRun: flag("dry-run") }, created.map((task) => `  ${flag("dry-run") ? muted("plan") : green("open")}  ${task.title} ${muted(task.labels.join(" "))}${task.url ? `\n        ${task.url}` : ""}`).join("\n"));
+  out({ created, labels: create.map((label) => label.name), dryRun: flag("dry-run") }, [...labelLines, ...created.map((task) => `  ${flag("dry-run") ? muted("plan") : green("open")}  ${task.title} ${muted(task.labels.join(" "))}${task.url ? `\n        ${task.url}` : ""}`)].join("\n"));
   return EXIT.OK;
 };
 

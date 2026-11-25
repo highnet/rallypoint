@@ -4,7 +4,10 @@
 --   psql "$DATABASE_URL" -f .rallypoint/swarm/schema.sql
 -- It is idempotent: re-running it upgrades in place and keeps your data.
 --
--- Then set the agents' write secret (once, in the SQL editor):
+-- Then set the agents' write secret (at least 16 characters) with
+--   npx rallypoint swarm connect
+-- which prompts for it, sets it with the service-role key and writes the
+-- gitignored env files. Or, in the SQL editor:
 --   select public.swarm_set_secret('a-long-random-secret');
 -- and give that same value to agents as RALLYPOINT_SWARM_SECRET.
 --
@@ -337,7 +340,7 @@ declare
 begin
   select hash into stored from public.swarm_secret where id = 1;
   if stored is null then
-    raise exception 'no swarm secret is set; run select public.swarm_set_secret(''…'') in the SQL editor'
+    raise exception 'no swarm secret is set; run npx rallypoint swarm connect, or select public.swarm_set_secret(''…'') in the SQL editor'
       using errcode = '28000';
   end if;
   if p_secret is null or extensions.crypt(p_secret, stored) <> stored then
@@ -544,6 +547,9 @@ $$;
 -- Function privileges: everything is revoked from PUBLIC first, then only
 -- the secret-checked RPCs and read helpers are granted.
 revoke all on function public.swarm_set_secret(text) from public, anon, authenticated;
+-- service_role is the project's admin key; `rallypoint swarm connect` uses it
+-- once to set the secret over the API instead of the SQL editor.
+grant execute on function public.swarm_set_secret(text) to service_role;
 revoke all on function public.swarm_assert_secret(text) from public, anon, authenticated;
 revoke all on function public.swarm_write(text, text, jsonb) from public;
 revoke all on function public.swarm_update(text, text, text, jsonb) from public;

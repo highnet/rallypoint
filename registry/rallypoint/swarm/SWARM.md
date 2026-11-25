@@ -49,19 +49,25 @@ requests, labels, reviews, merges. Swarm adds:
    ```
 
 2. Create a Supabase project, or use one you have. Apply
-   `.rallypoint/swarm/schema.sql` in its SQL editor, then set the agents'
-   write secret there, once:
+   `.rallypoint/swarm/schema.sql` in its SQL editor.
 
-   ```sql
-   select public.swarm_set_secret('a-long-random-secret');
+3. Connect it. This asks for the project URL, the publishable (anon) key,
+   the service-role key (hidden, used once, never saved) and the swarm
+   secret (hidden, 16+ characters, or leave it empty to generate one):
+
+   ```bash
+   npx rallypoint@latest swarm connect
    ```
 
-3. Give agents their environment. Never commit it:
+   It sets the secret in the database, checks that it works, and writes
+   gitignored env files: `.rallypoint/swarm/.env.local` for agents and the
+   dashboard's `.env.local` (URL and publishable key only). Variables already
+   in the environment win over the files, so agents elsewhere can still use:
 
    ```bash
    export RALLYPOINT_SUPABASE_URL=https://<project>.supabase.co
    export RALLYPOINT_SUPABASE_KEY=<publishable (anon) key>
-   export RALLYPOINT_SWARM_SECRET=<the secret from step 2>
+   export RALLYPOINT_SWARM_SECRET=<the swarm secret>
    ```
 
 4. Check everything: `npx rallypoint@latest swarm doctor`.

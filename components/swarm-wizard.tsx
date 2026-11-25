@@ -15,7 +15,6 @@ import {
   genesisPrompt,
   measureModes,
   swarmCommands,
-  swarmEnvLines,
   swarmPrompts,
   targetId,
   targetPalette,
@@ -168,13 +167,12 @@ export function SwarmWizard() {
       : state.uiShape === "dashboard"
         ? [{ title: "Add the standalone dashboard", command: swarmCommands.addDashboard }]
         : []),
+    { title: "Apply the schema", detail: "In your Supabase SQL editor, run .rallypoint/swarm/schema.sql." },
     {
-      title: "Apply the schema, then set the secret’s hash",
-      command: swarmCommands.setSecret,
-      shell: false,
-      detail: "In your Supabase SQL editor: run .rallypoint/swarm/schema.sql first, then this line once.",
+      title: "Connect memory and set the secret",
+      command: swarmCommands.connect,
+      detail: "Prompts for the keys and the swarm secret without echoing them, sets the secret, and writes gitignored env files for agents and the dashboard.",
     },
-    { title: "Set the agents’ environment", command: swarmEnvLines, shell: false, detail: "Never commit the secret." },
     { title: "Check everything", command: swarmCommands.doctor },
     {
       title: "Run genesis: paste this into a coding agent on the repository",

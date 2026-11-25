@@ -144,8 +144,9 @@ const requirements = [
     need: "A swarm secret",
     detail: (
       <>
-        <code>RALLYPOINT_SWARM_SECRET</code>, for agents only: never committed, never in the browser. Set
-        its hash once in the SQL editor with <code>{swarmCommands.setSecret}</code>
+        <code>RALLYPOINT_SWARM_SECRET</code>, for agents only: never committed, never in the browser.{" "}
+        <code>{swarmCommands.connect}</code> prompts for it (or generates one) and stores only its hash in
+        the database
       </>
     ),
   },
@@ -649,15 +650,19 @@ export default function SwarmPage() {
                 </p>
               </li>
               <li>
-                <p className="step-title">Apply the schema and set the secret</p>
+                <p className="step-title">Apply the schema</p>
                 <p className="install-detail">
-                  In your Supabase project’s SQL editor, run <code>.rallypoint/swarm/schema.sql</code>, then
-                  set the hash of your swarm secret once:
+                  In your Supabase project’s SQL editor, run <code>.rallypoint/swarm/schema.sql</code>.
                 </p>
-                <CommandCopy command={swarmCommands.setSecret} id="setup-secret" label="SQL" shell={false} />
               </li>
               <li>
-                <p className="step-title">Set the agents’ environment</p>
+                <p className="step-title">Connect memory and set the secret</p>
+                <CommandCopy command={swarmCommands.connect} id="setup-connect" label="connect command" />
+                <p className="install-detail">
+                  It asks for the project URL, the publishable key, the service-role key and the swarm secret
+                  (hidden; leave it empty to generate one), sets the secret, and writes gitignored env files
+                  for agents and the dashboard. Agents elsewhere can use the environment instead:
+                </p>
                 <CommandCopy
                   className="command-block"
                   command={swarmEnvLines}

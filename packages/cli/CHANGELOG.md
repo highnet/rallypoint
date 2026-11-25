@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.7.0...rallypoint-v0.8.0) (2026-11-25)
+
+
+### Features
+
+* **cli:** add swarm connect; fix init labels, empty repos and plan labels ([#64](https://github.com/highnet/rallypoint/issues/64)) ([658049b](https://github.com/highnet/rallypoint/commit/658049b5eb276ee4b2ccf40027577c4d2cf59c3e))
+
 ## [0.7.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.6.0...rallypoint-v0.7.0) (2026-11-25)
 
 

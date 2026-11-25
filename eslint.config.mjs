@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     ".claude/worktrees/**",
     "next-env.d.ts",
+    // Registry templates compile only inside the installing app.
+    "registry/**",
   ]),
 ]);
 

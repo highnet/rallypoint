@@ -3758,3 +3758,10 @@ a.role-cell:hover span {
 [data-audience="agent"] .hero-tier-link {
   display: none;
 }
+
+/* Swarm loop: marks the steps Swarm adds around the vanilla stations. */
+.swarm-loop-added {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}

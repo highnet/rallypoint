@@ -18,6 +18,7 @@ import {
   measureModes,
   swarmCommands,
   swarmEnvLines,
+  swarmLoop,
   swarmRoles,
   swarmUiEnvLines,
   swarmUiRoutes,
@@ -228,6 +229,47 @@ export default function SwarmPage() {
             </div>
             <SwarmCompare />
             <SwarmMechanism />
+          </div>
+        </section>
+
+        <section aria-labelledby="loop-title" className="band band-rule" id="loop">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="loop-title">One issue through the swarm, agent by agent.</h2>
+              <p>
+                All seven stations of the vanilla loop, Filed to Merged, in the same order and held by
+                the same agents. Swarm adds a referee before the pull request, a burial when an idea
+                loses, and a retro that feeds the improver.
+              </p>
+            </div>
+            <ol className="swarm-roles swarm-loop">
+              {swarmLoop.map((step, index) => (
+                <li key={step.name}>
+                  <span className="swarm-role-index">{index + 1}</span>
+                  <span className="role-cell swarm-role-name">
+                    {step.holder === "every" ? null : (
+                      <SignalFlag className="role-flag" signal={step.holder} />
+                    )}
+                    <span>
+                      <strong>{step.name}</strong>
+                      <br />
+                      {step.holder === "every" ? (
+                        step.holderName
+                      ) : (
+                        <Link href={`/agents/${step.holder}`}>{step.holderName}</Link>
+                      )}
+                      {step.swarm ? <span className="swarm-loop-added"> · Swarm</span> : null}
+                    </span>
+                  </span>
+                  <p className="swarm-role-job">{step.does}</p>
+                  <code className="swarm-role-command">{step.command}</code>
+                </li>
+              ))}
+            </ol>
+            <p className="swarm-note">
+              Also on duty: the conductor dispatches one session per role and target, the janitor
+              clears stale claims, and the tester is there for any verification on top of the referee.
+            </p>
           </div>
         </section>
 

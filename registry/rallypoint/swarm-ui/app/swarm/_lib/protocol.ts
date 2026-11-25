@@ -41,13 +41,30 @@ export const MODE_COPY = {
   },
 } as const;
 
-export const SHIP_STEPS: { title: string; body: string }[] = [
-  { title: "Plan", body: "A planner turns the goal into GitHub issues, each with a target and a concept." },
-  { title: "Claim", body: "A worker claims exactly one issue through Rallypoint's reservation ref." },
-  { title: "Measure", body: "The worker opens a pull request and runs the referee against the integration branch." },
-  { title: "Review", body: "Another agent reviews the pull request at its head SHA." },
-  { title: "Ship or bury", body: "A merger merges approved work and records the version; a losing idea is buried with its numbers." },
-  { title: "Learn", body: "Every session leaves a retro; the improver turns them into one measured protocol change at a time." },
+/**
+ * One issue through the swarm, agent by agent. The seven vanilla stations
+ * (filed → merged) are all here, in order; `swarm: true` marks the steps the
+ * swarm adds around them.
+ */
+export const SHIP_STEPS: { title: string; role: string; body: string; command: string; swarm?: boolean }[] = [
+  { title: "Filed", role: "planner", body: "The planner (as strategist) turns the goal into small issues, each with a target and a concept.", command: "swarm plan plan.json" },
+  { title: "Claimed", role: "worker", body: "One worker reserves exactly one issue through the reservation ref.", command: "node .rallypoint/scripts/claim.mjs" },
+  { title: "Refereed", role: "worker", body: "Before opening anything, the worker measures the change against the integration branch: a score, checks, or review alone.", command: "swarm referee", swarm: true },
+  { title: "Buried", role: "worker", body: "If the referee says it lost, no pull request opens: the idea is buried with its numbers and its lesson.", command: "swarm bury", swarm: true },
+  { title: "PR opened", role: "worker", body: "A winning change becomes one pull request that closes its issue, with the referee's result in the body.", command: "Closes #n" },
+  { title: "Changes requested", role: "reviewer", body: "Another session reviews it at its head SHA, against the issue and the referee result.", command: "review.mjs record --verdict request-changes" },
+  { title: "Fixed", role: "fixer", body: "A fixer pushes the requested change and re-runs the referee; the head moves, so it goes back for review.", command: "swarm referee" },
+  { title: "Approved", role: "reviewer", body: "An independent approve, never from the session that wrote the code.", command: "review.mjs record --verdict approve" },
+  { title: "Merged", role: "merger", body: "The merger lands it and records the shipped version and its score.", command: "swarm ship --version v…" },
+  { title: "Retro", role: "every session", body: "Every session ends with a retro: what helped, what slowed it, one suggestion.", command: "swarm retro", swarm: true },
+  { title: "Improved", role: "improver", body: "When retros pile up, the improver makes one measured change to the tunable skills; the judges stay frozen.", command: "swarm protocol change", swarm: true },
+];
+
+/** Always on duty around the loop. */
+export const ON_DUTY: { role: string; body: string }[] = [
+  { role: "orchestrator", body: "The conductor: surveys the board each tick and dispatches one session per role and target." },
+  { role: "janitor", body: "Clears stale claims, orphaned leases and abandoned sessions so the board tells the truth." },
+  { role: "tester", body: "Available as in vanilla, for verification passes a project wants on top of the referee." },
 ];
 
 /** Copyable prompts for starting sessions, as on the protocol page. */

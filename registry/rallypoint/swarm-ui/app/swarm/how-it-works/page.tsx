@@ -5,7 +5,7 @@ import { TargetChip } from "../_components/chips";
 import { RoleTag } from "../_components/role";
 import { Gate, PageHead, QueryErrors, Section } from "../_components/states";
 import { cap, word } from "../_lib/format";
-import { MODE_COPY, ROLE_ORDER, SHIP_STEPS } from "../_lib/protocol";
+import { MODE_COPY, ON_DUTY, ROLE_ORDER, SHIP_STEPS } from "../_lib/protocol";
 import { getHowItWorks, getSwarmContext } from "../_lib/queries";
 import { swarmConfig } from "../swarm.config";
 
@@ -81,10 +81,22 @@ export default async function HowItWorksPage() {
         <ol className="rp-steps">
           {SHIP_STEPS.map((step) => (
             <li key={step.title}>
-              <strong>{step.title}.</strong> {step.body}
+              <strong>{step.title}</strong>
+              {step.swarm ? <span className="rp-chip"> swarm</span> : null} ·{" "}
+              {step.role === "every session" ? "every session" : <RoleTag role={step.role} />}{" "}
+              — {step.body} <code>{step.command}</code>
             </li>
           ))}
         </ol>
+        <p>Also on duty:</p>
+        <ul className="rp-roles">
+          {ON_DUTY.map((item) => (
+            <li key={item.role}>
+              <RoleTag role={item.role} />
+              <span>{item.body}</span>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <Section

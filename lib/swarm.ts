@@ -150,6 +150,34 @@ export const swarmRoles: SwarmRole[] = [
   },
 ];
 
+export type SwarmLoopStep = {
+  name: string;
+  holder: AgentSlug | "every";
+  holderName: string;
+  does: string;
+  command: string;
+  /** A step the swarm adds around the seven vanilla stations. */
+  swarm?: boolean;
+};
+
+/**
+ * One issue through the swarm, agent by agent: all seven vanilla stations
+ * (Filed → Merged, as on the homepage) in order, plus the steps Swarm adds.
+ */
+export const swarmLoop: SwarmLoopStep[] = [
+  { name: "Filed", holder: "planner", holderName: "Planner", does: "Turns the goal into small issues, each with a target and a concept.", command: "swarm plan plan.json" },
+  { name: "Claimed", holder: "worker", holderName: "Worker", does: "Reserves exactly one issue through the reservation ref.", command: "claim.mjs --agent-id …" },
+  { name: "Refereed", holder: "worker", holderName: "Worker", does: "Measures the change against the integration branch before opening anything.", command: "swarm referee", swarm: true },
+  { name: "Buried", holder: "worker", holderName: "Worker", does: "If it lost, no pull request: the idea is buried with its numbers and lesson.", command: "swarm bury", swarm: true },
+  { name: "PR opened", holder: "worker", holderName: "Worker", does: "A winning change becomes one pull request that closes its issue.", command: "Closes #n" },
+  { name: "Changes requested", holder: "reviewer", holderName: "Reviewer", does: "Another session judges it at its head SHA, with the referee result.", command: "review.mjs record --verdict request-changes" },
+  { name: "Fixed", holder: "fixer", holderName: "Fixer", does: "Pushes the fix and re-runs the referee; the head moves, so it goes back for review.", command: "swarm referee" },
+  { name: "Approved", holder: "reviewer", holderName: "Reviewer", does: "An independent approve, never from the session that wrote the code.", command: "review.mjs record --verdict approve" },
+  { name: "Merged", holder: "merger", holderName: "Merger", does: "Lands it and records the shipped version and its score.", command: "swarm ship --version v…" },
+  { name: "Retro", holder: "every", holderName: "Every session", does: "Ends with what helped, what slowed it, and one suggestion.", command: "swarm retro", swarm: true },
+  { name: "Improved", holder: "improver", holderName: "Improver", does: "When retros pile up, makes one measured change to the tunable skills.", command: "swarm protocol change", swarm: true },
+];
+
 /** The CLI command list from the contract, verbatim. */
 export const swarmCliCommands: { command: string; does: string }[] = [
   { command: "doctor", does: "Checks env, gh, git, the config, Supabase reachability, the schema version and the secret." },

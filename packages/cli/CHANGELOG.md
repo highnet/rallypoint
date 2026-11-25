@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.6.0...rallypoint-v0.7.0) (2026-11-25)
+
+
+### Features
+
+* **site:** the orchestrator's fleet, vanilla prompts, Arena screenshots, easier wizard ([#62](https://github.com/highnet/rallypoint/issues/62)) ([d6efa03](https://github.com/highnet/rallypoint/commit/d6efa0370fbae9af0ef3757613313ea6cecc5ff8))
+* **swarm:** genesis interviews the operator with interview-me and initializes Impeccable ([#63](https://github.com/highnet/rallypoint/issues/63)) ([42e03fb](https://github.com/highnet/rallypoint/commit/42e03fbc4fbaf681d650844a32b82b6ca2d6dbc3))
+
+
+### Bug Fixes
+
+* **cli:** point package metadata at highnet/rallypoint so npm provenance verifies ([#60](https://github.com/highnet/rallypoint/issues/60)) ([20c4dc9](https://github.com/highnet/rallypoint/commit/20c4dc9a0ee1241d2c9ce45df8afa04910d5ceb0))
+
 ## [0.6.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.5.0...rallypoint-v0.6.0) (2026-11-25)
 
 

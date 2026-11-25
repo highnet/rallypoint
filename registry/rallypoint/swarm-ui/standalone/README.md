@@ -50,6 +50,7 @@ Redirect URLs. The session lives in an httpOnly cookie, `rp-swarm-token`.
 Everything project-specific is in `app/swarm/swarm.config.ts`, which you own.
 Styles are in `app/swarm/swarm.css` as CSS variables. Pages are thin and read
 through `app/swarm/_lib/queries.ts`. See Rallypoint's `CUSTOMIZE.md` for the
-rules and starter ideas. Fonts: the UI uses Archivo and Martian Mono when
-they are available and falls back to system fonts; load them however your
-app loads fonts and they apply.
+rules and starter ideas. Fonts: Inter, Inter Tight and JetBrains Mono,
+self-hosted by `next/font` at build time (so the first build needs network
+access, as `npm install` does); set `--rp-font-sans`, `--rp-font-display` or
+`--rp-font-code` to use others.

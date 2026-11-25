@@ -23,7 +23,9 @@ export default async function FleetPage() {
       <QueryErrors errors={errors} />
       {fleet.length === 0 ? (
         <Empty>
-          No {word("sessions")} working right now. Start one with <code>npx rallypoint swarm prepare</code>.
+          Nobody is working right now. An {word("agent")} shows up here within seconds of opening a{" "}
+          {word("session")} with <code>npx rallypoint swarm prepare</code>, and drops off two hours after its last
+          progress note.
         </Empty>
       ) : (
         <table className="rp-table rp-reflow">

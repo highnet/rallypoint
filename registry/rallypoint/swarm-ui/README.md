@@ -55,8 +55,12 @@ Rallypoint's tokens as CSS variables (the full list is at the top of the
 file): `--rp-paper`, `--rp-paper-sunk`, `--rp-ink`, `--rp-ink-soft`,
 `--rp-rule`, `--rp-accent`, `--rp-accent-fg`, `--rp-focus`, `--rp-pass`,
 `--rp-fail`, `--rp-sig-red|yellow|blue|black|white`, `--rp-code-bg`,
-`--rp-code-fg`, `--rp-radius-s|m|pill`, `--rp-sidebar`, and the optional
-`--rp-font-sans` / `--rp-font-code`. Override them in
+`--rp-code-fg`, `--rp-live`, `--rp-radius-s|m|pill`, `--rp-sidebar`,
+`--rp-measure`, and the optional `--rp-font-sans` / `--rp-font-display` /
+`--rp-font-code`. Inter, Inter Tight and JetBrains Mono are self-hosted by
+`next/font` in `app/swarm/layout.tsx`; set the font variables to use your own
+faces. Each target's colour comes from `swarm.config.ts` and is mixed with
+the ink and paper, so any colour reads in both themes. Override them in
 `swarmConfig.theme.cssVars`, or in your own CSS. Dark mode follows
 `prefers-color-scheme`, unless the host sets `data-theme="light|dark"` (or a
 `light` / `dark` class) on `<html>`, or `data-theme` on `.rp-swarm`.

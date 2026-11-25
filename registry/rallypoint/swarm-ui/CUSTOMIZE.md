@@ -12,7 +12,7 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/queries.ts` | every read the pages make, one function per page | extend it; keep it read-only |
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
-| `app/swarm/_components/*` | flags, chips, panels, the step chart, the delivery bar | freely |
+| `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar | freely |
 | `app/swarm/**/page.tsx` | thin pages: `getSwarmContext()`, one query, render | freely |
 | `app/swarm/swarm.css` | scoped styles and theme variables | freely |
 
@@ -50,12 +50,12 @@ review, then a merger. The improver never edits the referee.
 Seeds for `npx rallypoint swarm plan`, each scoped to one pull request:
 
 1. Draw a live fleet graph of targets, agents and open PRs on /swarm/fleet
-2. Give each target page a hero with its latest version, trend and open issues
+2. Show each target's open issues and the issue being worked on in its card
 3. Add a 24-hour replay of fleet activity with play, pause and step controls
 4. Show each referee run's checks as a timeline on /swarm/results/[id]
 5. Link buried ideas to the concepts matrix and show their numbers inline
 6. Add an RSS feed for /swarm/news
-7. Write a project landing section above Progress from swarm.config.ts copy
+7. Add a "News" band to the overview with the three latest stories
 8. Add per-target filters and a search box to the Board timeline
 
 Each must keep the rules above: read through `queries.ts`, no writes, text

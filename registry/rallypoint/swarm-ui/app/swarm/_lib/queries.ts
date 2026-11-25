@@ -172,17 +172,23 @@ export type ProgressData = {
   github: GithubState | null;
   delivery: Delivery | null;
   deliveryByTarget: TargetDelivery[];
+  /** Working sessions seen in the last two hours, newest first. */
+  fleet: FleetRow[];
+  /** The newest buried idea, for the "latest" line. */
+  lastBuried: BuriedRow | null;
   errors: Errors;
 };
 
 export async function getProgress(settings: SwarmSettings): Promise<ProgressData> {
   const errors: Errors = [];
   const mode = measureMode(settings);
-  const [metrics, sessions, versions, results] = await Promise.all([
+  const [metrics, sessions, versions, results, fleet, buried] = await Promise.all([
     selectRows("swarm_metrics", { limit: 1 }),
     countRows("swarm_sessions"),
     selectRows("swarm_versions", { order: "created_at.asc", limit: 1000 }),
     selectRows("swarm_results", { order: "created_at.desc", limit: 8 }),
+    selectRows("swarm_fleet", { order: "last_seen_at.desc", limit: 6 }),
+    selectRows("swarm_buried", { order: "created_at.desc", limit: 1 }),
   ]);
   const versionRows = take(versions, [], errors);
   const resultRows = take(results, [], errors);
@@ -222,8 +228,17 @@ export async function getProgress(settings: SwarmSettings): Promise<ProgressData
     github,
     delivery,
     deliveryByTarget,
+    fleet: take(fleet, [], errors),
+    lastBuried: first(buried, errors),
     errors,
   };
+}
+
+/** How many agents are working now, for the header's live indicator. */
+export async function getWorkingCount(): Promise<number | null> {
+  const read = await selectRows("swarm_metrics", { select: "sessions_working", limit: 1 });
+  if (!read.ok) return null;
+  return read.data[0]?.sessions_working ?? 0;
 }
 
 /* ───────────────────────── News ───────────────────────── */

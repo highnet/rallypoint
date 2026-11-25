@@ -41,6 +41,27 @@ default branch, creates the `status:ready`/`prio:*`/etc. labels the loop reads
 and writes, and reports (without changing) whether the default branch has
 protection rules.
 
+## Rallypoint Swarm
+
+Swarm is the next tier, installed on top of the loop, for goals no single
+agent finishes alone. GitHub still owns the work; a Supabase project you own
+holds the shared memory (sessions, progress, retros, messages, referee
+results, buried ideas, concepts). Sessions pick their own role, finishing
+first; a referee gates every change (a score, pass/fail checks, or
+independent review alone); and a conductor `/loop` keeps sessions running.
+
+```bash
+npx rallypoint@latest add swarm
+npx rallypoint@latest swarm doctor
+npx rallypoint@latest swarm init
+```
+
+Requirements, the full setup sequence and the goal wizard are at
+[rallypoint.tools/swarm](https://rallypoint.tools/swarm). The shared names
+(registry items, CLI commands, env vars, config) are defined in
+[`docs/swarm/CONTRACT.md`](docs/swarm/CONTRACT.md). Live example:
+[Swarm Arena](https://swarm-arena-race.vercel.app/).
+
 ## Website
 
 The marketing and documentation site is a Next.js App Router project using

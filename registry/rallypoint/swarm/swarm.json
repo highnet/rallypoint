@@ -1,0 +1,41 @@
+{
+  "$schema": "https://rallypoint.tools/schema/swarm.json",
+  "goal": {
+    "title": "",
+    "statement": "",
+    "pitch": ""
+  },
+  "measure": {
+    "mode": "review",
+    "label": "",
+    "command": "",
+    "direction": "higher",
+    "margin": 0,
+    "unit": "",
+    "checks": [],
+    "timeoutSeconds": 1800
+  },
+  "targets": [],
+  "ui": {
+    "project": { "name": "", "tagline": "" },
+    "targets": {},
+    "vocabulary": { "shipped": "shipped", "buried": "buried", "version": "version" },
+    "includeUiTarget": false
+  },
+  "visibility": "public",
+  "protocolVersion": "p1",
+  "roleOrder": ["merger", "fixer", "reviewer", "improver", "worker", "planner", "janitor"],
+  "improverRetroThreshold": 3,
+  "conductor": { "concurrency": 4, "budget": null, "focus": "balanced", "pace": "self" },
+  "tunablePaths": [".rallypoint/roles/", ".rallypoint/swarm/skills/", ".rallypoint/swarm/playbooks/"],
+  "frozenPaths": [
+    ".rallypoint/scripts/",
+    ".rallypoint/swarm/swarm.mjs",
+    ".rallypoint/swarm/lib/",
+    ".rallypoint/swarm/schema.sql",
+    ".rallypoint/swarm.json",
+    ".rallypoint/roles/reviewer.md",
+    ".rallypoint/roles/merger.md",
+    ".rallypoint/roles/improver.md"
+  ]
+}

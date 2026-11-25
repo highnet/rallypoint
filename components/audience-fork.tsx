@@ -92,6 +92,13 @@ export function AudienceFork({ human }: AudienceForkProps) {
             Constraints: no agent reviews its own work; no worker holds more than one claim; GitHub
             remains the only coordination state.
           </p>
+          <p className="agent-constraint">
+            Running in a Swarm repository? Follow <code>.claude/skills/swarm-agent/SKILL.md</code>; it
+            picks your role with <code>npx rallypoint@latest swarm next</code>. Details:{" "}
+            <Link className="text-link" href="/swarm">
+              /swarm
+            </Link>
+          </p>
         </div>
       )}
     </div>

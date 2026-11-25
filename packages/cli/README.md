@@ -49,6 +49,35 @@ from the purely local, checksum-verified file writes `add` performs. It:
 `init` is idempotent and supports `--dry-run` and `--cwd <path>`, same as
 `add`.
 
+## Rallypoint Swarm
+
+Swarm is the next tier, installed on top of `loop`. It adds shared memory in
+your own Supabase project, a referee (`score`, `checks` or `review` mode),
+self-picking roles, retros, buried ideas, concepts, a genesis skill that
+turns a one-line pitch into this project's starting point, and a conductor
+loop. More setup, more capability:
+
+```bash
+npx rallypoint@latest add swarm
+npx rallypoint@latest swarm doctor
+npx rallypoint@latest swarm init
+```
+
+`rallypoint swarm <command>` forwards to the installed runtime
+(`.rallypoint/swarm/swarm.mjs`). Try `rallypoint swarm help`. The installed
+`SWARM.md` has the full setup, including the schema and the environment
+variables.
+
+Optional UI: a route scaffold your project grows into its own frontend.
+
+```bash
+npx rallypoint@latest add swarm-ui          # into an existing Next.js app
+npx rallypoint@latest add swarm-dashboard   # a standalone swarm-ui/ app
+```
+
+Both generate a project-owned `swarm.config.ts` from `.rallypoint/swarm.json`
+the first time, and never overwrite it.
+
 ## Publishing
 
 Releases are automated via [release-please](https://github.com/googleapis/release-please),

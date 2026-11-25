@@ -14,7 +14,8 @@
     "lint": "eslint . --ignore-pattern .next",
     "registry:build": "node scripts/build-registry.mjs",
     "cli:test": "npm run registry:build && node scripts/test-cli.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "swarm:test": "npm run registry:build && node scripts/test-swarm.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

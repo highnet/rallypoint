@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.5.0...rallypoint-v0.6.0) (2026-11-25)
+
+
+### Features
+
+* Rallypoint Swarm, the next tier of Rallypoint ([#57](https://github.com/highnet/rallypoint/issues/57)) ([e4d9274](https://github.com/highnet/rallypoint/commit/e4d92744e30d12052c070abeeb642958fc30e9e8))
+
 ## [0.5.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.4.0...rallypoint-v0.5.0) (2026-10-28)
 
 

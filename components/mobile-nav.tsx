@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type MobileNavProps = {
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; featured?: boolean }[];
 };
 
 export function MobileNav({ links }: MobileNavProps) {
@@ -77,8 +77,13 @@ export function MobileNav({ links }: MobileNavProps) {
               <ul>
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} onClick={() => setOpen(false)}>
+                    <Link
+                      className={link.featured ? "mobile-nav-featured" : undefined}
+                      href={link.href}
+                      onClick={() => setOpen(false)}
+                    >
                       {link.label}
+                      {link.featured ? <span className="nav-featured-tag">Next tier</span> : null}
                     </Link>
                   </li>
                 ))}

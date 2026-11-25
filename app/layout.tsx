@@ -20,9 +20,9 @@ const martianMono = Martian_Mono({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rallypoint.tools";
-const title = "Rallypoint — Coordinate coding agents with nothing but GitHub";
+const title = "Rallypoint — Coordinate coding agents, from one loop to a swarm";
 const description =
-  "An MIT-licensed, agent-agnostic, self-improving graph of coding agents: nine roles, labels as a state machine, atomic issue claims, independent review, and an improver that tunes the loop on measured results — installed into your repository with one command.";
+  "An MIT-licensed, agent-agnostic, self-improving graph of coding agents: nine roles, labels as a state machine, atomic issue claims, independent review and an improver, installed with one command. Rallypoint Swarm adds shared memory in your own Supabase, a referee and a conductor for goals no single agent finishes alone.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

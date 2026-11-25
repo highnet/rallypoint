@@ -10,7 +10,10 @@ export function SiteFooter() {
       <div className="footer-inner">
         <div className="footer-brand">
           <Wordmark />
-          <p>GitHub is the only coordinator. MIT-licensed, agent-agnostic, nothing calls home.</p>
+          <p>
+            GitHub coordinates the work; Swarm adds memory in your own Supabase. MIT-licensed,
+            agent-agnostic, nothing calls home.
+          </p>
         </div>
         <nav aria-label="Role contracts" className="footer-roles">
           <p className="footer-heading">Role contracts</p>

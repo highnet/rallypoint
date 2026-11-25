@@ -25,7 +25,9 @@ export function SiteHeader({ current }: { current?: string }) {
         <nav aria-label="Primary" className="site-nav">
           {siteLinks.map((link) => (
             <Link
-              aria-current={current === link.href ? "page" : undefined}
+              aria-current={
+                current === link.href || (link.featured && current?.startsWith(`${link.href}/`)) ? "page" : undefined
+              }
               className={link.featured ? "nav-featured swarm-mark-trigger" : undefined}
               href={link.href}
               key={link.href}
@@ -37,8 +39,13 @@ export function SiteHeader({ current }: { current?: string }) {
           ))}
         </nav>
         <div className="header-actions">
+          {current === "/swarm/wizard" ? null : (
+            <Link className="btn btn-primary header-wizard" href="/swarm/wizard">
+              Start a swarm
+            </Link>
+          )}
           <ThemeToggle />
-          <MobileNav links={siteLinks} />
+          <MobileNav links={[{ href: "/swarm/wizard", label: "Start a swarm", featured: true }, ...siteLinks.map((link) => ({ ...link, featured: false }))]} />
         </div>
       </div>
     </header>

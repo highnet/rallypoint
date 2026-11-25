@@ -3,6 +3,9 @@ import Link from "next/link";
 
 import { AudienceFork, AudienceSwitch } from "@/components/audience-fork";
 import { ClaimRace } from "@/components/claim-race";
+import { FleetDispatch } from "@/components/fleet-dispatch";
+import { SignalFlag } from "@/components/signal-flag";
+import { loopPrompts } from "@/lib/loop-prompts";
 import { CommandCopy } from "@/components/command-copy";
 import { ImprovementCycle } from "@/components/improvement-cycle";
 import { InstallPanel } from "@/components/install-panel";
@@ -10,6 +13,7 @@ import { OwnershipBand } from "@/components/ownership-band";
 import { PrTally } from "@/components/pr-tally";
 import { RoleMatrix } from "@/components/role-matrix";
 import { SignalRail } from "@/components/signal-rail";
+import { SwarmScreens } from "@/components/swarm-screens";
 import { SwarmTierCta } from "@/components/swarm-tier-cta";
 import { SiteHeader } from "@/components/site-header";
 import { SwarmCompare } from "@/components/swarm-compare";
@@ -106,6 +110,7 @@ export default function Home() {
                 sentence.
               </p>
             </div>
+            <FleetDispatch />
             <RoleMatrix />
           </div>
         </section>
@@ -164,6 +169,8 @@ export default function Home() {
             </div>
             <SwarmMechanism />
 
+            <SwarmScreens only="lead" />
+
             <div className="arena">
               <div className="arena-copy">
                 <h3>Swarm Arena is a swarm at work.</h3>
@@ -186,7 +193,7 @@ export default function Home() {
                   writes the config and the commands for your repository and your Supabase project.
                 </p>
                 <p className="tier-links">
-                  <Link className="text-link" href="/swarm/wizard">
+                  <Link className="btn btn-primary" href="/swarm/wizard">
                     Open the wizard <ArrowRight aria-hidden="true" />
                   </Link>
                   <Link className="text-link" href="/swarm">
@@ -195,6 +202,43 @@ export default function Home() {
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="prompts-title" className="band band-rule" id="prompts">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="prompts-title">A prompt for every situation.</h2>
+              <p>
+                Paste one into any coding agent on the repository once the loop is installed. Each names
+                the job; the role file says how. Start with the orchestrator when you are not sure what
+                comes next.
+              </p>
+            </div>
+            <ul className="swarm-prompts loop-prompts">
+              {loopPrompts.map((item) => (
+                <li key={item.id}>
+                  <p className="step-title loop-prompt-title">
+                    <SignalFlag className="role-flag" signal={item.role} />
+                    {item.title}
+                  </p>
+                  <p className="install-detail">{item.when}</p>
+                  <CommandCopy
+                    command={item.prompt}
+                    id={`loop-prompt-${item.id}`}
+                    label={`${item.title.toLowerCase()} prompt`}
+                    shell={false}
+                  />
+                </li>
+              ))}
+            </ul>
+            <p className="swarm-note">
+              Running a swarm instead?{" "}
+              <Link className="text-link" href="/swarm#prompts">
+                The Swarm prompts
+              </Link>{" "}
+              add memory, the referee and the conductor.
+            </p>
           </div>
         </section>
 

@@ -46,7 +46,7 @@ export function SwarmTiers() {
         <StackList items={swarmStack} label="Rallypoint Swarm runs on" />
         <CommandCopy command={swarmCommands.addSwarm} id="tier-swarm" label="Swarm install command" />
         <p className="tier-links">
-          <Link className="text-link" href="/swarm/wizard">
+          <Link className="btn btn-primary" href="/swarm/wizard">
             Describe your swarm <ArrowRight aria-hidden="true" />
           </Link>
           <Link className="text-link" href="#swarm">

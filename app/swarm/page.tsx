@@ -12,6 +12,7 @@ import { SwarmCompare } from "@/components/swarm-compare";
 import { SwarmAgentQuickstart } from "@/components/swarm-agent-quickstart";
 import { SwarmMark } from "@/components/swarm-mark";
 import { SwarmMechanism } from "@/components/swarm-mechanism";
+import { SwarmScreens } from "@/components/swarm-screens";
 import {
   arenaPitch,
   arenaUrl,
@@ -20,6 +21,7 @@ import {
   genesisPrompt,
   measureModes,
   swarmCommands,
+  swarmDispatcher,
   swarmEnvLines,
   swarmLoop,
   swarmPrompts,
@@ -51,6 +53,7 @@ export const metadata: Metadata = {
 };
 
 const toc = [
+  { href: "#looks", label: "What it looks like" },
   { href: "#adds", label: "What it adds" },
   { href: "#learning", label: "Learning" },
   { href: "#roles", label: "Roles" },
@@ -190,7 +193,7 @@ export default function SwarmPage() {
               </p>
               <CommandCopy command={swarmCommands.addSwarm} id="swarm-hero-add" label="Swarm install command" />
               <p className="hero-links">
-                <Link className="text-link" href="/swarm/wizard">
+                <Link className="btn btn-primary" href="/swarm/wizard">
                   Describe your swarm <ArrowRight aria-hidden="true" />
                 </Link>
                 <span>Builds on the loop · more setup, more capability</span>
@@ -207,6 +210,20 @@ export default function SwarmPage() {
             </ol>
           </nav>
         </div>
+
+        <section aria-labelledby="looks-title" className="band" id="looks">
+          <div className="band-inner">
+            <div className="section-head">
+              <h2 id="looks-title">What a swarm looks like.</h2>
+              <p>
+                Swarm Arena is a real swarm: one pitch, four engines, agents dispatched around the clock.
+                These pages grew from the same UI scaffold <code>add swarm-ui</code> installs, then the
+                swarm made them its own.
+              </p>
+            </div>
+            <SwarmScreens />
+          </div>
+        </section>
 
         <section aria-labelledby="adds-title" className="band" id="adds">
           <div className="band-inner">
@@ -258,8 +275,8 @@ export default function SwarmPage() {
               ))}
             </ol>
             <p className="swarm-note">
-              Also on duty: the conductor dispatches one session per role and target, the janitor
-              clears stale claims, and the tester is there for any verification on top of the referee.
+              Also on duty: the janitor clears stale claims, and the tester is there for any
+              verification on top of the referee.
             </p>
           </div>
         </section>
@@ -313,6 +330,15 @@ export default function SwarmPage() {
                 to <code>READ</code>.
               </p>
             </div>
+            <div className="swarm-dispatcher">
+              <span className="role-cell swarm-role-name">
+                <SignalFlag className="role-flag" signal={swarmDispatcher.slug} />
+                <Link href={`/agents/${swarmDispatcher.slug}`}>{swarmDispatcher.name}</Link>
+              </span>
+              <p className="swarm-role-job">{swarmDispatcher.job}</p>
+              <code className="swarm-role-command">{swarmDispatcher.command}</code>
+              <p className="swarm-dispatcher-note">dispatches a fleet, one session per role ↓</p>
+            </div>
             <ol className="swarm-roles">
               {swarmRoles.map((role, index) => (
                 <li key={role.slug}>
@@ -333,8 +359,8 @@ export default function SwarmPage() {
             <p className="swarm-note">
               The planner runs as the strategist: it reads <code>swarm brief</code> (goal, targets,
               versions, buried ideas, concept trials, open work) and opens issues with{" "}
-              <code>swarm plan</code>. The orchestrator’s job moves to <code>swarm next</code> and the
-              conductor.
+              <code>swarm plan</code>. The orchestrator runs as the conductor: it starts the fleet,
+              and each session it starts takes its role with <code>swarm next</code>.
             </p>
           </div>
         </section>

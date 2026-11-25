@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 export default function SwarmWizardPage() {
   return (
     <>
-      <SiteHeader current="/swarm" />
+      <SiteHeader current="/swarm/wizard" />
       <main className="wizard-page" id="main">
         <div className="wizard-intro">
           <Link className="text-link back-link" href="/swarm">

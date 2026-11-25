@@ -4447,3 +4447,210 @@ a.role-cell:hover span {
     max-height: 16rem;
   }
 }
+
+/* The orchestrator, above the role queue it dispatches. */
+.swarm-dispatcher {
+  align-items: center;
+  background: var(--paper-sunk);
+  border: 2px solid var(--ink);
+  display: grid;
+  gap: var(--s-2) var(--s-5);
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) auto;
+  margin-bottom: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+}
+
+.swarm-dispatcher-note {
+  color: var(--ink-soft);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 759px) {
+  .swarm-dispatcher {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Fleet: the orchestrator and the sessions it dispatched. */
+.fleet {
+  border: 2px solid var(--ink);
+  margin: 0 0 var(--s-7);
+}
+
+.fleet-head {
+  align-items: center;
+  background: var(--paper-sunk);
+  border-bottom: 2px solid var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  padding: var(--s-4) var(--s-5);
+}
+
+.fleet-orchestrator {
+  font-weight: 700;
+}
+
+.fleet-head code {
+  font-size: var(--t-xs);
+}
+
+.fleet-head-note {
+  color: var(--ink-soft);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.fleet-sessions {
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.fleet-sessions li {
+  align-items: center;
+  border-right: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-4) var(--s-4);
+  position: relative;
+}
+
+/* A dispatch tick from the orchestrator's rule down into each session. */
+.fleet-sessions li::before {
+  background: var(--ink);
+  content: "";
+  height: var(--s-3);
+  left: calc(var(--s-4) + 11px);
+  position: absolute;
+  top: -1px;
+  width: 2px;
+}
+
+.fleet-session-name {
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.fleet-sessions code {
+  color: var(--ink-soft);
+  font-size: var(--t-xs);
+  margin-left: auto;
+}
+
+.fleet figcaption {
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: var(--t-sm);
+  padding: var(--s-4) var(--s-5);
+}
+
+@media (max-width: 599px) {
+  .fleet-head-note {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+.loop-prompt-title {
+  align-items: center;
+  display: flex;
+  gap: var(--s-2);
+}
+
+/* The wizard, one click from every page. */
+.header-wizard {
+  font-size: var(--t-sm);
+  min-height: 36px;
+  padding: 0 var(--s-4);
+  white-space: nowrap;
+}
+
+@media (max-width: 1199px) {
+  .header-wizard {
+    display: none;
+  }
+}
+
+/* Screenshots of a real swarm (Swarm Arena). */
+.swarm-screens {
+  display: grid;
+  gap: var(--s-6) var(--s-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.swarm-screens-lead {
+  grid-template-columns: minmax(0, 1fr);
+  margin: var(--s-7) 0 0;
+}
+
+.swarm-screen {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  min-width: 0;
+}
+
+.swarm-screen-lead {
+  grid-column: 1 / -1;
+}
+
+.swarm-screen > a {
+  border: 2px solid var(--ink);
+  display: block;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.swarm-screen img {
+  display: block;
+  height: auto;
+  transition: transform 300ms var(--ease-out);
+  width: 100%;
+}
+
+.swarm-screen > a:hover img {
+  transform: scale(1.012);
+}
+
+.swarm-screen > a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.swarm-screen figcaption {
+  color: var(--ink-soft);
+  font-size: var(--t-sm);
+  max-width: 72ch;
+}
+
+.swarm-screen figcaption strong {
+  color: var(--ink);
+  margin-right: var(--s-1);
+}
+
+.swarm-screen figcaption .text-link svg {
+  height: 14px;
+  width: 14px;
+}
+
+@media (max-width: 759px) {
+  .swarm-screens {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swarm-screen img {
+    transition: none;
+  }
+}

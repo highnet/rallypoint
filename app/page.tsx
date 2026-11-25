@@ -28,6 +28,9 @@ export default function Home() {
         <section aria-label="Introduction" className="hero">
           <div className="hero-bar">
             <AudienceSwitch />
+            <Link className="text-link hero-tier-link" href="#tiers">
+              Or the next tier: Rallypoint Swarm <ArrowRight aria-hidden="true" />
+            </Link>
           </div>
           <AudienceFork
             human={

@@ -21,7 +21,8 @@ export const swarmCommands = {
 } as const;
 
 export function genesisPrompt(pitch: string) {
-  const text = pitch.trim().replace(/\s+/g, " ") || "<your pitch>";
+  const raw = pitch.trim().replace(/\s+/g, " ") || "<your pitch>";
+  const text = /[.!?]$/.test(raw) ? raw : `${raw}.`;
   return `Run swarm genesis. Follow .claude/skills/swarm-genesis/SKILL.md. Pitch: ${text} Use the choices already in .rallypoint/swarm.json and decide the rest.`;
 }
 
@@ -89,7 +90,7 @@ export const tierComparison: { aspect: string; vanilla: string; swarm: string }[
   {
     aspect: "Setup",
     vanilla: "add loop, then init. Nothing else.",
-    swarm: "More: a Supabase project, its schema and env, a goal and a referee command.",
+    swarm: "More: a Supabase project with its schema and env, a goal, and optionally a way to measure it.",
   },
   {
     aspect: "Live proof",
@@ -170,9 +171,10 @@ export const swarmCliCommands: { command: string; does: string }[] = [
     does: "Records a buried idea with its numbers (the latest result).",
   },
   { command: "ship --version v… [--target t] [--pr n]", does: "Records a shipped version with its score (merger only, after merge)." },
+  { command: "concept add <id> \"<name>\" \"<description>\"", does: "Adds a concept the swarm can try on any target." },
   {
-    command: "concept add <id> \"<name>\" \"<description>\"",
-    does: "Adds a concept. concept trial <id> --target t --outcome gained|lost|neutral [--delta d] records a trial.",
+    command: "concept trial <id> --target t --outcome gained|lost|neutral [--delta d]",
+    does: "Records one trial of a concept on a target.",
   },
   { command: "plan <plan.json>", does: "Opens GitHub issues from [{title, body, target, concept, type, prio}]." },
   { command: "brief", does: "The strategist’s digest: goal, targets, versions, buried ideas, concept trials, open work." },

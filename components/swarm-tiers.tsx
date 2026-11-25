@@ -10,7 +10,7 @@ import { swarmCommands } from "@/lib/swarm";
  */
 export function SwarmTiers() {
   return (
-    <section aria-labelledby="tiers-title" className="tiers">
+    <section aria-labelledby="tiers-title" className="tiers" id="tiers">
       <h2 className="sr-only" id="tiers-title">
         Choose a tier
       </h2>

@@ -228,8 +228,18 @@ commands.doctor = async () => {
   try {
     const loaded = loadSwarmConfig();
     config = loaded.config;
-    add("swarm.json", loaded.problems.length === 0, loaded.problems.length ? loaded.problems.join("; ") : `measure mode: ${config.measure.mode}`);
-    if (!config.goal.title && !config.goal.pitch) {
+    // Before genesis (no goal title yet) an unfinished measure is expected:
+    // genesis decides whatever the wizard left empty.
+    const preGenesis = !config.goal.title;
+    add(
+      "swarm.json",
+      loaded.problems.length === 0,
+      loaded.problems.length
+        ? `${loaded.problems.join("; ")}${preGenesis ? " (genesis will decide)" : ""}`
+        : `measure mode: ${config.measure.mode}`,
+      loaded.problems.length === 0 ? "ok" : preGenesis ? "warn" : "fail",
+    );
+    if (preGenesis) {
       add("goal", false, "no goal yet: run swarm genesis (.claude/skills/swarm-genesis/SKILL.md)", "warn");
     }
   } catch (error) {

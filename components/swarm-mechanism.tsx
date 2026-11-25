@@ -71,7 +71,7 @@ export function SwarmMechanism() {
           </g>
         ))}
         <path className="mech-link" d="M767 222 V384" />
-        <text className="mech-note" textAnchor="end" x="757" y="268">
+        <text className="mech-note" x="777" y="340">
           every run
         </text>
         <path className="mech-link" d="M1100 222 V384" />
@@ -196,7 +196,7 @@ export function SwarmMechanism() {
           </g>
         ))}
 
-        <path className="mech-loop" d="M206 1010 V1046 H12 V120 L56 80" />
+        <path className="mech-loop" d="M206 1010 V1046 H12 V80 H42" />
         <text className="mech-label" x="36" y="1078">
           Learning loop
         </text>

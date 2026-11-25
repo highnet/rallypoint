@@ -621,7 +621,10 @@ svg {
 }
 
 .hero-bar {
+  align-items: center;
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
   margin-bottom: var(--s-6);
 }
 
@@ -2881,7 +2884,7 @@ a.role-cell:hover span {
 }
 
 .memory-table td[data-label="Written with"] {
-  max-width: 22ch;
+  width: 30%;
 }
 
 .swarm-roles {
@@ -3250,14 +3253,14 @@ a.role-cell:hover span {
 .wizard-page {
   margin: 0 auto;
   max-width: 1040px;
-  padding: var(--s-9) var(--gutter) var(--s-10);
+  padding: var(--s-7) var(--gutter) var(--s-10);
 }
 
 .wizard-intro {
   display: grid;
-  gap: var(--s-5);
+  gap: var(--s-4);
   justify-items: start;
-  padding-bottom: var(--s-7);
+  padding-bottom: var(--s-6);
 }
 
 .wizard-intro h1 {
@@ -3276,11 +3279,14 @@ a.role-cell:hover span {
 .wiz-step {
   border: 0;
   border-top: 2px solid var(--ink);
-  display: grid;
-  gap: var(--s-4);
+  display: block;
   margin: 0;
   min-width: 0;
   padding: var(--s-6) 0 var(--s-8);
+}
+
+.wiz-step > :not(legend) + * {
+  margin-top: var(--s-4);
 }
 
 .wiz-step legend {
@@ -3293,11 +3299,14 @@ a.role-cell:hover span {
   gap: var(--s-2) var(--s-3);
   letter-spacing: -0.015em;
   line-height: 1.15;
+  float: left;
+  margin-bottom: var(--s-5);
   padding: 0;
+  width: 100%;
 }
 
 .wiz-step legend + * {
-  margin-top: var(--s-5);
+  clear: both;
 }
 
 .wiz-optional {
@@ -3606,14 +3615,6 @@ a.role-cell:hover span {
   margin-top: var(--s-2);
 }
 
-.wiz-examples caption {
-  color: var(--ink-soft);
-  font-size: var(--t-xs);
-  font-weight: 600;
-  padding-bottom: var(--s-2);
-  text-align: left;
-}
-
 .wiz-examples tbody th,
 .wiz-examples td {
   vertical-align: middle;
@@ -3727,6 +3728,13 @@ a.role-cell:hover span {
   .wiz-examples td.role-open {
     padding-top: var(--s-2);
   }
+
+  .wiz-examples td[data-label="Unit"],
+  .wiz-examples td[data-label="Better"] {
+    display: inline-block;
+    padding-right: var(--s-5);
+    width: auto;
+  }
 }
 
 .cli-table tbody th {
@@ -3737,4 +3745,16 @@ a.role-cell:hover span {
 .cli-table tbody th code {
   font-size: var(--t-xs);
   font-weight: 400;
+}
+
+.wiz-step-primary > .wiz-label {
+  font-size: var(--t-sm);
+}
+
+.hero-tier-link {
+  font-size: var(--t-sm);
+}
+
+[data-audience="agent"] .hero-tier-link {
+  display: none;
 }

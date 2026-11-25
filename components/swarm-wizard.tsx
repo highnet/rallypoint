@@ -367,9 +367,10 @@ export function SwarmWizard() {
                 />
               </div>
             </div>
+            <p className="wiz-sub">Examples by kind. You define the real command.</p>
             <div className="table-wrap">
               <table className="code-table wiz-examples">
-                <caption>Examples by kind. You define the real command.</caption>
+                <caption className="sr-only">Example score commands by kind</caption>
                 <thead>
                   <tr>
                     <th scope="col">Kind</th>
@@ -541,7 +542,7 @@ export function SwarmWizard() {
                       >
                         {targetPalette.map((p) => (
                           <option key={p.hex} value={p.hex}>
-                            {p.name} · {p.hex}
+                            {p.name}
                           </option>
                         ))}
                       </select>

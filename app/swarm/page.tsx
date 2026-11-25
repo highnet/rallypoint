@@ -686,8 +686,16 @@ export default function SwarmPage() {
                   shell={false}
                 />
                 <p className="install-detail">
-                  Paste into a coding agent on the repository. Genesis turns the pitch into targets, the
-                  measure and its referee script, the completed <code>swarm.json</code>, the UI’s{" "}
+                  Paste into a coding agent on the repository. Genesis first interviews you with{" "}
+                  <a className="text-link" href="https://interviewme.at" rel="noreferrer" target="_blank">
+                    interview-me
+                  </a>{" "}
+                  until you confirm a brief, then initializes{" "}
+                  <a className="text-link" href="https://impeccable.style" rel="noreferrer" target="_blank">
+                    Impeccable
+                  </a>{" "}
+                  so <code>PRODUCT.md</code> and <code>DESIGN.md</code> come from it. From there it decides
+                  the targets, the measure and its referee, the completed <code>swarm.json</code>, the UI’s{" "}
                   <code>swarm.config.ts</code> and the first plan of issues, delivered as one pull request.
                   Review and merge it like any other. Swarm Arena’s pitch produced Swarm Arena.
                 </p>

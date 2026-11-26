@@ -24,7 +24,7 @@
       "requires": [
         "swarm"
       ],
-      "fileCount": 59
+      "fileCount": 79
     },
     {
       "name": "swarm-dashboard",
@@ -33,7 +33,7 @@
       "requires": [
         "swarm"
       ],
-      "fileCount": 67
+      "fileCount": 87
     }
   ]
 }

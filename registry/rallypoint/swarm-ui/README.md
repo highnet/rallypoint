@@ -27,6 +27,16 @@ lacks them; the standalone dashboard's `package.json` already lists them.
 `.rallypoint/swarm.json` on install and is yours from then on: Rallypoint
 writes it only when it is absent and never overwrites it.
 
+It builds as installed, with or without
+[Cache Components](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents)
+(`cacheComponents: true`, which `create-next-app` turns on for Next.js 16).
+No page exports `dynamic`: each one reads memory after `connection()`, inside
+the Suspense boundary of the `loading.tsx` in its own folder, so the top bar
+and sidebar are the prerendered shell and the page streams in at request
+time, on a page load and on a navigation. There is nothing to edit by hand,
+and no `instant = false` opt-out. With Cache Components, the pages you leave
+stay mounted but hidden; `CUSTOMIZE.md` lists what that asks of new code.
+
 ## Routes
 
 Results: `/swarm` (progress), `/swarm/news`, `/swarm/targets`,

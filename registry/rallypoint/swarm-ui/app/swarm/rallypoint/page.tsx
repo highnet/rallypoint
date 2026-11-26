@@ -6,7 +6,6 @@ import { githubRepoUrl, targetsOf } from "../_lib/github";
 import { getLanes, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Rallypoint" };
-export const dynamic = "force-dynamic";
 
 const LANE_PREVIEW = 12;
 

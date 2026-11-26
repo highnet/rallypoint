@@ -8,7 +8,6 @@ import { ROLE_ORDER, RULES, START_PROMPTS } from "../_lib/protocol";
 import { getProtocol, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Protocol" };
-export const dynamic = "force-dynamic";
 
 export default async function ProtocolPage() {
   const context = await getSwarmContext();

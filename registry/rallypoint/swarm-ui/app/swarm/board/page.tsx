@@ -9,7 +9,6 @@ import { BOARD_KINDS, getBoard, getSwarmContext, type BoardEntry, type BoardKind
 import { swarmConfig } from "../swarm.config";
 
 export const metadata: Metadata = { title: "Board" };
-export const dynamic = "force-dynamic";
 
 const kindLabel = (kind: BoardKind): string =>
   ({

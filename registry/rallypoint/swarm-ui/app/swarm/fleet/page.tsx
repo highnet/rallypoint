@@ -9,7 +9,6 @@ import { githubRepoUrl } from "../_lib/github";
 import { getFleet, getFleetGraph, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Fleet" };
-export const dynamic = "force-dynamic";
 
 export default async function FleetPage() {
   const context = await getSwarmContext();

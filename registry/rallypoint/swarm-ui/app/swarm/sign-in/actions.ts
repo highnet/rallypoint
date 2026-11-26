@@ -70,8 +70,14 @@ export async function acceptMagicLinkToken(token: string, expiresIn: number) {
   return { ok: true as const };
 }
 
-export async function signOut() {
+/** Deletes the session cookie. `SignOut` then reloads the page itself. */
+export async function endSession() {
   const jar = await cookies();
   jar.delete(TOKEN_COOKIE);
+}
+
+/** The no-JavaScript path of `SignOut`: delete the cookie, then redirect. */
+export async function signOut() {
+  await endSession();
   redirect("/swarm/sign-in");
 }

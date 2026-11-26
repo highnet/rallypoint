@@ -6,7 +6,6 @@ import { cap, word } from "../_lib/format";
 import { getResults, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: cap(word("results")) };
-export const dynamic = "force-dynamic";
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 

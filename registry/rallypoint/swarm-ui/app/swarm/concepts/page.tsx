@@ -7,7 +7,6 @@ import { getConcepts, getSwarmContext } from "../_lib/queries";
 import type { ConceptTrialRow, TrialOutcome } from "../_lib/types";
 
 export const metadata: Metadata = { title: cap(word("concepts")) };
-export const dynamic = "force-dynamic";
 
 /** The cell for one concept on one target: its latest outcome and how many trials. */
 function Cell({ trials }: { trials: ConceptTrialRow[] }) {

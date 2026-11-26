@@ -11,8 +11,6 @@ import { cap, formatNumber, formatScore, word } from "./_lib/format";
 import { findTarget, getProgress, getSwarmContext, getTargets, type ProgressData } from "./_lib/queries";
 import { swarmConfig } from "./swarm.config";
 
-export const dynamic = "force-dynamic";
-
 /** The newest thing in memory, as one sentence with a link. */
 function latestEvent(data: ProgressData): { at: string; text: ReactNode; href: string } | null {
   const events: { at: string; text: ReactNode; href: string }[] = [];
@@ -245,7 +243,7 @@ export default async function ProgressPage() {
           tone="sunk"
         >
           {data.versions.some((row) => row.score !== null) ? (
-            <ScoreChart label={`${metric} of ${word("shipped")} ${word("versions")}`} targets={data.targets} versions={data.versions} />
+            <ScoreChart label={`${metric} of ${word("shipped")} ${word("versions")}`} now={data.readAt} targets={data.targets} versions={data.versions} />
           ) : (
             <Empty>
               Nothing {word("shipped")} with a {word("score")} yet. The first point appears when the merger runs{" "}

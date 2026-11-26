@@ -6,7 +6,6 @@ import { cap, formatScore, word } from "../_lib/format";
 import { getNews, getSwarmContext, type NewsItem } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "News" };
-export const dynamic = "force-dynamic";
 
 function Headline({ item }: { item: NewsItem }) {
   switch (item.kind) {

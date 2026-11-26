@@ -17,7 +17,6 @@ import {
 } from "../_lib/threads";
 
 export const metadata: Metadata = { title: cap(word("messages")) };
-export const dynamic = "force-dynamic";
 
 /** The board shows this many threads; filters narrow the rest. */
 const SHOWN = 100;

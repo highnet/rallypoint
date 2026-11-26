@@ -6,7 +6,6 @@ import { cap, jsonEntries, word } from "../_lib/format";
 import { getBuried, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: `${cap(word("ideas"))} ${word("buried")}` };
-export const dynamic = "force-dynamic";
 
 export default async function BuriedPage() {
   const context = await getSwarmContext();

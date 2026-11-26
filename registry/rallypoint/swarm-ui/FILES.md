@@ -48,6 +48,7 @@ swarm-ui/app/swarm/_lib/config-types.ts -> app/swarm/_lib/config-types.ts
 swarm-ui/app/swarm/_lib/fleet-graph.ts -> app/swarm/_lib/fleet-graph.ts
 swarm-ui/app/swarm/_lib/format.ts -> app/swarm/_lib/format.ts
 swarm-ui/app/swarm/_lib/github.ts -> app/swarm/_lib/github.ts
+swarm-ui/app/swarm/_lib/guidance.ts -> app/swarm/_lib/guidance.ts
 swarm-ui/app/swarm/_lib/protocol.ts -> app/swarm/_lib/protocol.ts
 swarm-ui/app/swarm/_lib/queries.ts -> app/swarm/_lib/queries.ts
 swarm-ui/app/swarm/_lib/supabase.ts -> app/swarm/_lib/supabase.ts
@@ -103,6 +104,7 @@ swarm-ui/app/swarm/_lib/config-types.ts -> swarm-ui/app/swarm/_lib/config-types.
 swarm-ui/app/swarm/_lib/fleet-graph.ts -> swarm-ui/app/swarm/_lib/fleet-graph.ts
 swarm-ui/app/swarm/_lib/format.ts -> swarm-ui/app/swarm/_lib/format.ts
 swarm-ui/app/swarm/_lib/github.ts -> swarm-ui/app/swarm/_lib/github.ts
+swarm-ui/app/swarm/_lib/guidance.ts -> swarm-ui/app/swarm/_lib/guidance.ts
 swarm-ui/app/swarm/_lib/protocol.ts -> swarm-ui/app/swarm/_lib/protocol.ts
 swarm-ui/app/swarm/_lib/queries.ts -> swarm-ui/app/swarm/_lib/queries.ts
 swarm-ui/app/swarm/_lib/supabase.ts -> swarm-ui/app/swarm/_lib/supabase.ts

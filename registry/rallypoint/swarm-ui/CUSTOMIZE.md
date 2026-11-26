@@ -11,6 +11,7 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/swarm.config.ts` | project name, goal copy, measure mode and label, targets with colours, vocabulary, navigation, theme variables | you; generated once, never overwritten |
 | `app/swarm/_lib/queries.ts` | every read the pages make, one function per page | extend it; keep it read-only |
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
+| `app/swarm/_lib/guidance.ts` | the copy of every setup and error banner: what is wrong, the steps, when it applies | to reword; keep it free of secrets |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
 | `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar, the fleet graph's mount and replay bar (`fleet-graph.tsx`) | freely |
 | `app/swarm/_lib/fleet-graph.ts` | the adapter from sessions, memory and GitHub to the fleet graph's `SwarmInput` | freely; it decides what a sector, an agent and a work item are |
@@ -31,7 +32,11 @@ by hand or by the swarm itself through a `ui` target.
    numbers; `checks` and `review` swarms show delivery and named checks.
 4. **Gate every page.** Start with `getSwarmContext()` and render `<Gate>`
    when it is not `ok`, so missing env, a missing schema and private mode
-   keep working.
+   keep working. Render a failed GitHub read with `<GithubProblem>`, never
+   as an empty state: "no files yet" and "GitHub refused the read" must look
+   different. Every banner says what is wrong, the steps as a list, and
+   when the fix applies. Compose it on the server from status codes and
+   whether a variable is set, never from a variable's value.
 5. **Stay accessible.** Colour never carries meaning alone (pair it with a
    name, a symbol or a shape); every chart has a text or table equivalent;
    keyboard focus stays visible; motion respects `prefers-reduced-motion`;

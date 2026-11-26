@@ -464,6 +464,10 @@
           "target": "app/swarm/_lib/github.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/_lib/guidance.ts",
+          "target": "app/swarm/_lib/guidance.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/protocol.ts",
           "target": "app/swarm/_lib/protocol.ts"
         },
@@ -680,6 +684,10 @@
         {
           "source": "swarm-ui/app/swarm/_lib/github.ts",
           "target": "swarm-ui/app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/guidance.ts",
+          "target": "swarm-ui/app/swarm/_lib/guidance.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/protocol.ts",

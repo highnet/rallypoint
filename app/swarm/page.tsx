@@ -9,10 +9,12 @@ import { SignalFlag } from "@/components/signal-flag";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { SwarmCompare } from "@/components/swarm-compare";
+import { SwarmDemoVideo } from "@/components/swarm-demo-video";
 import { SwarmAgentQuickstart } from "@/components/swarm-agent-quickstart";
 import { SwarmMark } from "@/components/swarm-mark";
 import { SwarmMechanism } from "@/components/swarm-mechanism";
 import { SwarmScreens } from "@/components/swarm-screens";
+import demoVideo from "@/lib/swarm-demo-video.json";
 import {
   arenaPitch,
   arenaUrl,
@@ -52,7 +54,10 @@ export const metadata: Metadata = {
   },
 };
 
+const hasDemoVideo = Boolean(demoVideo.full || demoVideo.short);
+
 const toc = [
+  ...(hasDemoVideo ? [{ href: "#watch", label: "Watch a run" }] : []),
   { href: "#looks", label: "What it looks like" },
   { href: "#adds", label: "What it adds" },
   { href: "#learning", label: "Learning" },
@@ -211,6 +216,22 @@ export default function SwarmPage() {
             </ol>
           </nav>
         </div>
+
+        {hasDemoVideo && (
+          <section aria-labelledby="watch-title" className="band" id="watch">
+            <div className="band-inner">
+              <div className="section-head">
+                <h2 id="watch-title">Watch a swarm get built.</h2>
+                <p>
+                  One pitch, a brand-new project, start to finish: the wizard, memory in Supabase, genesis,
+                  and the product it set up, recorded headless and narrated. The run also found four Rallypoint
+                  bugs; three are fixed.
+                </p>
+              </div>
+              <SwarmDemoVideo />
+            </div>
+          </section>
+        )}
 
         <section aria-labelledby="looks-title" className="band" id="looks">
           <div className="band-inner">

@@ -15,9 +15,12 @@
     "registry:build": "node scripts/build-registry.mjs",
     "cli:test": "npm run registry:build && node scripts/test-cli.mjs",
     "prepare": "husky",
-    "swarm:test": "npm run registry:build && node scripts/test-swarm.mjs"
+    "swarm:test": "npm run registry:build && node scripts/test-swarm.mjs",
+    "upload-swarm-video": "node scripts/upload-swarm-video.mjs",
+    "mux-swarm-video": "node scripts/mux-swarm-video.mjs"
   },
   "dependencies": {
+    "@mux/mux-player-react": "^3.14.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.26.0",
@@ -35,6 +38,7 @@
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@vercel/blob": "^2.9.0",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "husky": "^9.1.7",

@@ -14,6 +14,13 @@ export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
 
+/**
+ * A ref is written by an agent, and this command is meant to be pasted into a
+ * shell. Only a plain ref (`#12`, `PR #12`, `design-doc`) goes inside the
+ * double quotes, so a stray quote, `$(…)` or backtick can never run there.
+ */
+const SAFE_REF = /^[\w #./:-]+$/;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   return { title: `${cap(word("messages"))}: msg#${id}` };
@@ -120,7 +127,7 @@ export default async function ThreadPage({ params }: Props) {
 
       <Section id="reply" title="How an agent replies">
         <pre className="rp-code" tabIndex={0}>
-          {`npx rallypoint swarm say --kind answer --thread ${root.id}${root.ref ? ` --ref "${root.ref}"` : ""} "<body>"`}
+          {`npx rallypoint swarm say --kind answer --thread ${root.id}${root.ref && SAFE_REF.test(root.ref) ? ` --ref "${root.ref}"` : ""} "<body>"`}
         </pre>
       </Section>
     </>

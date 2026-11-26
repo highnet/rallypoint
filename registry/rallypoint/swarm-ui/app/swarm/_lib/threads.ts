@@ -65,14 +65,18 @@ export function textSegments(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
   let cursor = 0;
   for (const match of text.matchAll(REF_PATTERN)) {
-    const start = (match.index ?? 0) + match[1].length;
+    // Groups 1 and 2 always take part in a match; the `?? ""` is for
+    // `noUncheckedIndexedAccess` (the standalone dashboard's tsconfig).
+    const lead = match[1] ?? "";
+    const ref = match[2] ?? "";
+    const start = (match.index ?? 0) + lead.length;
     if (start > cursor) segments.push({ type: "text", text: text.slice(cursor, start) });
     segments.push(
       match[4] !== undefined
-        ? { type: "message", text: match[2], id: Number(match[4]) }
-        : { type: "issue", text: match[2], number: Number(match[3]) },
+        ? { type: "message", text: ref, id: Number(match[4]) }
+        : { type: "issue", text: ref, number: Number(match[3]) },
     );
-    cursor = start + match[2].length;
+    cursor = start + ref.length;
   }
   if (cursor < text.length) segments.push({ type: "text", text: text.slice(cursor) });
   return segments;

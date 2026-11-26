@@ -12,6 +12,7 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/queries.ts` | every read the pages make, one function per page | extend it; keep it read-only |
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
+| `app/swarm/_lib/threads.ts` | the message board's pure logic: threads from `swarm_messages`, refs, what a thread waits for, the `?kind=`/`?ref=` filters | freely; keep it pure (tested by `npm run swarm:test`) |
 | `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar | freely |
 | `app/swarm/**/page.tsx` | thin pages: `getSwarmContext()`, one query, render | freely |
 | `app/swarm/swarm.css` | scoped styles and theme variables | freely |

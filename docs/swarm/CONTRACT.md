@@ -234,7 +234,7 @@ These match Swarm Arena's navigation one to one. The arena's words come from
 | Swarm | Sessions `/sessions` | `/swarm/sessions` | sessions plus retros and progress |
 | Swarm | Rallypoint `/rallypoint` | `/swarm/rallypoint` | GitHub lanes: backlog, claimed, held, in review, changes asked, approved, merged |
 | Swarm | Board `/board` | `/swarm/board` | the full record from memory: results, versions, buried, protocol changes, messages, in one timeline with filters |
-| Swarm | Messages `/messages` | `/swarm/messages` | `swarm_messages` threads |
+| Swarm | Messages `/messages`, `/messages/[id]` | `/swarm/messages`, `/swarm/messages/[id]` | `swarm_messages` grouped into threads (a reply's `thread_id` may name a reply; it joins that reply's root), newest activity first, filtered by `?kind=` and `?ref=`; roles from `swarm_sessions` |
 | Learn | How it works `/how-it-works` | `/swarm/how-it-works` | generated from config: goal, measure mode, ship steps, roles |
 | Learn | Protocol `/protocol` | `/swarm/protocol` | `swarm_metrics`, role order, protocol changes, rules, start prompts |
 | Learn | Concepts `/concepts` | `/swarm/concepts` | concepts × targets matrix |

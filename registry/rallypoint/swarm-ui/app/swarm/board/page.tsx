@@ -66,7 +66,7 @@ function Entry({ entry }: { entry: BoardEntry }) {
               on <Ref value={entry.row.ref} />
             </>
           ) : null}
-          : {entry.row.body}
+          : <Link href={`/swarm/messages/${entry.row.id}`}>{entry.row.body}</Link>
         </>
       );
   }

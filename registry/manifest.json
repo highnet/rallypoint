@@ -374,6 +374,10 @@
           "target": "app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/messages.tsx",
+          "target": "app/swarm/_components/messages.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
           "target": "app/swarm/_components/nav.tsx"
         },
@@ -414,6 +418,10 @@
           "target": "app/swarm/_lib/supabase.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/_lib/threads.ts",
+          "target": "app/swarm/_lib/threads.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/types.ts",
           "target": "app/swarm/_lib/types.ts"
         },
@@ -440,6 +448,10 @@
         {
           "source": "swarm-ui/app/swarm/layout.tsx",
           "target": "app/swarm/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/[id]/page.tsx",
+          "target": "app/swarm/messages/[id]/page.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/messages/page.tsx",
@@ -540,6 +552,10 @@
           "target": "swarm-ui/app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/messages.tsx",
+          "target": "swarm-ui/app/swarm/_components/messages.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
           "target": "swarm-ui/app/swarm/_components/nav.tsx"
         },
@@ -580,6 +596,10 @@
           "target": "swarm-ui/app/swarm/_lib/supabase.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/_lib/threads.ts",
+          "target": "swarm-ui/app/swarm/_lib/threads.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/types.ts",
           "target": "swarm-ui/app/swarm/_lib/types.ts"
         },
@@ -606,6 +626,10 @@
         {
           "source": "swarm-ui/app/swarm/layout.tsx",
           "target": "swarm-ui/app/swarm/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/[id]/page.tsx",
+          "target": "swarm-ui/app/swarm/messages/[id]/page.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/messages/page.tsx",

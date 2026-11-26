@@ -28,6 +28,7 @@ import {
   type SwarmReplayMode,
   type SwarmReplayPlan,
 } from "../_graph/replay";
+import { ANIMAL_VIEWBOX, animalOf, assignAnimals } from "../_lib/animals";
 
 /**
  * The animated fleet view: Swarm Arena's swarm graph (`../_graph`), drawn from
@@ -98,12 +99,19 @@ function plural(count: number, one: string, many = `${one}s`) {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-function describe(node: SwarmNode): { title: string; meta: string | null } {
+function describe(node: SwarmNode, animals: ReadonlyMap<string, number>): { title: string; meta: string | null } {
   if (node.kind === "agent" && node.agent) {
     const agent = node.agent;
     return {
       title: node.label,
-      meta: [agent.role, agent.status === "working" ? "working now" : agent.status, agent.activity]
+      meta: [
+        agent.role,
+        animalOf(agent.id, animals).name.toLowerCase(),
+        agent.status === "working" ? "working now" : agent.status,
+        agent.activity,
+        // The agent's id, when its label is something else (a session with no agent name).
+        node.label === agent.id ? null : agent.id,
+      ]
         .filter(Boolean)
         .join(" · "),
     };
@@ -120,7 +128,7 @@ function describe(node: SwarmNode): { title: string; meta: string | null } {
   return { title: node.label, meta: "integration branch" };
 }
 
-type HoverState = { node: SwarmNode; x: number; y: number; width: number };
+type HoverState = { node: SwarmNode; card: { title: string; meta: string | null }; x: number; y: number; width: number };
 
 export type FleetGraphProps = {
   input: SwarmInput;
@@ -152,11 +160,22 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
     links.current = { repoUrl, router };
   }, [repoUrl, router]);
 
+  // Each agent's animal (`../_lib/animals.ts`). Agents already drawn keep theirs, so a new agent
+  // arriving on a refresh takes a free animal rather than displacing one on screen.
+  const animals = useRef<ReadonlyMap<string, number>>(new Map());
+  const syncAnimals = useCallback((next: SwarmInput) => {
+    animals.current = assignAnimals(
+      next.agents.map((agent) => agent.id),
+      animals.current,
+    );
+  }, []);
+
   // New data: the renderer keeps what was there and animates what changed.
   useEffect(() => {
     latestGraph.current = graph;
+    syncAnimals(input);
     renderer.current?.update(graph);
-  }, [graph]);
+  }, [graph, input, syncAnimals]);
 
   useEffect(() => {
     const el = host.current;
@@ -167,7 +186,15 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
       intro: "full",
       theme: THEME,
       effectOf,
-      onHover: (node, point) => setHover(node && point ? { node, ...point, width: el.clientWidth } : null),
+      // An animal per agent instead of its role's letter, as Swarm Arena draws its fleet.
+      agentIcon: (agent) => {
+        const animal = animalOf(agent.id, animals.current);
+        return { d: animal.d, name: animal.name, size: ANIMAL_VIEWBOX };
+      },
+      onHover: (node, point) =>
+        setHover(
+          node && point ? { node, card: describe(node, animals.current), ...point, width: el.clientWidth } : null,
+        ),
       onSelect: (node) => {
         const { repoUrl: repo, router: nav } = links.current;
         if (node.kind === "work" && node.workItem && repo) {
@@ -231,7 +258,7 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
     [graph],
   );
   const hasHistory = graph.flows.length > 0;
-  const card = hover ? describe(hover.node) : null;
+  const card = hover?.card ?? null;
 
   return (
     <section aria-labelledby="rp-fleet-graph-title" className="rp-fleet-graph">
@@ -329,7 +356,10 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
       </ul>
       <p className="rp-fg-note">
         Issues are claimed into <code>agent/</code> branches forked from <code>{input.integrationBranch}</code>, worked,
-        opened as pull requests, reviewed, and merged back into the target they change.
+        opened as pull requests, reviewed, and merged back into the target they change.{" "}
+        <span className="rp-soft">
+          Agent animals by <a href="https://game-icons.net">game-icons.net</a>, CC BY 3.0.
+        </span>
         {note ? <span className="rp-soft"> {note}</span> : null}
       </p>
       <p aria-live="polite" className="rp-visually-hidden">

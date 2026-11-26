@@ -6,7 +6,7 @@ import { DeliveryBar, ScoreChart } from "./_components/charts";
 import { IssuePr, TargetChip } from "./_components/chips";
 import { ResultsTable } from "./_components/results";
 import { RoleTag } from "./_components/role";
-import { Empty, Gate, Panel, QueryErrors, TimeAgo } from "./_components/states";
+import { Empty, Gate, GithubProblem, QueryErrors, TimeAgo } from "./_components/states";
 import { cap, formatNumber, formatScore, word } from "./_lib/format";
 import { findTarget, getProgress, getSwarmContext, getTargets, type ProgressData } from "./_lib/queries";
 import { swarmConfig } from "./swarm.config";
@@ -100,7 +100,9 @@ export default async function ProgressPage() {
     swarmConfig.project.tagline ||
     `The public record of this swarm: who is working now, every ${word("result")} the referee measured, what ${word("shipped")} and what was ${word("buried")}.`;
   const latest = latestEvent(data);
-  const working = data.fleet.filter((row) => row.status === "working");
+  // swarm_fleet already holds only working sessions seen in the last two
+  // hours, and the view has no status column: filtering on one emptied it.
+  const working = data.fleet;
   const targets = summary.targets;
   const metric = measure.label || cap(word("score"));
 
@@ -169,7 +171,7 @@ export default async function ProgressPage() {
                   <li key={row.id}>
                     <RoleTag role={row.role} />
                     <span className="rp-now-what">
-                      {row.summary || row.latest_note || "Working"}
+                      {row.latest_note || "Working"}
                       <span className="rp-now-who">
                         <span className="rp-mono">{row.agent ?? ""}</span>
                         {row.issue || row.pr ? <IssuePr issue={row.issue} pr={row.pr} /> : null}
@@ -252,22 +254,12 @@ export default async function ProgressPage() {
       ) : (
         <Band id="b-progress" lede="Every issue counted once, at the furthest point it has reached." title="Delivery" tone="sunk">
           {data.github && !data.github.ok ? (
-            <Panel title={data.github.reason === "no-repo" ? "GitHub is not connected" : "GitHub could not be read"} tone="warn">
-              <p>
-                Delivery is counted from the repository&rsquo;s issues and pull requests.{" "}
-                {data.github.reason === "no-repo" ? (
-                  <>
-                    Set <code>RALLYPOINT_GITHUB_REPO=owner/name</code> (and optionally{" "}
-                    <code>RALLYPOINT_GITHUB_TOKEN</code>) and restart the dashboard.
-                  </>
-                ) : (
-                  data.github.message
-                )}
-              </p>
+            <GithubProblem failure={data.github}>
               <p className="rp-soft">
-                Everything else on this page comes from memory and works without it.
+                Delivery is counted from the repository&rsquo;s issues and pull requests. Everything else on this
+                page comes from memory and works without it.
               </p>
-            </Panel>
+            </GithubProblem>
           ) : data.delivery && data.delivery.total > 0 ? (
             <>
               <DeliveryBar delivery={data.delivery} />

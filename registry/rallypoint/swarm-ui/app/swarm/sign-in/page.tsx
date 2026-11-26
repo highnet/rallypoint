@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { Gate, PageHead, Panel } from "../_components/states";
+import { Fix, Gate, PageHead, Panel } from "../_components/states";
+import { signInGuidance } from "../_lib/guidance";
 import { isSignedIn } from "../_lib/queries";
 import { readSupabaseEnv } from "../_lib/supabase";
 import { swarmConfig } from "../swarm.config";
@@ -38,9 +39,7 @@ export default async function SignInPage({
       />
       <TokenFromLink />
       {error ? (
-        <Panel title="Could not sign in" tone="warn">
-          <p>{error}</p>
-        </Panel>
+        <Fix guidance={signInGuidance(error)} />
       ) : null}
       {sent ? (
         <Panel title="Check your email">

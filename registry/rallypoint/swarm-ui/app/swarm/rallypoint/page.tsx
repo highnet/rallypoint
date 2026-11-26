@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { LabelChip, Ref, TargetChip } from "../_components/chips";
-import { Empty, Figures, Gate, PageHead, Panel, Section, TimeAgo } from "../_components/states";
+import { Empty, Figures, Gate, GithubProblem, PageHead, Section, TimeAgo } from "../_components/states";
 import { githubRepoUrl, targetsOf } from "../_lib/github";
 import { getLanes, getSwarmContext } from "../_lib/queries";
 
@@ -34,13 +34,9 @@ export default async function RallypointPage() {
       </PageHead>
 
       {!github.ok ? (
-        <Panel title="GitHub not connected" tone={github.reason === "no-repo" ? undefined : "warn"}>
-          <p>{github.message}</p>
-          <p>
-            Set <code>RALLYPOINT_GITHUB_REPO</code> (and optionally <code>RALLYPOINT_GITHUB_TOKEN</code>)
-            on the server. Lanes refresh every two minutes.
-          </p>
-        </Panel>
+        <GithubProblem failure={github}>
+          <p className="rp-soft">Lanes are read from GitHub and refresh every two minutes.</p>
+        </GithubProblem>
       ) : (
         <>
           <Figures items={lanes.map((lane) => ({ label: lane.label, value: lane.items.length }))} />

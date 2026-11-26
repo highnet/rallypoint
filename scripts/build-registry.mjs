@@ -34,6 +34,11 @@ for (const item of manifest.items) {
     ...(item.requires ? { requires: item.requires } : {}),
     ...(item.detect ? { detect: item.detect } : {}),
     ...(item.generate ? { generate: item.generate } : {}),
+    // npm packages the installed files import and the host app must have
+    // (swarm-ui's fleet graph needs d3, its live updates @supabase/realtime-js).
+    // The CLI names the missing ones.
+    ...(item.dependencies ? { dependencies: item.dependencies } : {}),
+    ...(item.devDependencies ? { devDependencies: item.devDependencies } : {}),
     files,
   });
 }

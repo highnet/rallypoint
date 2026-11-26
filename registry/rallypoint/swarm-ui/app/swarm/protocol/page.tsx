@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { IssuePr, Verdict } from "../_components/chips";
 import { RoleTag } from "../_components/role";
-import { Empty, Figures, Gate, PageHead, QueryErrors, Section, TimeAgo } from "../_components/states";
+import { CopyBlock, Empty, Figures, Gate, PageHead, QueryErrors, Section, TimeAgo } from "../_components/states";
 import { cap, formatMinutes, formatNumber, formatPercent, word } from "../_lib/format";
 import { ROLE_ORDER, RULES, START_PROMPTS } from "../_lib/protocol";
 import { getProtocol, getSwarmContext } from "../_lib/queries";
@@ -37,11 +37,15 @@ export default async function ProtocolPage() {
 
       <Section title="Start a session" lede="Paste one into a new coding-agent session on the repository. Each is self-contained.">
         <ul className="rp-prompts">
-          {START_PROMPTS.map((prompt) => (
+          {START_PROMPTS.map((prompt, index) => (
             <li key={prompt.title}>
               <h3>{prompt.title}</h3>
               <p className="rp-soft">{prompt.when}</p>
-              <pre className="rp-code">{data.repoUrl ? `Repository: ${data.repoUrl}\n${prompt.prompt}` : prompt.prompt}</pre>
+              <CopyBlock
+                id={`rp-prompt-${index + 1}`}
+                label={`Copy the '${prompt.title}' prompt`}
+                text={data.repoUrl ? `Repository: ${data.repoUrl}\n${prompt.prompt}` : prompt.prompt}
+              />
             </li>
           ))}
         </ul>

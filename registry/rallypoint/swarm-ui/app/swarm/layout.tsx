@@ -5,9 +5,12 @@ import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 import { Suspense, type CSSProperties, type ReactNode } from "react";
 
+import { LiveRefresh } from "./_components/live";
 import { SwarmNav } from "./_components/nav";
 import { cap, word } from "./_lib/format";
+import { LIVE_TABLES } from "./_lib/live";
 import { getSwarmContext, getWorkingCount, isSignedIn } from "./_lib/queries";
+import { readSupabaseEnv } from "./_lib/supabase";
 import { SignOut } from "./sign-in/sign-out";
 import { swarmConfig } from "./swarm.config";
 
@@ -23,17 +26,29 @@ const display = Inter_Tight({ subsets: ["latin"], variable: "--rp-face-display",
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--rp-face-mono", display: "swap" });
 
 /**
- * The top bar's live part: the working count and the sign-out button. It
- * reads the session cookie and memory, so it streams in its own Suspense
- * boundary and the rest of the layout stays in the prerendered shell.
+ * The top bar's live part: the live-update indicator, the working count and
+ * the sign-out button. It reads the session cookie and memory, so it streams
+ * in its own Suspense boundary and the rest of the layout stays in the
+ * prerendered shell.
  */
 async function TopBarStatus() {
   const signedIn = await isSignedIn();
   const context = await getSwarmContext();
   const working = context.state === "ok" ? await getWorkingCount() : null;
+  // Live updates need readable memory; the publishable key is public by design.
+  const { env } = readSupabaseEnv();
+  const live = context.state === "ok" && env ? { env, private: context.settings.visibility === "private" } : null;
 
   return (
     <>
+      {live ? (
+        <LiveRefresh
+          publishableKey={live.env.key}
+          tables={LIVE_TABLES}
+          url={live.env.url}
+          withSession={live.private}
+        />
+      ) : null}
       {working === null ? null : working > 0 ? (
         <Link className="rp-live rp-live-on" href="/swarm/fleet">
           <span aria-hidden="true" className="rp-live-dot" />

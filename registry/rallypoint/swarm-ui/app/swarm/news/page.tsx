@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { IssuePr, Ref, TargetChip } from "../_components/chips";
-import { Empty, Gate, PageHead, Panel, QueryErrors, TimeAgo } from "../_components/states";
+import { Empty, Gate, GithubProblem, PageHead, QueryErrors, TimeAgo } from "../_components/states";
 import { cap, formatScore, word } from "../_lib/format";
 import { getNews, getSwarmContext, type NewsItem } from "../_lib/queries";
 
@@ -55,9 +55,9 @@ export default async function NewsPage() {
       />
       <QueryErrors errors={errors} />
       {!github.ok && github.reason === "error" ? (
-        <Panel title="GitHub not connected" tone="warn">
-          <p>{github.message}</p>
-        </Panel>
+        <GithubProblem failure={github}>
+          <p className="rp-soft">Merged pull requests come from GitHub; the rest of the news comes from memory.</p>
+        </GithubProblem>
       ) : null}
       {items.length === 0 ? (
         <Empty>

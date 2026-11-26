@@ -2,7 +2,10 @@ import { connection } from "next/server";
 import { cache } from "react";
 
 import { swarmConfig } from "../swarm.config";
+import type { SwarmInput } from "../_graph/model";
 import type { MeasureMode, SwarmTarget } from "./config-types";
+import { toSwarmInput } from "./fleet-graph";
+import { word } from "./format";
 import {
   deliveryOf,
   githubRepoUrl,
@@ -11,9 +14,11 @@ import {
   listDirectory,
   listItems,
   readFile,
+  readDefaultBranch,
   readGithubRepo,
   targetsOf,
   type Delivery,
+  type GithubFailure,
   type GithubItem,
   type LaneId,
   type RepoEntry,
@@ -28,13 +33,13 @@ import {
   type ReadError,
   type ReadResult,
 } from "./supabase";
+import { buildThreads, filterThreads, type ThreadFilter } from "./threads";
 import type {
   BuriedRow,
   ConceptRow,
   ConceptTrialRow,
   FleetRow,
   GoalSetting,
-  MessageKind,
   MessageRow,
   MetricsRow,
   ProgressRow,
@@ -108,7 +113,9 @@ export const getSwarmContext = cache(async (): Promise<SwarmContext> => {
     if (isAuthError(read.error)) return { state: "locked", signedIn, expired };
     return { state: "unreachable", message: read.error.message };
   }
-  if (read.data.length === 0 && !signedIn) return { state: "locked", signedIn, expired };
+  // Signed in but nothing readable: not on the `swarm_readers` allowlist, or
+  // `swarm init` has not stored settings yet. Say so instead of empty pages.
+  if (read.data.length === 0) return { state: "locked", signedIn, expired };
   const settings = foldSettings(read.data);
   if (settings.visibility === "private" && !signedIn) {
     return { state: "locked", signedIn, expired };
@@ -156,7 +163,7 @@ export function findTarget(id: string): SwarmTarget | null {
 
 export type GithubState =
   | { ok: true; items: GithubItem[]; truncated: boolean }
-  | { ok: false; reason: "no-repo" | "error"; message: string };
+  | GithubFailure;
 
 const getGithubItems = cache(async (): Promise<GithubState> => {
   const read = await listItems();
@@ -421,6 +428,60 @@ export async function getFleet(): Promise<{ fleet: FleetRow[]; errors: Errors }>
   return { fleet, errors };
 }
 
+/* ───────────────────────── Fleet graph ───────────────────────── */
+
+export type FleetGraphData = {
+  input: SwarmInput;
+  /** Why the graph shows memory only, when GitHub could not be read. */
+  githubNote: string | null;
+  errors: Errors;
+};
+
+/**
+ * Everything the fleet graph draws, as its `SwarmInput` (see
+ * `_lib/fleet-graph.ts` for the mapping). Reads the history the replay plays
+ * back: recent sessions, progress notes, referee results, shipped versions,
+ * buried ideas and protocol changes, plus GitHub's issues and pull requests.
+ * Any read may fail; the graph then draws what the others returned.
+ */
+export async function getFleetGraph(): Promise<FleetGraphData> {
+  const errors: Errors = [];
+  const [sessions, progress, results, versions, buried, changes, github, defaultBranch] = await Promise.all([
+    selectRows("swarm_sessions", { order: "started_at.desc", limit: 500 }),
+    selectRows("swarm_progress", { order: "created_at.desc", limit: 1000 }),
+    selectRows("swarm_results", { order: "created_at.desc", limit: 500 }),
+    selectRows("swarm_versions", { order: "created_at.desc", limit: 500 }),
+    selectRows("swarm_buried", { order: "created_at.desc", limit: 300 }),
+    selectRows("swarm_protocol_changes", { order: "created_at.desc", limit: 200 }),
+    getGithubItems(),
+    swarmConfig.integrationBranch ? Promise.resolve(null) : readDefaultBranch(),
+  ]);
+  const sessionRows = take(sessions, [], errors);
+  const resultRows = take(results, [], errors);
+  const versionRows = take(versions, [], errors);
+  const buriedRows = take(buried, [], errors);
+  const input = toSwarmInput({
+    now: Date.now(),
+    integrationBranch: swarmConfig.integrationBranch || defaultBranch || "main",
+    branchPrefix: swarmConfig.branchPrefix,
+    targets: resolveTargets([
+      ...sessionRows.map((row) => row.target),
+      ...resultRows.map((row) => row.target),
+      ...versionRows.map((row) => row.target),
+      ...buriedRows.map((row) => row.target),
+    ]),
+    sessions: sessionRows,
+    progress: take(progress, [], errors),
+    results: resultRows,
+    versions: versionRows,
+    buried: buriedRows,
+    protocolChanges: take(changes, [], errors),
+    github: github.ok ? github.items : null,
+    shippedUnit: word("shipped"),
+  });
+  return { input, githubNote: github.ok ? null : github.message, errors };
+}
+
 /* ───────────────────────── Sessions ───────────────────────── */
 
 export type SessionWithMemory = SessionRow & { retros: RetroRow[]; progress: ProgressRow[] };
@@ -513,30 +574,94 @@ export async function getBoard(filter: { kind?: BoardKind; target?: string }) {
 
 /* ───────────────────────── Messages ───────────────────────── */
 
-export type Thread = { root: MessageRow; replies: MessageRow[]; lastAt: string };
+export type { Thread } from "./threads";
 
-export async function getThreads(kind?: MessageKind) {
+/** How many messages the board reads: the newest, so a long history never hides today's threads. */
+const MESSAGE_PAGE = 1000;
+
+/** Session id → role, for the sessions that posted these messages. */
+async function rolesOf(messages: MessageRow[], errors: Errors): Promise<Record<string, string>> {
+  const ids = [...new Set(messages.map((message) => message.session_id).filter((id): id is string => Boolean(id)))];
+  const chunks: string[][] = [];
+  for (let index = 0; index < ids.length; index += 100) chunks.push(ids.slice(index, index + 100));
+  const reads = await Promise.all(
+    chunks.map((chunk) => selectRows("swarm_sessions", { filters: { id: `in.(${chunk.join(",")})` }, limit: chunk.length })),
+  );
+  const roles: Record<string, string> = {};
+  for (const read of reads) for (const session of take(read, [], errors)) if (session.role) roles[session.id] = session.role;
+  return roles;
+}
+
+export async function getThreads(filter: ThreadFilter = {}) {
   const errors: Errors = [];
-  const messages = take(await selectRows("swarm_messages", { order: "created_at.asc", limit: 500 }), [], errors);
-  const byId = new Map<number, Thread>();
-  const threads: Thread[] = [];
-  for (const message of messages) {
-    const parent = message.thread_id !== null ? byId.get(message.thread_id) : undefined;
-    if (parent) {
-      parent.replies.push(message);
-      parent.lastAt = message.created_at;
-      byId.set(message.id, parent);
-    } else {
-      const thread = { root: message, replies: [], lastAt: message.created_at };
-      threads.push(thread);
-      byId.set(message.id, thread);
+  const messages = take(
+    await selectRows("swarm_messages", { order: "created_at.desc", limit: MESSAGE_PAGE }),
+    [],
+    errors,
+  );
+  const all = buildThreads(messages);
+  const roles = await rolesOf(messages, errors);
+  return {
+    threads: filterThreads(all, filter),
+    all,
+    roles,
+    truncated: messages.length === MESSAGE_PAGE,
+    errors,
+  };
+}
+
+/**
+ * One thread by any of its message ids: walks `thread_id` up to the root,
+ * then reads replies level by level, so a thread older than the board's page
+ * still opens whole. `null` means no such message.
+ */
+export async function getThread(id: string) {
+  if (!/^\d+$/.test(id)) return null;
+  const errors: Errors = [];
+  const found = new Map<number, MessageRow>();
+  let current = first(await selectRows("swarm_messages", { filters: { id: `eq.${id}` }, limit: 1 }), errors);
+  if (!current) return errors.length > 0 ? { thread: null, roles: {}, requested: Number(id), errors } : null;
+  found.set(current.id, current);
+  for (let hop = 0; hop < 20 && current.thread_id !== null && !found.has(current.thread_id); hop += 1) {
+    const parent: MessageRow | null = first(
+      await selectRows("swarm_messages", { filters: { id: `eq.${current.thread_id}` }, limit: 1 }),
+      errors,
+    );
+    if (!parent) break;
+    found.set(parent.id, parent);
+    current = parent;
+  }
+  const rootId = current.id;
+  let frontier = [rootId];
+  for (let depth = 0; depth < 20 && frontier.length > 0; depth += 1) {
+    const children = take(
+      await selectRows("swarm_messages", {
+        filters: { thread_id: `in.(${frontier.join(",")})` },
+        order: "created_at.asc",
+        limit: MESSAGE_PAGE,
+      }),
+      [],
+      errors,
+    );
+    frontier = [];
+    for (const child of children) {
+      if (found.has(child.id)) continue;
+      found.set(child.id, child);
+      frontier.push(child.id);
     }
   }
-  const filtered = kind
-    ? threads.filter((thread) => thread.root.kind === kind || thread.replies.some((reply) => reply.kind === kind))
-    : threads;
-  filtered.sort((a, b) => b.lastAt.localeCompare(a.lastAt));
-  return { threads: filtered, errors };
+  // Later messages on the root's ref decide whether a hand-off was picked up.
+  if (current.ref) {
+    const related = take(
+      await selectRows("swarm_messages", { filters: { ref: `eq.${current.ref}` }, order: "created_at.desc", limit: 200 }),
+      [],
+      errors,
+    );
+    for (const message of related) if (!found.has(message.id)) found.set(message.id, message);
+  }
+  const messages = [...found.values()];
+  const thread = buildThreads(messages).find((entry) => entry.root.id === rootId) ?? null;
+  return { thread, roles: await rolesOf(messages, errors), requested: Number(id), errors };
 }
 
 /* ───────────────────────── Protocol, concepts ───────────────────────── */
@@ -608,7 +733,8 @@ export type SkillFolder = {
   path: string;
   label: string;
   entries: RepoEntry[];
-  error: string | null;
+  /** Set when the folder could not be read; an empty folder has none. */
+  error: GithubFailure | null;
 };
 
 export async function getSkills(selected?: string) {
@@ -619,17 +745,17 @@ export async function getSkills(selected?: string) {
       return {
         ...folder,
         entries: read.ok ? read.data.filter((entry) => entry.type === "file") : [],
-        error: read.ok ? null : read.message,
+        error: read.ok ? null : read,
       };
     }),
   );
-  let file: { path: string; text: string | null; error: string | null } | null = null;
+  let file: { path: string; text: string | null; error: GithubFailure | null } | null = null;
   // Only files the listing returned can be opened, so the query string cannot
   // read anything else in the repository.
   const allowed = folders.flatMap((folder) => folder.entries.map((entry) => entry.path));
   if (selected && allowed.includes(selected)) {
     const read = await readFile(selected);
-    file = { path: selected, text: read.ok ? read.data : null, error: read.ok ? null : read.message };
+    file = { path: selected, text: read.ok ? read.data : null, error: read.ok ? null : read };
   }
   return { repo, folders, file };
 }

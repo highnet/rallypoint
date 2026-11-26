@@ -193,7 +193,8 @@ export type MetricsRow = {
 };
 
 /** View `swarm_fleet`: working sessions seen in the last 2 h. */
-export type FleetRow = SessionRow & {
+/** `swarm_fleet`: working sessions only, so it has no `status`, `summary` or `ended_at`. */
+export type FleetRow = Omit<SessionRow, "status" | "summary" | "ended_at"> & {
   latest_note: string | null;
   latest_note_at: string | null;
 };

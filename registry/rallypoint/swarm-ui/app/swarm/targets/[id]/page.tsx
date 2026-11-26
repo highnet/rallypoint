@@ -6,7 +6,7 @@ import { DeliveryBar, ScoreChart } from "../../_components/charts";
 import { IssuePr, LabelChip, Ref } from "../../_components/chips";
 import { ResultsTable } from "../../_components/results";
 import { TargetMark, targetStyle } from "../../_components/icons";
-import { Empty, Gate, Panel, QueryErrors, Section, TimeAgo } from "../../_components/states";
+import { Empty, Gate, GithubProblem, QueryErrors, Section, TimeAgo } from "../../_components/states";
 import { cap, formatNumber, formatScore, word } from "../../_lib/format";
 import { swarmConfig } from "../../swarm.config";
 import { findTarget, getSwarmContext, getTarget, measureMode } from "../../_lib/queries";
@@ -88,11 +88,11 @@ export default async function TargetPage({ params }: Props) {
           {data.delivery && data.delivery.total > 0 ? (
             <DeliveryBar delivery={data.delivery} />
           ) : !data.github.ok ? (
-            <Panel title="GitHub is not connected" tone="warn">
-              <p>
-                Delivery is counted from issues labelled <code>target:{data.target.id}</code>. {data.github.message}
+            <GithubProblem failure={data.github}>
+              <p className="rp-soft">
+                Delivery is counted from issues labelled <code>target:{data.target.id}</code>.
               </p>
-            </Panel>
+            </GithubProblem>
           ) : (
             <Empty>
               No issues for this {word("target")} yet. Open some with <code>npx rallypoint swarm plan plan.json</code>,
@@ -145,7 +145,13 @@ export default async function TargetPage({ params }: Props) {
 
       <Section title="Open issues">
         {!data.github.ok ? (
-          <Empty>Open issues are read from GitHub. {data.github.message}</Empty>
+          mode === "score" ? (
+            <GithubProblem failure={data.github}>
+              <p className="rp-soft">Open issues are read from GitHub.</p>
+            </GithubProblem>
+          ) : (
+            <Empty>Open issues are read from GitHub, which could not be read: see Delivery above.</Empty>
+          )
         ) : data.openIssues.length === 0 ? (
           <Empty>
             No open issues with the <code>target:{data.target.id}</code> label. Plan more with{" "}

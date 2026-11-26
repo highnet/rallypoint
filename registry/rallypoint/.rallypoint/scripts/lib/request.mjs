@@ -6,6 +6,7 @@
 
 import { execFileSync } from "node:child_process";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 // What a GitHub credential looks like: the `gh*_` prefixed tokens GitHub issues
 // today, the newer fine-grained form, or a classic 40-character hex PAT.
@@ -64,7 +65,9 @@ export const repositoryFrom = ({ env = process.env, remote } = {}) => {
  * @returns {(call: { method: string, path: string, body?: unknown }) => { status: number, body: unknown, nextPath?: string | null }}
  */
 export const syncRequest = ({ token, baseUrl, timeoutMs = 30_000 } = {}) => {
-  const runner = new URL("./fetch-once.mjs", import.meta.url).pathname;
+  // `fileURLToPath`, not `.pathname`: the latter keeps `%20` for a space and
+  // yields `/C:/…` on Windows, and either way the child cannot be found.
+  const runner = fileURLToPath(new URL("./fetch-once.mjs", import.meta.url));
 
   return (call) => {
     try {

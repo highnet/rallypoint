@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
 import { IssuePr, TargetChip } from "../_components/chips";
+import { FleetGraph } from "../_components/fleet-graph";
 import { RoleTag } from "../_components/role";
 import { Empty, Gate, PageHead, QueryErrors, TimeAgo } from "../_components/states";
 import { cap, word } from "../_lib/format";
-import { getFleet, getSwarmContext } from "../_lib/queries";
+import { githubRepoUrl } from "../_lib/github";
+import { getFleet, getFleetGraph, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Fleet" };
 export const dynamic = "force-dynamic";
@@ -12,15 +14,22 @@ export const dynamic = "force-dynamic";
 export default async function FleetPage() {
   const context = await getSwarmContext();
   if (context.state !== "ok") return <Gate context={context} />;
-  const { fleet, errors } = await getFleet();
+  const [{ fleet, errors }, graph] = await Promise.all([getFleet(), getFleetGraph()]);
+  // One panel for every failed read, the table's and the graph's.
+  const failed = [...errors, ...graph.errors];
 
   return (
     <>
       <PageHead
         title="Fleet"
-        lede={`Every ${word("session")} working now and seen in the last two hours, with its latest progress note.`}
+        lede={`Where the swarm's effort goes, live, with a replay of its whole history. Below it, every ${word("session")} working now and seen in the last two hours, with its latest progress note.`}
       />
-      <QueryErrors errors={errors} />
+      <QueryErrors errors={failed} />
+      <FleetGraph
+        input={graph.input}
+        note={graph.githubNote ? `GitHub is not shown: ${graph.githubNote}` : null}
+        repoUrl={githubRepoUrl()}
+      />
       {fleet.length === 0 ? (
         <Empty>
           Nobody is working right now. An {word("agent")} shows up here within seconds of opening a{" "}

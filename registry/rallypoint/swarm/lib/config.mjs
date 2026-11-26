@@ -25,6 +25,7 @@ export const DEFAULTS = Object.freeze({
     ".rallypoint/swarm/swarm.mjs",
     ".rallypoint/swarm/lib/",
     ".rallypoint/swarm/schema.sql",
+    ".rallypoint/swarm/realtime.sql",
     ".rallypoint/swarm.json",
     ".rallypoint/roles/reviewer.md",
     ".rallypoint/roles/merger.md",

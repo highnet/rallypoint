@@ -26,6 +26,9 @@ import { ROLE_WHEN, computeQueues, pickRole } from "./lib/roles.mjs";
 import { referee } from "./lib/referee.mjs";
 import { renderUiConfig } from "./lib/ui-config.mjs";
 
+// Turns on live dashboard updates for a project that applied an older schema.
+const REALTIME_SQL = ".rallypoint/swarm/realtime.sql";
+
 export const EXIT = { OK: 0, ERROR: 1, MISUSE: 2, REFEREE_FAILED: 3, NOTHING: 4 };
 
 // ---------------------------------------------------------------------------
@@ -175,7 +178,7 @@ commands.help = () => {
 ${strong("Rallypoint Swarm")}
 
 ${strong("Setup")}
-  doctor                         check env, gh, git, config, memory and secret
+  doctor                         check env, gh, git, config, memory, realtime, secret
   init [--dry-run]               target labels + goal/visibility into memory
   ui-config [--out <path>] [--force]
                                  generate the project's app/swarm/swarm.config.ts
@@ -261,11 +264,31 @@ commands.doctor = async () => {
   );
 
   if (memory.configured()) {
+    let schemaOk = false;
     try {
       const version = await memory.schemaVersion();
-      add("schema", version === 1, `schema version ${version}`);
+      schemaOk = version === 1;
+      add("schema", schemaOk, `schema version ${version}`);
     } catch (error) {
       add("schema", false, `${error.message} (apply .rallypoint/swarm/schema.sql)`);
+    }
+    // Live dashboard updates. Optional: without them the dashboard polls once
+    // a minute, so this warns and never fails.
+    if (schemaOk) {
+      const fix = `run ${REALTIME_SQL} in the SQL editor`;
+      try {
+        const status = await memory.realtimeStatus();
+        const missing = Array.isArray(status?.missing) ? status.missing : [];
+        if (!status?.publication) {
+          add("realtime", false, "no supabase_realtime publication: the dashboard refreshes once a minute instead", "warn");
+        } else if (missing.length) {
+          add("realtime", false, `not published: ${missing.join(", ")}; ${fix} (the dashboard polls until then)`, "warn");
+        } else {
+          add("realtime", true, "memory tables are in supabase_realtime: the dashboard updates live");
+        }
+      } catch (error) {
+        add("realtime", false, `not set up (${error.message}); ${fix}`, "warn");
+      }
     }
     if (memory.canWrite()) {
       try {

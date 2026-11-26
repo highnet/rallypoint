@@ -158,6 +158,10 @@
           "target": ".rallypoint/scripts/lib/freshness.mjs"
         },
         {
+          "source": ".rallypoint/scripts/lib/fetch-once.mjs",
+          "target": ".rallypoint/scripts/lib/fetch-once.mjs"
+        },
+        {
           "source": ".rallypoint/scripts/lib/gh.mjs",
           "target": ".rallypoint/scripts/lib/gh.mjs"
         },

@@ -162,6 +162,140 @@ await test("ui-config generation follows the documented mapping", () => {
 });
 
 // ---------------------------------------------------------------------------
+// swarm-ui setup and error banners (the TypeScript is loaded through Node's
+// type stripping; the scaffold's own imports are extensionless, so the two
+// modules are copied side by side with the import rewritten)
+// ---------------------------------------------------------------------------
+
+const uiLib = resolve(root, "registry/rallypoint/swarm-ui/app/swarm/_lib");
+const uiTmp = await mkdtemp(resolve(tmpdir(), "rallypoint-swarm-ui-lib-"));
+await writeFile(resolve(uiTmp, "package.json"), '{ "type": "module" }\n');
+await writeFile(resolve(uiTmp, "guidance.ts"), await readFile(resolve(uiLib, "guidance.ts"), "utf8"));
+await writeFile(
+  resolve(uiTmp, "github.ts"),
+  (await readFile(resolve(uiLib, "github.ts"), "utf8")).replace('from "./guidance"', 'from "./guidance.ts"'),
+);
+const guidance = await import(pathToFileURL(resolve(uiTmp, "guidance.ts")).href);
+const FAKE_TOKEN = "github_pat_11FAKEFAKEFAKE_do-not-print-me";
+const bannerText = (g) => JSON.stringify(g);
+const noToken = (g, label) => {
+  const text = bannerText(g);
+  assert.ok(!text.includes(FAKE_TOKEN) && !text.includes("do-not-print-me") && !text.includes("11FAKE"), `${label}: never shows the token`);
+  assert.ok(g.title && g.problem && g.steps.length > 0 && g.after, `${label}: what, steps and when`);
+};
+
+await test("GitHub banners: the cause, the steps and when it applies, never the token", () => {
+  const repo = "acme/app";
+  const anon404 = guidance.githubFailureGuidance({ status: 404, repo, token: undefined });
+  noToken(anon404, "404 without token");
+  assert.match(anon404.problem, /acme\/app/);
+  assert.match(anon404.problem, /private or the name is wrong/);
+  assert.ok(anon404.steps.some((s) => s.includes("https://github.com/settings/personal-access-tokens/new")));
+  assert.ok(anon404.steps.some((s) => /Only select repositories → `acme\/app`/.test(s)));
+  assert.ok(anon404.steps.some((s) => /Contents\*\*, \*\*Issues\*\* and \*\*Pull requests\*\* to Read-only/.test(s)));
+  assert.ok(anon404.steps.some((s) => /RALLYPOINT_GITHUB_TOKEN/.test(s) && /Vercel/.test(s) && /Sensitive/.test(s) && /\.env\.local/.test(s)));
+  assert.match(anon404.after, /redeploy/);
+
+  const token404 = guidance.githubFailureGuidance({ status: 404, repo, token: FAKE_TOKEN });
+  noToken(token404, "404 with token");
+  assert.match(token404.problem, /token has no access to this repository, or the name is wrong/);
+  assert.notEqual(token404.title, anon404.title);
+
+  const bad = guidance.githubFailureGuidance({ status: 401, repo, token: FAKE_TOKEN });
+  noToken(bad, "401");
+  assert.match(bad.problem, /invalid, expired or revoked/);
+
+  const limited = guidance.githubFailureGuidance({ status: 403, repo, token: FAKE_TOKEN, rateLimitRemaining: "0" });
+  noToken(limited, "403 rate limited");
+  assert.match(limited.title, /rate limit/);
+  assert.doesNotMatch(limited.title, /permission/);
+  const limitedAnon = guidance.githubFailureGuidance({ status: 403, repo, token: null, rateLimitRemaining: "0" });
+  assert.match(limitedAnon.problem, /60 requests an hour/);
+
+  const denied = guidance.githubFailureGuidance({ status: 403, repo, token: FAKE_TOKEN, rateLimitRemaining: "4999", resource: "contents" });
+  noToken(denied, "403 permission");
+  assert.match(denied.title, /permission/);
+  assert.match(denied.problem, /Contents/);
+
+  const noRepo = guidance.githubNoRepoGuidance(false);
+  noToken(noRepo, "no repo");
+  assert.match(noRepo.problem, /RALLYPOINT_GITHUB_REPO/);
+
+  for (const g of [
+    guidance.supabaseMissingGuidance(["NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL"]),
+    guidance.supabaseNoSchemaGuidance("x"),
+    guidance.supabaseUnreachableGuidance("x"),
+    guidance.privateGuidance(),
+    guidance.notAllowedGuidance(),
+    guidance.signInGuidance("Invalid login credentials"),
+  ]) noToken(g, g.title);
+  assert.ok(guidance.privateGuidance().steps.some((s) => s.includes("Authentication → Users → Add user")));
+  assert.ok(guidance.privateGuidance().steps.some((s) => s.includes("Authentication → URL Configuration")));
+  assert.ok(guidance.notAllowedGuidance().steps.some((s) => s.includes("swarm_readers")));
+});
+
+await test("Skills: an empty folder and a refused read are told apart", async () => {
+  const github = await import(pathToFileURL(resolve(uiTmp, "github.ts")).href);
+  const realFetch = globalThis.fetch;
+  const saved = { repo: process.env.RALLYPOINT_GITHUB_REPO, token: process.env.RALLYPOINT_GITHUB_TOKEN };
+  const respond = (routes) => {
+    globalThis.fetch = async (url, init) => {
+      const path = new URL(url).pathname;
+      if (init?.headers?.Authorization) assert.equal(init.headers.Authorization, `Bearer ${FAKE_TOKEN}`);
+      const status = routes(path) ?? 404;
+      return new Response(status === 200 ? "[]" : "{}", { status, headers: { "x-ratelimit-remaining": "4000" } });
+    };
+  };
+  try {
+    process.env.RALLYPOINT_GITHUB_REPO = "acme/app";
+    process.env.RALLYPOINT_GITHUB_TOKEN = FAKE_TOKEN;
+
+    // The folder is missing, the repository's files are readable: empty.
+    respond((p) => (p === "/repos/acme/app/contents/" ? 200 : 404));
+    assert.deepEqual(await github.listDirectory(".rallypoint/roles"), { ok: true, data: [], truncated: false });
+
+    // The token sees the repository but not its files (no Contents permission).
+    respond((p) => (p === "/repos/acme/app" ? 200 : 404));
+    const denied = await github.listDirectory(".rallypoint/roles");
+    assert.equal(denied.ok, false);
+    assert.match(denied.guidance.problem, /Contents/);
+    noToken(denied.guidance, "contents denied");
+
+    // GitHub refuses outright with 403.
+    respond(() => 403);
+    const refused = await github.listDirectory(".rallypoint/roles");
+    assert.equal(refused.ok, false);
+    assert.match(refused.guidance.title, /permission/);
+    const file = await github.readFile(".rallypoint/roles/worker.md");
+    assert.equal(file.ok, false);
+    assert.match(file.guidance.problem, /Contents/);
+
+    // No token, private repository: everything 404s.
+    delete process.env.RALLYPOINT_GITHUB_TOKEN;
+    respond(() => 404);
+    const anon = await github.listDirectory(".rallypoint/roles");
+    assert.equal(anon.ok, false);
+    assert.match(anon.guidance.problem, /private or the name is wrong/);
+    const items = await github.listItems();
+    assert.equal(items.ok, false);
+    assert.equal(items.message.includes("`"), false, "the one-line message is plain text");
+
+    process.env.RALLYPOINT_GITHUB_TOKEN = FAKE_TOKEN;
+    for (const status of [401, 403, 404]) {
+      respond(() => status);
+      noToken((await github.listItems()).guidance, `listItems ${status}`);
+    }
+  } finally {
+    globalThis.fetch = realFetch;
+    if (saved.repo === undefined) delete process.env.RALLYPOINT_GITHUB_REPO;
+    else process.env.RALLYPOINT_GITHUB_REPO = saved.repo;
+    if (saved.token === undefined) delete process.env.RALLYPOINT_GITHUB_TOKEN;
+    else process.env.RALLYPOINT_GITHUB_TOKEN = saved.token;
+    await rm(uiTmp, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // end to end: install + CLI against fake PostgREST and fake gh
 // ---------------------------------------------------------------------------
 
@@ -500,7 +634,7 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, install, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

@@ -13,6 +13,7 @@ import {
   readGithubRepo,
   targetsOf,
   type Delivery,
+  type GithubFailure,
   type GithubItem,
   type LaneId,
   type RepoEntry,
@@ -99,7 +100,9 @@ export const getSwarmContext = cache(async (): Promise<SwarmContext> => {
     if (isAuthError(read.error)) return { state: "locked", signedIn, expired };
     return { state: "unreachable", message: read.error.message };
   }
-  if (read.data.length === 0 && !signedIn) return { state: "locked", signedIn, expired };
+  // Signed in but nothing readable: not on the `swarm_readers` allowlist, or
+  // `swarm init` has not stored settings yet. Say so instead of empty pages.
+  if (read.data.length === 0) return { state: "locked", signedIn, expired };
   const settings = foldSettings(read.data);
   if (settings.visibility === "private" && !signedIn) {
     return { state: "locked", signedIn, expired };
@@ -147,7 +150,7 @@ export function findTarget(id: string): SwarmTarget | null {
 
 export type GithubState =
   | { ok: true; items: GithubItem[]; truncated: boolean }
-  | { ok: false; reason: "no-repo" | "error"; message: string };
+  | GithubFailure;
 
 const getGithubItems = cache(async (): Promise<GithubState> => {
   const read = await listItems();
@@ -593,7 +596,8 @@ export type SkillFolder = {
   path: string;
   label: string;
   entries: RepoEntry[];
-  error: string | null;
+  /** Set when the folder could not be read; an empty folder has none. */
+  error: GithubFailure | null;
 };
 
 export async function getSkills(selected?: string) {
@@ -604,17 +608,17 @@ export async function getSkills(selected?: string) {
       return {
         ...folder,
         entries: read.ok ? read.data.filter((entry) => entry.type === "file") : [],
-        error: read.ok ? null : read.message,
+        error: read.ok ? null : read,
       };
     }),
   );
-  let file: { path: string; text: string | null; error: string | null } | null = null;
+  let file: { path: string; text: string | null; error: GithubFailure | null } | null = null;
   // Only files the listing returned can be opened, so the query string cannot
   // read anything else in the repository.
   const allowed = folders.flatMap((folder) => folder.entries.map((entry) => entry.path));
   if (selected && allowed.includes(selected)) {
     const read = await readFile(selected);
-    file = { path: selected, text: read.ok ? read.data : null, error: read.ok ? null : read.message };
+    file = { path: selected, text: read.ok ? read.data : null, error: read.ok ? null : read };
   }
   return { repo, folders, file };
 }

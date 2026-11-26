@@ -7,6 +7,8 @@
  * GitHub Enterprise Server API, e.g. https://ghe.example.com/api/v3.
  */
 
+import { githubFailureGuidance, githubNoRepoGuidance, type Guidance } from "./guidance";
+
 export const ENV_REPO = "RALLYPOINT_GITHUB_REPO";
 export const ENV_TOKEN = "RALLYPOINT_GITHUB_TOKEN";
 
@@ -55,7 +57,16 @@ export type GithubItem = {
 
 export type GithubReadResult<T> =
   | { ok: true; data: T; truncated: boolean }
-  | { ok: false; reason: "no-repo" | "error"; message: string };
+  | GithubFailure;
+
+/**
+ * A failed read. `message` is the one-line problem; `guidance` is the whole
+ * banner (problem, steps, when it applies). Both are composed from status
+ * codes and env-var presence only, never from the token's value.
+ */
+export type GithubFailure = { ok: false; reason: "no-repo" | "error"; message: string; guidance: Guidance };
+
+type Resource = "issues" | "contents";
 
 export function readGithubRepo(): string | null {
   const repo = process.env.RALLYPOINT_GITHUB_REPO?.trim() ?? "";
@@ -94,22 +105,45 @@ async function githubFetch(path: string, accept?: string): Promise<Response> {
   });
 }
 
-function failure(res: Response): { ok: false; reason: "error"; message: string } {
-  if (res.status === 403 || res.status === 429) {
-    return {
-      ok: false,
-      reason: "error",
-      message: `GitHub rate limit or permission refusal (${res.status}). Set ${ENV_TOKEN} to raise the limit.`,
-    };
-  }
-  if (res.status === 404) {
-    return {
-      ok: false,
-      reason: "error",
-      message: `GitHub returned 404. Check ${ENV_REPO}; a private repository needs ${ENV_TOKEN}.`,
-    };
-  }
-  return { ok: false, reason: "error", message: `GitHub returned ${res.status}.` };
+function token(): string | undefined {
+  return process.env.RALLYPOINT_GITHUB_TOKEN;
+}
+
+function fromGuidance(reason: GithubFailure["reason"], guidance: Guidance): GithubFailure {
+  return { ok: false, reason, message: guidance.problem.replace(/[`*]/g, ""), guidance };
+}
+
+function noRepo(): GithubFailure {
+  return fromGuidance("no-repo", githubNoRepoGuidance(Boolean(process.env.RALLYPOINT_GITHUB_REPO?.trim())));
+}
+
+function failure(res: Response, repo: string, resource: Resource, contentsDenied = false): GithubFailure {
+  return fromGuidance(
+    "error",
+    githubFailureGuidance({
+      status: res.status,
+      repo,
+      token: token(),
+      rateLimitRemaining: res.headers.get("x-ratelimit-remaining"),
+      resource,
+      contentsDenied,
+      enterprise: API !== "https://api.github.com",
+    }),
+  );
+}
+
+function unreachable(cause: unknown, repo: string, resource: Resource): GithubFailure {
+  return fromGuidance(
+    "error",
+    githubFailureGuidance({
+      status: 0,
+      repo,
+      token: token(),
+      resource,
+      networkMessage: cause instanceof Error ? cause.message : undefined,
+      enterprise: API !== "https://api.github.com",
+    }),
+  );
 }
 
 type RawIssue = {
@@ -164,7 +198,7 @@ function toItem(raw: RawIssue): GithubItem {
 export async function listItems(): Promise<GithubReadResult<GithubItem[]>> {
   const repo = readGithubRepo();
   if (!repo) {
-    return { ok: false, reason: "no-repo", message: `Set ${ENV_REPO} to owner/name.` };
+    return noRepo();
   }
   const items: GithubItem[] = [];
   try {
@@ -172,18 +206,14 @@ export async function listItems(): Promise<GithubReadResult<GithubItem[]>> {
       const res = await githubFetch(
         `/repos/${repo}/issues?state=all&sort=updated&direction=desc&per_page=100&page=${page}`,
       );
-      if (!res.ok) return failure(res);
+      if (!res.ok) return failure(res, repo, "issues");
       const batch = (await res.json()) as RawIssue[];
       items.push(...batch.map(toItem));
       if (batch.length < 100) return { ok: true, data: items, truncated: false };
     }
     return { ok: true, data: items, truncated: true };
   } catch (cause) {
-    return {
-      ok: false,
-      reason: "error",
-      message: cause instanceof Error ? cause.message : "Could not reach GitHub.",
-    };
+    return unreachable(cause, repo, "issues");
   }
 }
 
@@ -198,12 +228,24 @@ export type RepoEntry = {
 export async function listDirectory(dir: string): Promise<GithubReadResult<RepoEntry[]>> {
   const repo = readGithubRepo();
   if (!repo) {
-    return { ok: false, reason: "no-repo", message: `Set ${ENV_REPO} to owner/name.` };
+    return noRepo();
   }
   try {
     const res = await githubFetch(`/repos/${repo}/contents/${encodePath(dir)}`);
-    if (res.status === 404) return { ok: true, data: [], truncated: false };
-    if (!res.ok) return failure(res);
+    if (res.status === 404) {
+      // GitHub says 404 both for a folder that does not exist and for files
+      // it will not show (private repository without a token, or a token
+      // without Contents permission). Only call the folder empty when the
+      // repository's root listing can be read.
+      const root = await githubFetch(`/repos/${repo}/contents/`);
+      if (root.ok) return { ok: true, data: [], truncated: false };
+      if (root.status === 404 && token()?.trim()) {
+        const meta = await githubFetch(`/repos/${repo}`);
+        if (meta.ok) return failure(root, repo, "contents", true);
+      }
+      return failure(root, repo, "contents");
+    }
+    if (!res.ok) return failure(res, repo, "contents");
     const body = (await res.json()) as
       | { name: string; path: string; type: string; html_url: string }[]
       | Record<string, unknown>;
@@ -221,11 +263,7 @@ export async function listDirectory(dir: string): Promise<GithubReadResult<RepoE
         })),
     };
   } catch (cause) {
-    return {
-      ok: false,
-      reason: "error",
-      message: cause instanceof Error ? cause.message : "Could not reach GitHub.",
-    };
+    return unreachable(cause, repo, "contents");
   }
 }
 
@@ -233,21 +271,17 @@ export async function listDirectory(dir: string): Promise<GithubReadResult<RepoE
 export async function readFile(path: string): Promise<GithubReadResult<string>> {
   const repo = readGithubRepo();
   if (!repo) {
-    return { ok: false, reason: "no-repo", message: `Set ${ENV_REPO} to owner/name.` };
+    return noRepo();
   }
   try {
     const res = await githubFetch(
       `/repos/${repo}/contents/${encodePath(path)}`,
       "application/vnd.github.raw+json",
     );
-    if (!res.ok) return failure(res);
+    if (!res.ok) return failure(res, repo, "contents");
     return { ok: true, data: await res.text(), truncated: false };
   } catch (cause) {
-    return {
-      ok: false,
-      reason: "error",
-      message: cause instanceof Error ? cause.message : "Could not reach GitHub.",
-    };
+    return unreachable(cause, repo, "contents");
   }
 }
 

@@ -1935,3 +1935,31 @@
   border-top: 0;
   margin-top: 16px;
 }
+
+/* ───────────────────────── Setup and error banners ───────────────────────── */
+
+.rp-fix-steps {
+  list-style: decimal;
+  margin: 12px 0;
+  padding-left: 1.4em;
+}
+
+.rp-fix-steps > li {
+  margin: 0 0 6px;
+  padding-left: 0.2em;
+}
+
+.rp-fix-steps > li:last-child {
+  margin-bottom: 0;
+}
+
+.rp-fix-after {
+  color: var(--rp-ink-soft);
+  font-size: 0.92em;
+}
+
+.rp-fix-detail {
+  font-family: var(--rp-font-code, ui-monospace, monospace);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}

@@ -25,6 +25,11 @@
  *   vocabulary                 <- DEFAULT_VOCABULARY, then ui.vocabulary
  *                                 merged over it key by key
  *   nav                        <- DEFAULT_NAV (not read from swarm.json)
+ *   nav[i].icon                <- not generated: DEFAULT_NAV's routes get
+ *                                 their icon by href. Set it on a route you
+ *                                 add, from NAV_ICON_NAMES below; left out,
+ *                                 /swarm/targets/<id> gets "target" and any
+ *                                 other path "page"
  *   theme.cssVars              <- {} (not read from swarm.json)
  *
  * A `ui` target added by `ui.includeUiTarget` is an ordinary entry in
@@ -83,12 +88,51 @@ export type SwarmVocabulary = {
 
 export type NavSection = "Results" | "Swarm" | "Learn" | (string & {});
 
+/**
+ * The line icons the nav can draw (`_components/icons.tsx`). The first group
+ * are the scaffold routes' own; the second are for the routes a project adds.
+ */
+export const NAV_ICON_NAMES = [
+  "pulse",
+  "news",
+  "target",
+  "clipboard",
+  "branch",
+  "grave",
+  "people",
+  "robot",
+  "merge",
+  "list",
+  "chat",
+  "compass",
+  "flow",
+  "grid",
+  "book",
+  "brush",
+  "inbox",
+  "check",
+  "document",
+  "card",
+  "mail",
+  "chart",
+  "settings",
+  "page",
+] as const;
+
+export type NavIconName = (typeof NAV_ICON_NAMES)[number];
+
 export type SwarmNavItem = {
   /** An absolute path inside the app, e.g. "/swarm/fleet". */
   href: string;
   label: string;
   /** Items are grouped under their section, in order of first appearance. */
   section: NavSection;
+  /**
+   * The item's icon, e.g. `icon: "people"`. Optional: a scaffold route gets
+   * its own icon by href, `/swarm/targets/<id>` gets "target", and any other
+   * path gets the neutral "page".
+   */
+  icon?: NavIconName;
 };
 
 export type SwarmConfig = {

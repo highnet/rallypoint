@@ -39,6 +39,28 @@ by hand or by the swarm itself through a `ui` target.
 6. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
    and the nav from the config, not hard-coded project nouns.
 
+## Nav icons
+
+Every nav item draws a line icon. The scaffold's routes get theirs by href;
+a route you add to `nav` in `swarm.config.ts` names one with `icon`:
+
+```ts
+{ href: "/swarm/targets/leads", label: "Leads", section: "Results", icon: "people" },
+{ href: "/swarm/billing", label: "Payments", section: "Business", icon: "card" },
+{ href: "/", label: "Website", section: "Project", icon: "globe" },
+```
+
+The names are `NAV_ICON_NAMES` in `_lib/config-types.ts`, among them
+`target`, `people`, `brush`, `inbox`, `check`, `document`, `card`, `mail`,
+`chart`, `settings`, `globe` and `home`. Leave `icon` out and
+`/swarm/targets/<id>` gets `target`, any other path the neutral `page`.
+Items may link outside `/swarm`, such as back to the site's home page; a
+section appears in the order of its first item, so list a section's items
+first to put it at the top. To draw a new one, add its name
+to `NAV_ICON_NAMES` and its paths to `icons` in `_components/icons.tsx`, on
+the same 24px grid with a 1.75px stroke; the type check fails until both
+exist.
+
 ## The fleet graph
 
 `/swarm/fleet` opens with an animated graph of the swarm, the same engine as

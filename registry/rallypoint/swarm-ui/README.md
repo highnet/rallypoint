@@ -15,8 +15,11 @@ the browser only reads, server-side.
 | `swarm-ui` | `npx rallypoint@latest add swarm-ui` | `app/swarm/**` into your existing Next.js App Router app |
 | `swarm-dashboard` | `npx rallypoint@latest add swarm-dashboard` | a standalone Next.js app in `swarm-ui/` (the same `app/swarm/**` plus a root layout, `package.json`, `.env.example`) |
 
-Both need Next.js 15 or 16, React 19, and nothing else: no Tailwind, no
-Supabase SDK, no `@/` alias. `app/swarm/swarm.config.ts` is generated from
+Both need Next.js 15 or 16, React 19 and `d3` (for the fleet graph), and
+nothing else: no Tailwind, no Supabase SDK, no `@/` alias. `add swarm-ui`
+prints the `npm install d3` / `npm install --save-dev @types/d3` commands
+when your app lacks them; the standalone dashboard's `package.json` already
+lists them. `app/swarm/swarm.config.ts` is generated from
 `.rallypoint/swarm.json` on install and is yours from then on: Rallypoint
 writes it only when it is absent and never overwrites it.
 
@@ -28,6 +31,13 @@ Results: `/swarm` (progress), `/swarm/news`, `/swarm/targets`,
 `/swarm/rallypoint` (GitHub lanes), `/swarm/board` (memory timeline),
 `/swarm/messages`. Learn: `/swarm/how-it-works`, `/swarm/protocol`,
 `/swarm/concepts`, `/swarm/skills`. Plus `/swarm/sign-in` for private mode.
+
+`/swarm/fleet` opens with an animated fleet graph (Swarm Arena's
+`@rallypoint/swarm-graph`, in `app/swarm/_graph/`): targets around the
+integration branch, agents on the branches and pull requests they hold, every
+merge flowing into the target it changed, and a replay of the last 24 active
+hours or the whole run at 1×, 2× or 4×. `CUSTOMIZE.md` ("The fleet graph")
+says what feeds it.
 
 `/swarm` follows the measure mode: a step chart of shipped scores in `score`
 mode; delivery (merged vs open issues, overall and per `target:<id>` label)

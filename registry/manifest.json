@@ -348,7 +348,7 @@
     },
     {
       "name": "swarm-ui",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "requires": [
         "swarm"
       ],
@@ -358,6 +358,12 @@
       "generate": {
         "command": "ui-config",
         "out": "app/swarm/swarm.config.ts"
+      },
+      "dependencies": {
+        "d3": "^7.9.0"
+      },
+      "devDependencies": {
+        "@types/d3": "^7.4.3"
       },
       "description": "The swarm UI route scaffold, installed into an existing Next.js App Router app (the UI is the product): Progress, News, Targets, Results, Versions, Ideas buried, Fleet, Sessions, Rallypoint, Board, Messages, How it works, Protocol, Concepts, Skills. Read-only. Generates a project-owned app/swarm/swarm.config.ts.",
       "files": [
@@ -378,6 +384,10 @@
           "target": "app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/fleet-graph.tsx",
+          "target": "app/swarm/_components/fleet-graph.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
           "target": "app/swarm/_components/nav.tsx"
         },
@@ -394,8 +404,48 @@
           "target": "app/swarm/_components/states.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_graph/beams.ts",
+          "target": "app/swarm/_graph/beams.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/effects.ts",
+          "target": "app/swarm/_graph/effects.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/index.ts",
+          "target": "app/swarm/_graph/index.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/intro.ts",
+          "target": "app/swarm/_graph/intro.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/layout.ts",
+          "target": "app/swarm/_graph/layout.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/lifecycle.ts",
+          "target": "app/swarm/_graph/lifecycle.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/model.ts",
+          "target": "app/swarm/_graph/model.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/render.ts",
+          "target": "app/swarm/_graph/render.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/replay.ts",
+          "target": "app/swarm/_graph/replay.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/config-types.ts",
           "target": "app/swarm/_lib/config-types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/fleet-graph.ts",
+          "target": "app/swarm/_lib/fleet-graph.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/format.ts",
@@ -517,7 +567,7 @@
     },
     {
       "name": "swarm-dashboard",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "requires": [
         "swarm"
       ],
@@ -544,6 +594,10 @@
           "target": "swarm-ui/app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/fleet-graph.tsx",
+          "target": "swarm-ui/app/swarm/_components/fleet-graph.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
           "target": "swarm-ui/app/swarm/_components/nav.tsx"
         },
@@ -560,8 +614,48 @@
           "target": "swarm-ui/app/swarm/_components/states.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_graph/beams.ts",
+          "target": "swarm-ui/app/swarm/_graph/beams.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/effects.ts",
+          "target": "swarm-ui/app/swarm/_graph/effects.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/index.ts",
+          "target": "swarm-ui/app/swarm/_graph/index.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/intro.ts",
+          "target": "swarm-ui/app/swarm/_graph/intro.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/layout.ts",
+          "target": "swarm-ui/app/swarm/_graph/layout.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/lifecycle.ts",
+          "target": "swarm-ui/app/swarm/_graph/lifecycle.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/model.ts",
+          "target": "swarm-ui/app/swarm/_graph/model.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/render.ts",
+          "target": "swarm-ui/app/swarm/_graph/render.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/replay.ts",
+          "target": "swarm-ui/app/swarm/_graph/replay.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/config-types.ts",
           "target": "swarm-ui/app/swarm/_lib/config-types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/fleet-graph.ts",
+          "target": "swarm-ui/app/swarm/_lib/fleet-graph.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/format.ts",

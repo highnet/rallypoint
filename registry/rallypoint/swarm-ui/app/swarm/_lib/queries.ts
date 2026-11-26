@@ -1,7 +1,10 @@
 import { cache } from "react";
 
 import { swarmConfig } from "../swarm.config";
+import type { SwarmInput } from "../_graph/model";
 import type { MeasureMode, SwarmTarget } from "./config-types";
+import { toSwarmInput } from "./fleet-graph";
+import { word } from "./format";
 import {
   deliveryOf,
   githubRepoUrl,
@@ -10,6 +13,7 @@ import {
   listDirectory,
   listItems,
   readFile,
+  readDefaultBranch,
   readGithubRepo,
   targetsOf,
   type Delivery,
@@ -404,6 +408,60 @@ export async function getFleet(): Promise<{ fleet: FleetRow[]; errors: Errors }>
   const errors: Errors = [];
   const fleet = take(await selectRows("swarm_fleet", { order: "last_seen_at.desc", limit: 100 }), [], errors);
   return { fleet, errors };
+}
+
+/* ───────────────────────── Fleet graph ───────────────────────── */
+
+export type FleetGraphData = {
+  input: SwarmInput;
+  /** Why the graph shows memory only, when GitHub could not be read. */
+  githubNote: string | null;
+  errors: Errors;
+};
+
+/**
+ * Everything the fleet graph draws, as its `SwarmInput` (see
+ * `_lib/fleet-graph.ts` for the mapping). Reads the history the replay plays
+ * back: recent sessions, progress notes, referee results, shipped versions,
+ * buried ideas and protocol changes, plus GitHub's issues and pull requests.
+ * Any read may fail; the graph then draws what the others returned.
+ */
+export async function getFleetGraph(): Promise<FleetGraphData> {
+  const errors: Errors = [];
+  const [sessions, progress, results, versions, buried, changes, github, defaultBranch] = await Promise.all([
+    selectRows("swarm_sessions", { order: "started_at.desc", limit: 500 }),
+    selectRows("swarm_progress", { order: "created_at.desc", limit: 1000 }),
+    selectRows("swarm_results", { order: "created_at.desc", limit: 500 }),
+    selectRows("swarm_versions", { order: "created_at.desc", limit: 500 }),
+    selectRows("swarm_buried", { order: "created_at.desc", limit: 300 }),
+    selectRows("swarm_protocol_changes", { order: "created_at.desc", limit: 200 }),
+    getGithubItems(),
+    swarmConfig.integrationBranch ? Promise.resolve(null) : readDefaultBranch(),
+  ]);
+  const sessionRows = take(sessions, [], errors);
+  const resultRows = take(results, [], errors);
+  const versionRows = take(versions, [], errors);
+  const buriedRows = take(buried, [], errors);
+  const input = toSwarmInput({
+    now: Date.now(),
+    integrationBranch: swarmConfig.integrationBranch || defaultBranch || "main",
+    branchPrefix: swarmConfig.branchPrefix,
+    targets: resolveTargets([
+      ...sessionRows.map((row) => row.target),
+      ...resultRows.map((row) => row.target),
+      ...versionRows.map((row) => row.target),
+      ...buriedRows.map((row) => row.target),
+    ]),
+    sessions: sessionRows,
+    progress: take(progress, [], errors),
+    results: resultRows,
+    versions: versionRows,
+    buried: buriedRows,
+    protocolChanges: take(changes, [], errors),
+    github: github.ok ? github.items : null,
+    shippedUnit: word("shipped"),
+  });
+  return { input, githubNote: github.ok ? null : github.message, errors };
 }
 
 /* ───────────────────────── Sessions ───────────────────────── */

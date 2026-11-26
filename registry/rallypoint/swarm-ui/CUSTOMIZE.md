@@ -12,7 +12,9 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/queries.ts` | every read the pages make, one function per page | extend it; keep it read-only |
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
-| `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar | freely |
+| `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar, the fleet graph's mount and replay bar (`fleet-graph.tsx`) | freely |
+| `app/swarm/_lib/fleet-graph.ts` | the adapter from sessions, memory and GitHub to the fleet graph's `SwarmInput` | freely; it decides what a sector, an agent and a work item are |
+| `app/swarm/_graph/*` | the fleet graph engine (`@rallypoint/swarm-graph`, D3, framework-free) | rarely; take upstream changes whole |
 | `app/swarm/**/page.tsx` | thin pages: `getSwarmContext()`, one query, render | freely |
 | `app/swarm/swarm.css` | scoped styles and theme variables | freely |
 
@@ -37,6 +39,52 @@ by hand or by the swarm itself through a `ui` target.
 6. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
    and the nav from the config, not hard-coded project nouns.
 
+## The fleet graph
+
+`/swarm/fleet` opens with an animated graph of the swarm, the same engine as
+Swarm Arena's fleet page (`@rallypoint/swarm-graph`, copied into
+`app/swarm/_graph/`), with the session table below it as its text
+equivalent. It follows the protocol: your targets ring the integration
+branch; open issues wait outside their target; a claim forks an
+`agent/<issue>-<slug>` branch; it becomes a pull request, outlined by its
+review state; and a merge is the only flow into the integration branch,
+landing in the target it changed. Agents sit on the branch or pull request
+their latest session holds.
+
+**Replay.** "Replay last 24 h" plays the last 24 actively worked hours back
+from the state they started in (idle gaps squeezed to a beat); the timeline
+switches to the whole run, plays at 1×, 2× or 4×, pauses, and scrubs (drag,
+or arrow keys; Shift+arrow jumps between milestones; Home and End). The
+clock shows the time of the last event played. With
+`prefers-reduced-motion` the graph draws without ambient motion and the
+playhead steps per event.
+
+**What feeds it.** `getFleetGraph()` in `_lib/queries.ts` reads the history
+(the latest 500 sessions, 1000 progress notes, 500 referee results, 500
+versions, 300 buried ideas, 200 protocol changes, and the 300 most recently
+updated GitHub issues and pull requests) and hands it to `toSwarmInput()` in
+`_lib/fleet-graph.ts`, which maps:
+
+| Graph | From |
+| ----- | ---- |
+| sectors | `swarmConfig.targets` (names and colours) plus target ids found in the data; work with no target goes to the only target, or to "Other" |
+| integration branch | `swarmConfig.integrationBranch`, else the GitHub repository's default branch, else `main` |
+| agents | one per agent name in `swarm_sessions`, from its latest session: role, target, issue, PR, latest progress note. Working only while that session is `working` and was seen in the last two hours |
+| work items | GitHub issues staged by `status:claimed` / `status:blocked` / `status:deferred` / `needs:human`, and pull requests (joined by "Closes #N") by `review:approved` / `status:changes-requested` / merged. Without GitHub, the issues working sessions hold and those a shipped version names |
+| events | sessions starting and ending, progress notes, referee results (pass/fail), shipped versions, buried ideas, protocol changes, issues opened and claimed, pull requests opened, reviewed and merged |
+| the number in a sector | merged pull requests (all time, with today's), or shipped versions without GitHub |
+
+Every read may fail: without GitHub the graph shows memory alone and says
+so under it; with no rows it still draws the integration branch and the
+targets. It re-reads the page every 60 seconds while the tab is visible and
+no replay plays (`refreshSeconds` on `<FleetGraph>`; 0 turns it off).
+
+Change what a sector is (a directory, a label) in `toSwarmInput`. Colours
+come from the `--rp-*` variables (the `THEME` map at the top of
+`fleet-graph.tsx`). The graph needs `d3` (and `@types/d3` for TypeScript);
+`add swarm-ui` names the install command when they are missing, and the
+standalone dashboard lists them in its `package.json`.
+
 ## Letting the swarm build it
 
 With `ui.includeUiTarget` in `.rallypoint/swarm.json`, `swarm init` adds a
@@ -49,14 +97,13 @@ review, then a merger. The improver never edits the referee.
 
 Seeds for `npx rallypoint swarm plan`, each scoped to one pull request:
 
-1. Draw a live fleet graph of targets, agents and open PRs on /swarm/fleet
-2. Show each target's open issues and the issue being worked on in its card
-3. Add a 24-hour replay of fleet activity with play, pause and step controls
-4. Show each referee run's checks as a timeline on /swarm/results/[id]
-5. Link buried ideas to the concepts matrix and show their numbers inline
-6. Add an RSS feed for /swarm/news
-7. Add a "News" band to the overview with the three latest stories
-8. Add per-target filters and a search box to the Board timeline
+1. Show each target's open issues and the issue being worked on in its card
+2. Link a fleet graph node to its session, issue or pull request in a side panel
+3. Show each referee run's checks as a timeline on /swarm/results/[id]
+4. Link buried ideas to the concepts matrix and show their numbers inline
+5. Add an RSS feed for /swarm/news
+6. Add a "News" band to the overview with the three latest stories
+7. Add per-target filters and a search box to the Board timeline
 
 Each must keep the rules above: read through `queries.ts`, no writes, text
 equivalents for anything drawn, and no horizontal overflow at 375px.

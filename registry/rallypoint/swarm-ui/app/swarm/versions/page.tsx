@@ -7,7 +7,6 @@ import { cap, formatScore, shortSha, word } from "../_lib/format";
 import { getSwarmContext, getVersions } from "../_lib/queries";
 
 export const metadata: Metadata = { title: cap(word("versions")) };
-export const dynamic = "force-dynamic";
 
 export default async function VersionsPage() {
   const context = await getSwarmContext();

@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -159,6 +159,53 @@ await test("ui-config generation follows the documented mapping", () => {
   assert.match(source, /"shipped": "landed"/);
   assert.match(source, /"\/swarm\/targets": "Engines"/);
   assert.match(source, /export const swarmConfig: SwarmConfig/);
+});
+
+// #70: the scaffold must build with Next.js 16 Cache Components on and off,
+// as installed. Route segment config like `dynamic` fails that build, a page
+// needs a Suspense boundary in its own folder so a navigation between two
+// /swarm pages is instant, and nothing may read request data in the layout
+// outside <Suspense>.
+await test("swarm-ui builds under Cache Components: no segment config, a boundary per route", async () => {
+  const app = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
+  const files = (await readdir(app, { recursive: true })).map((file) => file.split("\\").join("/"));
+  const pages = files.filter((file) => /(^|\/)page\.tsx$/.test(file) && !file.startsWith("_"));
+  assert.ok(pages.length >= 18, `expected the scaffold's pages, found ${pages.length}`);
+  for (const file of files.filter((name) => /\.(ts|tsx)$/.test(name))) {
+    const source = await readFile(resolve(app, file), "utf8");
+    assert.doesNotMatch(source, /^export const (dynamic|revalidate|fetchCache|dynamicParams)\b/m, `${file} exports route segment config`);
+  }
+  for (const page of pages) {
+    const folder = page.replace(/\/?page\.tsx$/, "");
+    const loading = folder ? `${folder}/loading.tsx` : "loading.tsx";
+    assert.ok(files.includes(loading), `${page} has no ${loading}`);
+  }
+  const queries = await readFile(resolve(app, "_lib/queries.ts"), "utf8");
+  assert.match(queries, /getSwarmContext = cache\(async \(\): Promise<SwarmContext> => \{\n  await connection\(\);/, "getSwarmContext waits for a request first");
+  const layout = await readFile(resolve(app, "layout.tsx"), "utf8");
+  assert.match(layout, /export default function SwarmLayout/, "the layout itself does not await");
+  assert.match(layout, /<Suspense fallback=\{null\}>\s*<TopBarStatus \/>/, "the top bar's request-time part streams in its own boundary");
+  const nav = await readFile(resolve(app, "_components/nav.tsx"), "utf8");
+  assert.match(nav, /<Suspense fallback=\{<NavLinks \{\.\.\.props\} pathname=\{null\} \/>\}>/, "usePathname() sits behind a Suspense boundary");
+  const manifest = JSON.parse(await readFile(resolve(root, "registry/manifest.json"), "utf8"));
+  for (const name of ["swarm-ui", "swarm-dashboard"]) {
+    const sources = new Set(manifest.items.find((item) => item.name === name).files.map((file) => file.source));
+    for (const file of files.filter((entry) => entry.endsWith("loading.tsx") || entry === "sign-in/sign-out.tsx")) {
+      assert.ok(sources.has(`swarm-ui/app/swarm/${file}`), `${name} does not ship ${file}`);
+    }
+  }
+});
+
+// With Cache Components, pages you leave stay mounted but hidden (React
+// <Activity>), so nothing may assume a page unmounts.
+await test("swarm-ui does not assume a page unmounts", async () => {
+  const app = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
+  const skills = await readFile(resolve(app, "skills/page.tsx"), "utf8");
+  assert.doesNotMatch(skills, /id="file"|\}#file`/, "the skills viewer's anchor is unique per file");
+  const signOut = await readFile(resolve(app, "sign-in/sign-out.tsx"), "utf8");
+  assert.match(signOut, /window\.location\.assign/, "signing out is a full page load");
+  const layout = await readFile(resolve(app, "layout.tsx"), "utf8");
+  assert.doesNotMatch(layout, /action=\{signOut\}/, "the top bar signs out through <SignOut>");
 });
 
 // ---------------------------------------------------------------------------

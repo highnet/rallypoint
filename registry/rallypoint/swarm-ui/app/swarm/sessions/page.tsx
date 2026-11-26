@@ -8,7 +8,6 @@ import { getSessions, getSwarmContext } from "../_lib/queries";
 import type { SessionStatus } from "../_lib/types";
 
 export const metadata: Metadata = { title: cap(word("sessions")) };
-export const dynamic = "force-dynamic";
 
 const STATUSES: SessionStatus[] = ["working", "ended", "abandoned"];
 

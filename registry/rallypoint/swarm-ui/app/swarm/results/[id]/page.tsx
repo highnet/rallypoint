@@ -19,8 +19,6 @@ import {
 } from "../../_lib/format";
 import { getResult, getSwarmContext } from "../../_lib/queries";
 
-export const dynamic = "force-dynamic";
-
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

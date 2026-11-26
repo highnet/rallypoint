@@ -14,6 +14,7 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
 | `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar | freely |
 | `app/swarm/**/page.tsx` | thin pages: `getSwarmContext()`, one query, render | freely |
+| `app/swarm/loading.tsx`, `app/swarm/**/loading.tsx` | the fallback each page streams into; the folders' copies re-export the root one | the root one freely |
 | `app/swarm/swarm.css` | scoped styles and theme variables | freely |
 
 ## Rules that keep it honest
@@ -36,6 +37,24 @@ by hand or by the swarm itself through a `ui` target.
    nothing overflows at 375px.
 6. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
    and the nav from the config, not hard-coded project nouns.
+7. **Read request data inside the page, never in the layout.** Every page
+   is request-time because `getSwarmContext()` calls `connection()` first,
+   and it renders inside the Suspense boundary of the `loading.tsx` in its
+   own folder. Do not add `export const dynamic`, `revalidate` or
+   `fetchCache`: Next.js 16 rejects them under Cache Components. Anything in
+   `layout.tsx` that reads cookies or memory goes in its own `<Suspense>`, as
+   the top bar's status does. That keeps the scaffold building with
+   `cacheComponents` on and off. A new route folder (and an `[id]` folder)
+   gets the same one-line `loading.tsx`, re-exporting `app/swarm/loading.tsx`;
+   `npm run swarm:test` checks that every page has one.
+8. **Never assume a page unmounts.** With Cache Components, Next.js keeps up
+   to three pages you left mounted but hidden (`display: none`). So element
+   ids must be unique per page (as the skills viewer's file anchors are),
+   CSS must not depend on what else sits in `<main>` (no `:has()` on page
+   content from outside it), timers and subscriptions pause in an effect
+   cleanup, and stale status messages clear in a `useLayoutEffect` cleanup.
+   Signing out reloads the whole page so no private page stays hidden in
+   the document.
 
 ## Letting the swarm build it
 

@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { cache } from "react";
 
 import { swarmConfig } from "../swarm.config";
@@ -79,8 +80,16 @@ function foldSettings(rows: SettingRow[]): SwarmSettings {
  * Whether memory can be read, once per request. Private swarms hide even
  * `swarm_settings` from the anon key, so an empty settings read without a
  * session means "private, or `swarm init` has not run yet".
+ *
+ * Every page starts here, so this is where a page becomes request-time.
+ * `connection()` waits for a real request before the environment is read:
+ * without it, a build with no Supabase variables would prerender "Not
+ * connected yet" for good. It works with Cache Components on or off, and is
+ * why no page exports `dynamic`. Each page renders inside `loading.tsx`'s
+ * Suspense boundary, so the layout's static shell can still be prerendered.
  */
 export const getSwarmContext = cache(async (): Promise<SwarmContext> => {
+  await connection();
   const { env, missing } = readSupabaseEnv();
   if (!env) return { state: "unconfigured", missing };
 
@@ -176,6 +185,8 @@ export type ProgressData = {
   fleet: FleetRow[];
   /** The newest buried idea, for the "latest" line. */
   lastBuried: BuriedRow | null;
+  /** When memory was read (ms since the epoch); charts run up to it. */
+  readAt: number;
   errors: Errors;
 };
 
@@ -230,6 +241,7 @@ export async function getProgress(settings: SwarmSettings): Promise<ProgressData
     deliveryByTarget,
     fleet: take(fleet, [], errors),
     lastBuried: first(buried, errors),
+    readAt: Date.now(),
     errors,
   };
 }
@@ -325,6 +337,8 @@ export type TargetDetail = {
   openIssues: GithubItem[];
   delivery: Delivery | null;
   github: GithubState;
+  /** When memory was read (ms since the epoch); charts run up to it. */
+  readAt: number;
   errors: Errors;
 };
 
@@ -355,6 +369,7 @@ export async function getTarget(id: string): Promise<TargetDetail | null> {
       : [],
     delivery: github.ok ? deliveryOf(github.items, id) : null,
     github,
+    readAt: Date.now(),
     errors,
   };
 }

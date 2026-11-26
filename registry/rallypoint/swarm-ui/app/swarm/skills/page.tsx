@@ -5,7 +5,15 @@ import { Empty, Gate, PageHead, Panel, Section } from "../_components/states";
 import { getSkills, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Skills" };
-export const dynamic = "force-dynamic";
+
+/**
+ * The open file's anchor, unique per file. With Cache Components a page you
+ * left can stay mounted, hidden, so two `?file=` views may share the
+ * document; a fixed `#file` could then scroll to the hidden one.
+ */
+function fileAnchor(path: string): string {
+  return `file-${path.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
 
 export default async function SkillsPage({
   searchParams,
@@ -45,7 +53,7 @@ export default async function SkillsPage({
                       <Link
                         aria-current={file?.path === entry.path ? "true" : undefined}
                         className="rp-mono"
-                        href={`/swarm/skills?file=${encodeURIComponent(entry.path)}#file`}
+                        href={`/swarm/skills?file=${encodeURIComponent(entry.path)}#${fileAnchor(entry.path)}`}
                       >
                         {entry.name}
                       </Link>{" "}
@@ -59,7 +67,7 @@ export default async function SkillsPage({
             </Section>
           ))}
           {file ? (
-            <Section id="file" title={file.path}>
+            <Section id={fileAnchor(file.path)} title={file.path}>
               {file.error ? <p className="rp-soft">{file.error}</p> : <pre className="rp-file">{file.text}</pre>}
             </Section>
           ) : null}

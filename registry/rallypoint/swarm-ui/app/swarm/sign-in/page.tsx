@@ -4,11 +4,11 @@ import { Gate, PageHead, Panel } from "../_components/states";
 import { isSignedIn } from "../_lib/queries";
 import { readSupabaseEnv } from "../_lib/supabase";
 import { swarmConfig } from "../swarm.config";
-import { requestMagicLink, signInWithPassword, signOut } from "./actions";
+import { requestMagicLink, signInWithPassword } from "./actions";
+import { SignOut } from "./sign-out";
 import { TokenFromLink } from "./token-from-link";
 
 export const metadata: Metadata = { title: "Sign in" };
-export const dynamic = "force-dynamic";
 
 export default async function SignInPage({
   searchParams,
@@ -25,11 +25,7 @@ export default async function SignInPage({
     return (
       <>
         <PageHead title="Signed in" lede={`You can read ${swarmConfig.project.name}'s memory.`} />
-        <form action={signOut}>
-          <button className="rp-button rp-button-quiet" type="submit">
-            Sign out
-          </button>
-        </form>
+        <SignOut buttonClassName="rp-button rp-button-quiet" />
       </>
     );
   }

@@ -7,7 +7,6 @@ import { cap, word } from "../_lib/format";
 import { getFleet, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Fleet" };
-export const dynamic = "force-dynamic";
 
 export default async function FleetPage() {
   const context = await getSwarmContext();

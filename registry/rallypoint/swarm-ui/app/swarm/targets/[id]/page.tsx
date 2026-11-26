@@ -11,8 +11,6 @@ import { cap, formatNumber, formatScore, word } from "../../_lib/format";
 import { swarmConfig } from "../../swarm.config";
 import { findTarget, getSwarmContext, getTarget, measureMode } from "../../_lib/queries";
 
-export const dynamic = "force-dynamic";
-
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -75,7 +73,7 @@ export default async function TargetPage({ params }: Props) {
       {mode === "score" ? (
         <Section title={`${swarmConfig.measure.label || cap(word("score"))} over time`}>
           {data.versions.some((row) => row.score !== null) ? (
-            <ScoreChart label={`${data.target.name} ${word("score")}`} targets={[data.target]} versions={data.versions} />
+            <ScoreChart label={`${data.target.name} ${word("score")}`} now={data.readAt} targets={[data.target]} versions={data.versions} />
           ) : (
             <Empty>
               Nothing {word("shipped")} with a {word("score")} yet. The first point appears when the merger runs{" "}

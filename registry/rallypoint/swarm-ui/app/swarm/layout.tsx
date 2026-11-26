@@ -3,12 +3,12 @@ import "./swarm.css";
 import type { Metadata } from "next";
 import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
-import type { CSSProperties, ReactNode } from "react";
+import { Suspense, type CSSProperties, type ReactNode } from "react";
 
 import { SwarmNav } from "./_components/nav";
 import { cap, word } from "./_lib/format";
 import { getSwarmContext, getWorkingCount, isSignedIn } from "./_lib/queries";
-import { signOut } from "./sign-in/actions";
+import { SignOut } from "./sign-in/sign-out";
 import { swarmConfig } from "./swarm.config";
 
 export const metadata: Metadata = {
@@ -22,10 +22,35 @@ const sans = Inter({ subsets: ["latin"], variable: "--rp-face-sans", display: "s
 const display = Inter_Tight({ subsets: ["latin"], variable: "--rp-face-display", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--rp-face-mono", display: "swap" });
 
-export default async function SwarmLayout({ children }: { children: ReactNode }) {
+/**
+ * The top bar's live part: the working count and the sign-out button. It
+ * reads the session cookie and memory, so it streams in its own Suspense
+ * boundary and the rest of the layout stays in the prerendered shell.
+ */
+async function TopBarStatus() {
   const signedIn = await isSignedIn();
   const context = await getSwarmContext();
   const working = context.state === "ok" ? await getWorkingCount() : null;
+
+  return (
+    <>
+      {working === null ? null : working > 0 ? (
+        <Link className="rp-live rp-live-on" href="/swarm/fleet">
+          <span aria-hidden="true" className="rp-live-dot" />
+          {working} working
+        </Link>
+      ) : (
+        <Link className="rp-live" href="/swarm/fleet" title={`No ${word("sessions")} working right now`}>
+          <span aria-hidden="true" className="rp-live-dot" />
+          Idle
+        </Link>
+      )}
+      {signedIn ? <SignOut className="rp-session" /> : null}
+    </>
+  );
+}
+
+export default function SwarmLayout({ children }: { children: ReactNode }) {
   const style = swarmConfig.theme.cssVars as CSSProperties;
 
   return (
@@ -45,24 +70,9 @@ export default async function SwarmLayout({ children }: { children: ReactNode })
           <Link href="/swarm">{swarmConfig.project.name}</Link>
         </div>
         <div className="rp-top-end">
-          {working === null ? null : working > 0 ? (
-            <Link className="rp-live rp-live-on" href="/swarm/fleet">
-              <span aria-hidden="true" className="rp-live-dot" />
-              {working} working
-            </Link>
-          ) : (
-            <Link className="rp-live" href="/swarm/fleet" title={`No ${word("sessions")} working right now`}>
-              <span aria-hidden="true" className="rp-live-dot" />
-              Idle
-            </Link>
-          )}
-          {signedIn ? (
-            <form action={signOut} className="rp-session">
-              <button className="rp-linkish" type="submit">
-                Sign out
-              </button>
-            </form>
-          ) : null}
+          <Suspense fallback={null}>
+            <TopBarStatus />
+          </Suspense>
         </div>
       </header>
       <aside className="rp-sidebar">

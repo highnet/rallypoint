@@ -39,10 +39,21 @@ function niceTicks(min: number, max: number, count: number): number[] {
   return ticks;
 }
 
-function Plot({ series, width, height, label }: { series: Series[]; width: number; height: number; label: string }) {
+function Plot({
+  series,
+  width,
+  height,
+  label,
+  now,
+}: {
+  series: Series[];
+  width: number;
+  height: number;
+  label: string;
+  now: number;
+}) {
   const pad = { top: 16, right: width < 500 ? 16 : 120, bottom: 32, left: 52 };
   const all = series.flatMap((s) => s.points);
-  const now = Date.now();
   const t0 = Math.min(...all.map((p) => p.t));
   const t1 = Math.max(now, ...all.map((p) => p.t));
   let lo = Math.min(...all.map((p) => p.score));
@@ -114,10 +125,13 @@ export function ScoreChart({
   versions,
   targets,
   label,
+  now,
 }: {
   versions: VersionRow[];
   targets: SwarmTarget[];
   label: string;
+  /** When memory was read (ms). The lines run on to this moment. */
+  now: number;
 }) {
   const series: Series[] = targets
     .map((target, index) => ({
@@ -145,10 +159,10 @@ export function ScoreChart({
         ))}
       </ul>
       <div className="rp-plot-wide">
-        <Plot height={300} label={summary} series={series} width={760} />
+        <Plot height={300} label={summary} now={now} series={series} width={760} />
       </div>
       <div className="rp-plot-narrow">
-        <Plot height={240} label={summary} series={series} width={360} />
+        <Plot height={240} label={summary} now={now} series={series} width={360} />
       </div>
       <details className="rp-details">
         <summary>Show the data as a table</summary>

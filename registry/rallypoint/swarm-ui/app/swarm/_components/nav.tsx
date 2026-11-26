@@ -2,32 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 
 import type { SwarmNavItem, SwarmTarget } from "../_lib/config-types";
 import { NavIcon, TargetMark } from "./icons";
 
-function isCurrent(pathname: string, href: string): boolean {
+function isCurrent(pathname: string | null, href: string): boolean {
+  if (pathname === null) return false;
   if (href === "/swarm") return pathname === "/swarm";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/**
- * The swarm's navigation, grouped by section. Wide screens get a sticky
- * sidebar; narrow screens a disclosure menu that closes on navigation.
- */
-export function SwarmNav({
-  items,
-  title,
-  targets,
-  targetsLabel,
-}: {
+type NavProps = {
   items: SwarmNavItem[];
   title: string;
   targets: SwarmTarget[];
   targetsLabel: string;
-}) {
-  const pathname = usePathname() ?? "/swarm";
+};
+
+/**
+ * The swarm's navigation, grouped by section. Wide screens get a sticky
+ * sidebar; narrow screens a disclosure menu that closes on navigation.
+ *
+ * The current page comes from the URL, which a prerender of an `[id]` route
+ * does not know. So the links render without a current page in the static
+ * shell, and the marked version streams in (Cache Components requires the
+ * Suspense boundary around `usePathname()`; without it, it changes nothing).
+ */
+export function SwarmNav(props: NavProps) {
+  return (
+    <Suspense fallback={<NavLinks {...props} pathname={null} />}>
+      <NavAtPath {...props} />
+    </Suspense>
+  );
+}
+
+function NavAtPath(props: NavProps) {
+  return <NavLinks {...props} pathname={usePathname() ?? "/swarm"} />;
+}
+
+function NavLinks({ items, title, targets, targetsLabel, pathname }: NavProps & { pathname: string | null }) {
   const menu = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {

@@ -7,7 +7,6 @@ import { getSwarmContext, getTargets } from "../_lib/queries";
 import { swarmConfig } from "../swarm.config";
 
 export const metadata: Metadata = { title: cap(word("targets")) };
-export const dynamic = "force-dynamic";
 
 export default async function TargetsPage() {
   const context = await getSwarmContext();

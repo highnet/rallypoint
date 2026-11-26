@@ -418,20 +418,40 @@
           "target": "app/swarm/_lib/types.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/board/loading.tsx",
+          "target": "app/swarm/board/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/board/page.tsx",
           "target": "app/swarm/board/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/buried/loading.tsx",
+          "target": "app/swarm/buried/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/buried/page.tsx",
           "target": "app/swarm/buried/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/concepts/loading.tsx",
+          "target": "app/swarm/concepts/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/concepts/page.tsx",
           "target": "app/swarm/concepts/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/fleet/loading.tsx",
+          "target": "app/swarm/fleet/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/fleet/page.tsx",
           "target": "app/swarm/fleet/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/how-it-works/loading.tsx",
+          "target": "app/swarm/how-it-works/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/how-it-works/page.tsx",
@@ -442,8 +462,20 @@
           "target": "app/swarm/layout.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/loading.tsx",
+          "target": "app/swarm/loading.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/loading.tsx",
+          "target": "app/swarm/messages/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/messages/page.tsx",
           "target": "app/swarm/messages/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/news/loading.tsx",
+          "target": "app/swarm/news/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/news/page.tsx",
@@ -458,20 +490,40 @@
           "target": "app/swarm/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/protocol/loading.tsx",
+          "target": "app/swarm/protocol/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/protocol/page.tsx",
           "target": "app/swarm/protocol/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/rallypoint/loading.tsx",
+          "target": "app/swarm/rallypoint/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/rallypoint/page.tsx",
           "target": "app/swarm/rallypoint/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/results/[id]/loading.tsx",
+          "target": "app/swarm/results/[id]/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/results/[id]/page.tsx",
           "target": "app/swarm/results/[id]/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/results/loading.tsx",
+          "target": "app/swarm/results/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/results/page.tsx",
           "target": "app/swarm/results/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sessions/loading.tsx",
+          "target": "app/swarm/sessions/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/sessions/page.tsx",
@@ -482,12 +534,24 @@
           "target": "app/swarm/sign-in/actions.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/sign-in/loading.tsx",
+          "target": "app/swarm/sign-in/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/sign-in/page.tsx",
           "target": "app/swarm/sign-in/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/sign-in/sign-out.tsx",
+          "target": "app/swarm/sign-in/sign-out.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/sign-in/token-from-link.tsx",
           "target": "app/swarm/sign-in/token-from-link.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/skills/loading.tsx",
+          "target": "app/swarm/skills/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/skills/page.tsx",
@@ -498,12 +562,24 @@
           "target": "app/swarm/swarm.css"
         },
         {
+          "source": "swarm-ui/app/swarm/targets/[id]/loading.tsx",
+          "target": "app/swarm/targets/[id]/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/targets/[id]/page.tsx",
           "target": "app/swarm/targets/[id]/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/targets/loading.tsx",
+          "target": "app/swarm/targets/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/targets/page.tsx",
           "target": "app/swarm/targets/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/versions/loading.tsx",
+          "target": "app/swarm/versions/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/versions/page.tsx",
@@ -584,20 +660,40 @@
           "target": "swarm-ui/app/swarm/_lib/types.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/board/loading.tsx",
+          "target": "swarm-ui/app/swarm/board/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/board/page.tsx",
           "target": "swarm-ui/app/swarm/board/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/buried/loading.tsx",
+          "target": "swarm-ui/app/swarm/buried/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/buried/page.tsx",
           "target": "swarm-ui/app/swarm/buried/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/concepts/loading.tsx",
+          "target": "swarm-ui/app/swarm/concepts/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/concepts/page.tsx",
           "target": "swarm-ui/app/swarm/concepts/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/fleet/loading.tsx",
+          "target": "swarm-ui/app/swarm/fleet/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/fleet/page.tsx",
           "target": "swarm-ui/app/swarm/fleet/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/how-it-works/loading.tsx",
+          "target": "swarm-ui/app/swarm/how-it-works/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/how-it-works/page.tsx",
@@ -608,8 +704,20 @@
           "target": "swarm-ui/app/swarm/layout.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/loading.tsx",
+          "target": "swarm-ui/app/swarm/loading.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/loading.tsx",
+          "target": "swarm-ui/app/swarm/messages/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/messages/page.tsx",
           "target": "swarm-ui/app/swarm/messages/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/news/loading.tsx",
+          "target": "swarm-ui/app/swarm/news/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/news/page.tsx",
@@ -624,20 +732,40 @@
           "target": "swarm-ui/app/swarm/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/protocol/loading.tsx",
+          "target": "swarm-ui/app/swarm/protocol/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/protocol/page.tsx",
           "target": "swarm-ui/app/swarm/protocol/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/rallypoint/loading.tsx",
+          "target": "swarm-ui/app/swarm/rallypoint/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/rallypoint/page.tsx",
           "target": "swarm-ui/app/swarm/rallypoint/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/results/[id]/loading.tsx",
+          "target": "swarm-ui/app/swarm/results/[id]/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/results/[id]/page.tsx",
           "target": "swarm-ui/app/swarm/results/[id]/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/results/loading.tsx",
+          "target": "swarm-ui/app/swarm/results/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/results/page.tsx",
           "target": "swarm-ui/app/swarm/results/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sessions/loading.tsx",
+          "target": "swarm-ui/app/swarm/sessions/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/sessions/page.tsx",
@@ -648,12 +776,24 @@
           "target": "swarm-ui/app/swarm/sign-in/actions.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/sign-in/loading.tsx",
+          "target": "swarm-ui/app/swarm/sign-in/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/sign-in/page.tsx",
           "target": "swarm-ui/app/swarm/sign-in/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/sign-in/sign-out.tsx",
+          "target": "swarm-ui/app/swarm/sign-in/sign-out.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/sign-in/token-from-link.tsx",
           "target": "swarm-ui/app/swarm/sign-in/token-from-link.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/skills/loading.tsx",
+          "target": "swarm-ui/app/swarm/skills/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/skills/page.tsx",
@@ -664,12 +804,24 @@
           "target": "swarm-ui/app/swarm/swarm.css"
         },
         {
+          "source": "swarm-ui/app/swarm/targets/[id]/loading.tsx",
+          "target": "swarm-ui/app/swarm/targets/[id]/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/targets/[id]/page.tsx",
           "target": "swarm-ui/app/swarm/targets/[id]/page.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/targets/loading.tsx",
+          "target": "swarm-ui/app/swarm/targets/loading.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/targets/page.tsx",
           "target": "swarm-ui/app/swarm/targets/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/versions/loading.tsx",
+          "target": "swarm-ui/app/swarm/versions/loading.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/versions/page.tsx",

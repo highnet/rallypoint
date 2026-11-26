@@ -10,7 +10,6 @@ import { getHowItWorks, getSwarmContext } from "../_lib/queries";
 import { swarmConfig } from "../swarm.config";
 
 export const metadata: Metadata = { title: "How it works" };
-export const dynamic = "force-dynamic";
 
 export default async function HowItWorksPage() {
   const context = await getSwarmContext();

@@ -7,7 +7,6 @@ import { getSwarmContext, getThreads } from "../_lib/queries";
 import type { MessageKind, MessageRow } from "../_lib/types";
 
 export const metadata: Metadata = { title: cap(word("messages")) };
-export const dynamic = "force-dynamic";
 
 const KINDS: MessageKind[] = ["question", "proposal", "handoff", "answer", "note"];
 

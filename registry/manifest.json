@@ -158,6 +158,10 @@
           "target": ".rallypoint/scripts/lib/freshness.mjs"
         },
         {
+          "source": ".rallypoint/scripts/lib/fetch-once.mjs",
+          "target": ".rallypoint/scripts/lib/fetch-once.mjs"
+        },
+        {
           "source": ".rallypoint/scripts/lib/gh.mjs",
           "target": ".rallypoint/scripts/lib/gh.mjs"
         },
@@ -360,7 +364,11 @@
         "out": "app/swarm/swarm.config.ts"
       },
       "dependencies": {
-        "@supabase/realtime-js": "^2.119.2"
+        "@supabase/realtime-js": "^2.119.2",
+        "d3": "^7.9.0"
+      },
+      "devDependencies": {
+        "@types/d3": "^7.4.3"
       },
       "description": "The swarm UI route scaffold, installed into an existing Next.js App Router app (the UI is the product): Progress, News, Targets, Results, Versions, Ideas buried, Fleet, Sessions, Rallypoint, Board, Messages, How it works, Protocol, Concepts, Skills. Read-only. Generates a project-owned app/swarm/swarm.config.ts.",
       "files": [
@@ -381,8 +389,16 @@
           "target": "app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/fleet-graph.tsx",
+          "target": "app/swarm/_components/fleet-graph.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/live.tsx",
           "target": "app/swarm/_components/live.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/messages.tsx",
+          "target": "app/swarm/_components/messages.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
@@ -401,8 +417,56 @@
           "target": "app/swarm/_components/states.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_graph/beams.ts",
+          "target": "app/swarm/_graph/beams.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/effects.ts",
+          "target": "app/swarm/_graph/effects.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/index.ts",
+          "target": "app/swarm/_graph/index.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/intro.ts",
+          "target": "app/swarm/_graph/intro.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/layout.ts",
+          "target": "app/swarm/_graph/layout.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/lifecycle.ts",
+          "target": "app/swarm/_graph/lifecycle.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/model.ts",
+          "target": "app/swarm/_graph/model.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/render.ts",
+          "target": "app/swarm/_graph/render.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/replay.ts",
+          "target": "app/swarm/_graph/replay.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animal-icons.ts",
+          "target": "app/swarm/_lib/animal-icons.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animals.ts",
+          "target": "app/swarm/_lib/animals.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/config-types.ts",
           "target": "app/swarm/_lib/config-types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/fleet-graph.ts",
+          "target": "app/swarm/_lib/fleet-graph.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/format.ts",
@@ -411,6 +475,10 @@
         {
           "source": "swarm-ui/app/swarm/_lib/github.ts",
           "target": "app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/guidance.ts",
+          "target": "app/swarm/_lib/guidance.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/live-token.ts",
@@ -431,6 +499,10 @@
         {
           "source": "swarm-ui/app/swarm/_lib/supabase.ts",
           "target": "app/swarm/_lib/supabase.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/threads.ts",
+          "target": "app/swarm/_lib/threads.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/types.ts",
@@ -459,6 +531,10 @@
         {
           "source": "swarm-ui/app/swarm/layout.tsx",
           "target": "app/swarm/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/[id]/page.tsx",
+          "target": "app/swarm/messages/[id]/page.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/messages/page.tsx",
@@ -559,8 +635,16 @@
           "target": "swarm-ui/app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/fleet-graph.tsx",
+          "target": "swarm-ui/app/swarm/_components/fleet-graph.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/live.tsx",
           "target": "swarm-ui/app/swarm/_components/live.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/messages.tsx",
+          "target": "swarm-ui/app/swarm/_components/messages.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
@@ -579,8 +663,56 @@
           "target": "swarm-ui/app/swarm/_components/states.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_graph/beams.ts",
+          "target": "swarm-ui/app/swarm/_graph/beams.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/effects.ts",
+          "target": "swarm-ui/app/swarm/_graph/effects.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/index.ts",
+          "target": "swarm-ui/app/swarm/_graph/index.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/intro.ts",
+          "target": "swarm-ui/app/swarm/_graph/intro.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/layout.ts",
+          "target": "swarm-ui/app/swarm/_graph/layout.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/lifecycle.ts",
+          "target": "swarm-ui/app/swarm/_graph/lifecycle.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/model.ts",
+          "target": "swarm-ui/app/swarm/_graph/model.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/render.ts",
+          "target": "swarm-ui/app/swarm/_graph/render.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_graph/replay.ts",
+          "target": "swarm-ui/app/swarm/_graph/replay.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animal-icons.ts",
+          "target": "swarm-ui/app/swarm/_lib/animal-icons.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animals.ts",
+          "target": "swarm-ui/app/swarm/_lib/animals.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/config-types.ts",
           "target": "swarm-ui/app/swarm/_lib/config-types.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/fleet-graph.ts",
+          "target": "swarm-ui/app/swarm/_lib/fleet-graph.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/format.ts",
@@ -589,6 +721,10 @@
         {
           "source": "swarm-ui/app/swarm/_lib/github.ts",
           "target": "swarm-ui/app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/guidance.ts",
+          "target": "swarm-ui/app/swarm/_lib/guidance.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/live-token.ts",
@@ -609,6 +745,10 @@
         {
           "source": "swarm-ui/app/swarm/_lib/supabase.ts",
           "target": "swarm-ui/app/swarm/_lib/supabase.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/threads.ts",
+          "target": "swarm-ui/app/swarm/_lib/threads.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/types.ts",
@@ -637,6 +777,10 @@
         {
           "source": "swarm-ui/app/swarm/layout.tsx",
           "target": "swarm-ui/app/swarm/layout.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/messages/[id]/page.tsx",
+          "target": "swarm-ui/app/swarm/messages/[id]/page.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/messages/page.tsx",

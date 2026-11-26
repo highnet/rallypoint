@@ -30,7 +30,7 @@ user's app.
 | `NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL`     | UI                               | no      |
 | `NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY`     | UI (publishable/anon key)        | no      |
 | `RALLYPOINT_GITHUB_REPO`                  | UI (`owner/name`, board lanes)   | no      |
-| `RALLYPOINT_GITHUB_TOKEN`                 | UI, optional (rate limits/private repos) | yes |
+| `RALLYPOINT_GITHUB_TOKEN`                 | UI, optional (rate limits/private repos; fine-grained, read-only Contents, Issues, Pull requests) | yes |
 | `RALLYPOINT_GITHUB_API_URL`               | UI, optional (GitHub Enterprise; default `https://api.github.com`) | no |
 
 The browser never writes. Agents write only through SECURITY DEFINER RPCs that
@@ -246,11 +246,11 @@ These match Swarm Arena's navigation one to one. The arena's words come from
 | Results | Games `/games` | `/swarm/results`, `/swarm/results/[id]` | referee runs (`swarm_results`) with checks or scores |
 | Results | Versions `/versions` | `/swarm/versions` | `swarm_versions` |
 | Results | Ideas buried `/graveyard` | `/swarm/buried` | `swarm_buried` |
-| Swarm | Fleet `/fleet` | `/swarm/fleet` | `swarm_fleet` |
+| Swarm | Fleet `/fleet` | `/swarm/fleet` | an animated fleet graph with replay (sessions, progress, results, versions, buried, protocol changes, GitHub issues and PRs), then `swarm_fleet` |
 | Swarm | Sessions `/sessions` | `/swarm/sessions` | sessions plus retros and progress |
 | Swarm | Rallypoint `/rallypoint` | `/swarm/rallypoint` | GitHub lanes: backlog, claimed, held, in review, changes asked, approved, merged |
 | Swarm | Board `/board` | `/swarm/board` | the full record from memory: results, versions, buried, protocol changes, messages, in one timeline with filters |
-| Swarm | Messages `/messages` | `/swarm/messages` | `swarm_messages` threads |
+| Swarm | Messages `/messages`, `/messages/[id]` | `/swarm/messages`, `/swarm/messages/[id]` | `swarm_messages` grouped into threads (a reply's `thread_id` may name a reply; it joins that reply's root), newest activity first, filtered by `?kind=` and `?ref=`; roles from `swarm_sessions` |
 | Learn | How it works `/how-it-works` | `/swarm/how-it-works` | generated from config: goal, measure mode, ship steps, roles |
 | Learn | Protocol `/protocol` | `/swarm/protocol` | `swarm_metrics`, role order, protocol changes, rules, start prompts |
 | Learn | Concepts `/concepts` | `/swarm/concepts` | concepts × targets matrix |
@@ -272,6 +272,7 @@ a request carrying a valid session cookie. The browser never sees the
 service-role key or the swarm secret. Needs `@supabase/realtime-js` in the
 host app (the CLI names it when missing).
 
-Private folders: `app/swarm/_lib`, `app/swarm/_components`. Styling:
+Private folders: `app/swarm/_lib`, `app/swarm/_components`, `app/swarm/_graph`
+(the fleet graph engine, `@rallypoint/swarm-graph`; it needs `d3`). Styling:
 `app/swarm/swarm.css`, scoped under `.rp-swarm`, Rallypoint tokens as CSS
 variables. No Tailwind dependency and no `@/` alias: relative imports only.

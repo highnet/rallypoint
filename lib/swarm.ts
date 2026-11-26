@@ -57,7 +57,7 @@ export function genesisPrompt(pitch: string, configJson?: string) {
 export function agentSetupPrompt(pitch: string, configJson: string, uiShape: "product" | "dashboard" | "none") {
   const ui =
     uiShape === "product"
-      ? [`Add the swarm UI to the existing Next.js app: \`${swarmCommands.addUi}\`.`]
+      ? [`Add the swarm UI to the Next.js app: \`${swarmCommands.addUi}\`. If the repository has no Next.js app yet (no "next" dependency in package.json), create one first (for example \`npx create-next-app@latest\`), or use the standalone dashboard instead: \`${swarmCommands.addDashboard}\`.`]
       : uiShape === "dashboard"
         ? [`Add the standalone dashboard: \`${swarmCommands.addDashboard}\`.`]
         : [];

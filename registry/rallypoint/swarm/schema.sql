@@ -186,8 +186,11 @@ on conflict (key) do nothing;
 -- Read access
 -- ---------------------------------------------------------------------------
 
+-- search_path is pinned on every function, including these two that touch no
+-- table, so Supabase's security advisor (function_search_path_mutable) has
+-- nothing to report on a fresh project.
 create or replace function public.swarm_schema_version()
-returns int language sql immutable as $$ select 1 $$;
+returns int language sql immutable set search_path = '' as $$ select 1 $$;
 
 create or replace function public.swarm_can_read()
 returns boolean
@@ -353,6 +356,7 @@ create or replace function public.swarm_writable(p_table text)
 returns boolean
 language sql
 immutable
+set search_path = ''
 as $$
   select p_table = any (array[
     'swarm_sessions', 'swarm_progress', 'swarm_retros', 'swarm_messages',

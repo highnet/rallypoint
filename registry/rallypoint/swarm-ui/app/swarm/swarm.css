@@ -1935,3 +1935,321 @@
   border-top: 0;
   margin-top: 16px;
 }
+
+/* ───────────────────────── Fleet graph (/swarm/fleet) ───────────────────────── */
+
+/*
+ * The animated fleet view (_components/fleet-graph.tsx). The graph itself
+ * draws in the scaffold's colours (its theme maps onto --rp-* above); these
+ * rules only frame it: the canvas, its toolbar, the replay bar and legend.
+ */
+
+.rp-fleet-graph {
+  background: var(--rp-paper-sunk);
+  border: 1px solid var(--rp-rule);
+  border-radius: var(--rp-radius-m);
+  margin: 0 0 40px;
+  overflow: hidden;
+}
+
+.rp-fg-bar {
+  align-items: center;
+  border-bottom: 1px solid var(--rp-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.rp-swarm .rp-fg-totals {
+  color: var(--rp-ink-soft);
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.rp-fg-actions,
+.rp-fg-replay-end {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rp-fg-replay-end {
+  margin-left: auto;
+}
+
+.rp-fg-button,
+.rp-fg-segment button {
+  align-items: center;
+  background: var(--rp-paper);
+  border: 1px solid var(--rp-rule);
+  border-radius: var(--rp-radius-s);
+  color: var(--rp-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 0.8125rem/1 var(--rp-sans);
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.rp-fg-button:hover:not(:disabled),
+.rp-fg-segment button:hover {
+  border-color: var(--rp-ink-soft);
+}
+
+.rp-fg-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.rp-fg-button-quiet {
+  background: transparent;
+  padding: 0 9px;
+}
+
+.rp-fg-button-solid {
+  background: var(--rp-ink);
+  border-color: var(--rp-ink);
+  color: var(--rp-paper);
+}
+
+.rp-fg-segment {
+  border: 1px solid var(--rp-rule);
+  border-radius: var(--rp-radius-s);
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+}
+
+.rp-fg-segment button {
+  border-color: transparent;
+  font-weight: 500;
+  min-height: 26px;
+  padding: 0 8px;
+}
+
+.rp-fg-segment button[aria-pressed="true"] {
+  background: var(--rp-ink);
+  border-color: var(--rp-ink);
+  color: var(--rp-paper);
+}
+
+.rp-fg-canvas {
+  background: var(--rp-paper);
+  height: clamp(380px, 62vh, 660px);
+  overflow: hidden;
+  position: relative;
+}
+
+.rp-fg-card {
+  background: var(--rp-paper-sunk);
+  border: 1px solid var(--rp-rule);
+  border-radius: var(--rp-radius-s);
+  box-shadow: 0 6px 24px color-mix(in oklch, var(--rp-ink) 14%, transparent);
+  display: grid;
+  font-size: 0.8125rem;
+  gap: 2px;
+  max-width: 280px;
+  padding: 8px 10px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+}
+
+.rp-fg-card span {
+  color: var(--rp-ink-soft);
+}
+
+.rp-fg-replay {
+  background: var(--rp-paper-sunk);
+  border-top: 1px solid var(--rp-rule);
+  padding: 8px 12px;
+}
+
+.rp-fg-replay-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  gap: 6px 12px;
+}
+
+.rp-fg-clock {
+  color: var(--rp-ink);
+  font-weight: 600;
+}
+
+.rp-fg-track {
+  cursor: pointer;
+  height: 32px;
+  margin-top: 8px;
+  position: relative;
+  touch-action: none;
+}
+
+.rp-fg-rail,
+.rp-fg-fill {
+  height: 2px;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.rp-fg-rail {
+  background: var(--rp-rule);
+  right: 0;
+}
+
+.rp-fg-fill {
+  background: var(--rp-ink-soft);
+}
+
+.rp-fg-tick {
+  bottom: 50%;
+  height: 6px;
+  opacity: 0.35;
+  position: absolute;
+  transform: translateX(-50%);
+  width: 1px;
+}
+
+.rp-fg-tick-milestone {
+  height: 12px;
+  width: 2px;
+}
+
+.rp-fg-tick-played {
+  opacity: 1;
+}
+
+.rp-fg-break {
+  color: var(--rp-ink-soft);
+  font: 10px/1 var(--rp-mono);
+  position: absolute;
+  top: 55%;
+  transform: translateX(-50%);
+}
+
+.rp-fg-head {
+  background: var(--rp-ink);
+  border: 2px solid var(--rp-paper);
+  border-radius: 50%;
+  height: 12px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+}
+
+.rp-swarm .rp-fg-range {
+  font-size: 0.75rem;
+  margin: 2px 0 0;
+}
+
+.rp-fg-summary {
+  align-items: center;
+  background: var(--rp-paper);
+  border: 1px solid var(--rp-rule);
+  border-radius: var(--rp-radius-s);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  gap: 6px 16px;
+  margin-top: 8px;
+  padding: 8px 10px;
+}
+
+.rp-fg-legend {
+  border-top: 1px solid var(--rp-rule);
+  color: var(--rp-ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  gap: 6px 16px;
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.rp-fg-legend li {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.rp-fg-legend-gap {
+  margin-left: auto;
+}
+
+.rp-fg-active {
+  color: var(--rp-ink);
+  font-weight: 600;
+}
+
+.rp-fg-dot,
+.rp-fg-key {
+  display: inline-block;
+  flex: none;
+  height: 10px;
+  width: 10px;
+}
+
+.rp-fg-dot {
+  border-radius: 50%;
+}
+
+.rp-fg-key {
+  border: 1px solid var(--rp-ink-soft);
+}
+
+.rp-fg-key-agent {
+  border-radius: 50%;
+}
+
+.rp-fg-key-issue {
+  border-radius: 50%;
+  border-style: dashed;
+  height: 8px;
+  width: 8px;
+}
+
+.rp-fg-key-branch {
+  height: 8px;
+  transform: rotate(45deg);
+  width: 8px;
+}
+
+.rp-fg-key-pr {
+  background: color-mix(in oklch, var(--rp-ink-soft) 30%, transparent);
+  border-radius: 2px;
+}
+
+.rp-fg-key-merged {
+  background: color-mix(in oklch, var(--rp-ink-soft) 60%, transparent);
+  border: 0;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.rp-swarm .rp-fg-note {
+  color: var(--rp-ink-soft);
+  font-size: 0.8125rem;
+  margin: 0;
+  padding: 0 12px 10px;
+}
+
+@media (max-width: 599px) {
+  .rp-fg-canvas {
+    height: clamp(340px, 70vh, 520px);
+  }
+
+  .rp-fg-legend-gap {
+    margin-left: 0;
+  }
+}

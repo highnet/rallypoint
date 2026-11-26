@@ -31,6 +31,12 @@
  *                                 /swarm/targets/<id> gets "target" and any
  *                                 other path "page"
  *   theme.cssVars              <- {} (not read from swarm.json)
+ *   integrationBranch          <- not generated (optional). The fleet graph's
+ *                                 trunk: set it to `.rallypoint/config.json`'s
+ *                                 `integrationBranch`. Absent, the GitHub
+ *                                 repository's default branch, else "main"
+ *   branchPrefix               <- not generated (optional). Rallypoint's
+ *                                 `branchPrefix`; absent, "agent/"
  *
  * A `ui` target added by `ui.includeUiTarget` is an ordinary entry in
  * `targets` and is generated like any other.
@@ -156,6 +162,15 @@ export type SwarmConfig = {
    * `{ "--rp-accent": "#0a7d5a" }`. See the list at the top of swarm.css.
    */
   theme: { cssVars: Record<string, string> };
+  /**
+   * The branch every `agent/<issue>-<slug>` branch forks from and merges
+   * into (`.rallypoint/config.json` `integrationBranch`), drawn at the centre
+   * of the fleet graph. Optional: absent, the repository's default branch on
+   * GitHub, else "main".
+   */
+  integrationBranch?: string;
+  /** Rallypoint's `branchPrefix`. Optional: absent, "agent/". */
+  branchPrefix?: string;
 };
 
 export const DEFAULT_TARGET_COLORS = [

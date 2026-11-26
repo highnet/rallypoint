@@ -680,6 +680,11 @@ async function connectSwarm() {
     }
   }
   const generated = !secret;
+  // The same holds for an empty answer under --no-db, which would otherwise
+  // generate a secret that can never verify.
+  if (generated && has("--no-db")) {
+    throw new Error("--no-db needs the secret that is already set in the database: pipe it in (rallypoint swarm connect --no-db < secret-file) or type it at the prompt. Nothing was changed");
+  }
   if (generated) secret = randomBytes(32).toString("base64url");
   if (secret.length < MIN_SECRET) {
     throw new Error(`the swarm secret must be at least ${MIN_SECRET} characters (the schema refuses shorter ones); nothing was changed`);

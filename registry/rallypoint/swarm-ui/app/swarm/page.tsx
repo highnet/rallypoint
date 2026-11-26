@@ -102,7 +102,9 @@ export default async function ProgressPage() {
     swarmConfig.project.tagline ||
     `The public record of this swarm: who is working now, every ${word("result")} the referee measured, what ${word("shipped")} and what was ${word("buried")}.`;
   const latest = latestEvent(data);
-  const working = data.fleet.filter((row) => row.status === "working");
+  // swarm_fleet already holds only working sessions seen in the last two
+  // hours, and the view has no status column: filtering on one emptied it.
+  const working = data.fleet;
   const targets = summary.targets;
   const metric = measure.label || cap(word("score"));
 
@@ -171,7 +173,7 @@ export default async function ProgressPage() {
                   <li key={row.id}>
                     <RoleTag role={row.role} />
                     <span className="rp-now-what">
-                      {row.summary || row.latest_note || "Working"}
+                      {row.latest_note || "Working"}
                       <span className="rp-now-who">
                         <span className="rp-mono">{row.agent ?? ""}</span>
                         {row.issue || row.pr ? <IssuePr issue={row.issue} pr={row.pr} /> : null}

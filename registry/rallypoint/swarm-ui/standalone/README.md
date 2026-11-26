@@ -30,6 +30,15 @@ is missing.
 
 Never add the service-role key or `RALLYPOINT_SWARM_SECRET` here.
 
+## Live updates
+
+Pages update on their own within a couple of seconds of an agent writing
+memory, through Supabase Realtime (`@supabase/realtime-js`, already in
+`package.json`). `schema.sql` publishes the memory tables; a project that
+applied an older one runs `.rallypoint/swarm/realtime.sql` once
+(`npx rallypoint swarm doctor` says when). Without Realtime the pages refresh
+every minute.
+
 ## Deploy to Vercel
 
 1. Import the repository in Vercel and set **Root Directory** to `swarm-ui`.
@@ -44,6 +53,8 @@ key and the pages ask visitors to sign in at `/swarm/sign-in` (Supabase Auth
 email and password, or a magic link). Add your team in Supabase Auth. For
 magic links, add `https://<your-domain>/swarm/sign-in` to Supabase Auth's
 Redirect URLs. The session lives in an httpOnly cookie, `rp-swarm-token`.
+Live updates then use the reader's own access token, so Realtime applies the
+same RLS; the cookie stays httpOnly.
 
 ## Make it yours
 

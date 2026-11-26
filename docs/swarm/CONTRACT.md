@@ -30,7 +30,7 @@ user's app.
 | `NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL`     | UI                               | no      |
 | `NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY`     | UI (publishable/anon key)        | no      |
 | `RALLYPOINT_GITHUB_REPO`                  | UI (`owner/name`, board lanes)   | no      |
-| `RALLYPOINT_GITHUB_TOKEN`                 | UI, optional (rate limits/private repos) | yes |
+| `RALLYPOINT_GITHUB_TOKEN`                 | UI, optional (rate limits/private repos; fine-grained, read-only Contents, Issues, Pull requests) | yes |
 | `RALLYPOINT_GITHUB_API_URL`               | UI, optional (GitHub Enterprise; default `https://api.github.com`) | no |
 
 The browser never writes. Agents write only through SECURITY DEFINER RPCs that
@@ -83,6 +83,22 @@ RLS: enabled on every table. One `select` policy each:
 visibility is `public`, or when `auth.role() = 'authenticated'`. There are no
 insert, update or delete policies. Views use `security_invoker = true`.
 
+Realtime: `swarm_sessions`, `swarm_progress`, `swarm_retros`,
+`swarm_messages`, `swarm_results`, `swarm_versions`, `swarm_buried`,
+`swarm_concepts`, `swarm_concept_trials` and `swarm_protocol_changes` are in
+the `supabase_realtime` publication (`swarm_realtime_wanted()` lists them),
+so the dashboard updates live. `schema.sql` adds them idempotently, checking
+`pg_publication` and `pg_publication_tables` first, and skips the step on
+Postgres without that publication. `swarm_settings`, `swarm_secret` and
+`swarm_readers` are never published. Realtime applies the same RLS to
+`postgres_changes`, per subscriber and with the subscriber's own token, so a
+private swarm sends changes only to signed-in readers that may read the row.
+`registry/rallypoint/swarm/realtime.sql` (installed as
+`.rallypoint/swarm/realtime.sql`) is that section alone, for projects that
+applied an older `schema.sql`; `scripts/test-swarm.mjs` keeps the two
+identical. `swarm_realtime_status() returns jsonb` (`{publication,
+missing}`, granted to `anon, authenticated`) is what `doctor` checks.
+
 RPCs (execute granted to `anon, authenticated`; all check the secret first):
 - `swarm_write(p_secret text, p_table text, p_row jsonb) returns jsonb`:
   inserts into a whitelisted table and returns the row.
@@ -122,7 +138,7 @@ Every command accepts `--json`. Exit codes: `0` ok, `1` error, `2` misuse,
 
 | Command | What it does |
 | ------- | ------------ |
-| `doctor` | checks env, `gh`, git, the config, Supabase reachability, the schema version and the secret |
+| `doctor` | checks env, `gh`, git, the config, Supabase reachability, the schema version, the secret, and (a warning only) that the memory tables are in `supabase_realtime`, naming `.rallypoint/swarm/realtime.sql` when they are not |
 | `init`   | after `doctor`: creates `target:<name>` labels and stores the goal and visibility in `swarm_settings` |
 | `prepare [--agent name]` | opens a session (row plus `.git/rallypoint-swarm/session.json`) |
 | `next [target] [--only r1,r2]` | picks the role, finishing first: merger → fixer → reviewer → improver → worker → planner → janitor. Prints `ROLE <role>`, `TARGET <issue/pr or ->`, `READ <role file>` |
@@ -182,7 +198,7 @@ is shown as delivery: merged vs open issues, per target and per milestone.
   "improverRetroThreshold": 3,
   "conductor": { "concurrency": 4, "budget": null, "focus": "balanced", "pace": "self" },
   "tunablePaths": [".rallypoint/roles/", ".rallypoint/swarm/skills/", ".rallypoint/swarm/playbooks/"],
-  "frozenPaths": [".rallypoint/scripts/", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/lib/", ".rallypoint/swarm/schema.sql", ".rallypoint/swarm.json", ".rallypoint/roles/reviewer.md", ".rallypoint/roles/merger.md", ".rallypoint/roles/improver.md"]
+  "frozenPaths": [".rallypoint/scripts/", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/lib/", ".rallypoint/swarm/schema.sql", ".rallypoint/swarm/realtime.sql", ".rallypoint/swarm.json", ".rallypoint/roles/reviewer.md", ".rallypoint/roles/merger.md", ".rallypoint/roles/improver.md"]
 }
 ```
 
@@ -230,17 +246,33 @@ These match Swarm Arena's navigation one to one. The arena's words come from
 | Results | Games `/games` | `/swarm/results`, `/swarm/results/[id]` | referee runs (`swarm_results`) with checks or scores |
 | Results | Versions `/versions` | `/swarm/versions` | `swarm_versions` |
 | Results | Ideas buried `/graveyard` | `/swarm/buried` | `swarm_buried` |
-| Swarm | Fleet `/fleet` | `/swarm/fleet` | `swarm_fleet` |
+| Swarm | Fleet `/fleet` | `/swarm/fleet` | an animated fleet graph with replay (sessions, progress, results, versions, buried, protocol changes, GitHub issues and PRs), then `swarm_fleet` |
 | Swarm | Sessions `/sessions` | `/swarm/sessions` | sessions plus retros and progress |
 | Swarm | Rallypoint `/rallypoint` | `/swarm/rallypoint` | GitHub lanes: backlog, claimed, held, in review, changes asked, approved, merged |
 | Swarm | Board `/board` | `/swarm/board` | the full record from memory: results, versions, buried, protocol changes, messages, in one timeline with filters |
-| Swarm | Messages `/messages` | `/swarm/messages` | `swarm_messages` threads |
+| Swarm | Messages `/messages`, `/messages/[id]` | `/swarm/messages`, `/swarm/messages/[id]` | `swarm_messages` grouped into threads (a reply's `thread_id` may name a reply; it joins that reply's root), newest activity first, filtered by `?kind=` and `?ref=`; roles from `swarm_sessions` |
 | Learn | How it works `/how-it-works` | `/swarm/how-it-works` | generated from config: goal, measure mode, ship steps, roles |
 | Learn | Protocol `/protocol` | `/swarm/protocol` | `swarm_metrics`, role order, protocol changes, rules, start prompts |
 | Learn | Concepts `/concepts` | `/swarm/concepts` | concepts × targets matrix |
 | Learn | Skills `/skills` | `/swarm/skills` | role prompts, skills and playbooks, read from the repo through GitHub contents (`.rallypoint/roles/`, `.rallypoint/swarm/skills/`, `.rallypoint/swarm/playbooks/`) |
 | — | — | `/swarm/sign-in` | private mode only |
 
-Private folders: `app/swarm/_lib`, `app/swarm/_components`. Styling:
+Live updates: the layout mounts `<LiveRefresh>` (`_components/live.tsx`)
+once. It subscribes to Realtime `postgres_changes` on the published tables
+(`LIVE_TABLES` in `_lib/live.ts`) and answers a burst of changes with one
+`router.refresh()`, debounced to 1.5 s, so the server-rendered pages stay the
+only source of truth. It shows "Live", "Reconnecting…", "Every minute"
+(polling) or "Paused" in the top bar, refreshes every 60 s while Realtime is
+unavailable, and waits while the tab is hidden or a component holds the
+shared signal (`useLiveHold(active)`, as the fleet replay does). Public mode
+subscribes with the publishable key. Private mode passes the reader's own
+access token to `setAuth`: the session cookie stays httpOnly, and the
+`liveToken()` Server Action (`_lib/live-token.ts`) returns that token only to
+a request carrying a valid session cookie. The browser never sees the
+service-role key or the swarm secret. Needs `@supabase/realtime-js` in the
+host app (the CLI names it when missing).
+
+Private folders: `app/swarm/_lib`, `app/swarm/_components`, `app/swarm/_graph`
+(the fleet graph engine, `@rallypoint/swarm-graph`; it needs `d3`). Styling:
 `app/swarm/swarm.css`, scoped under `.rp-swarm`, Rallypoint tokens as CSS
 variables. No Tailwind dependency and no `@/` alias: relative imports only.

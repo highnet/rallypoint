@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
 import { mkdtemp, readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
+import { register } from "node:module";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -190,12 +191,485 @@ await test("swarm-ui: every prompt, command and file block has a copy button", a
   assert.match(protocol, /text=\{data\.repoUrl \? `Repository: \$\{data\.repoUrl\}\\n\$\{prompt\.prompt\}` : prompt\.prompt\}/, "copies the prompt with its Repository: line");
 });
 
+// The message board's grouping and filters live in a type-only TypeScript
+// module so the dashboard and this script share one implementation. Node 22.18+
+// strips the types; CI runs Node 24.
+const threads = await import(pathToFileURL(resolve(root, "registry/rallypoint/swarm-ui/app/swarm/_lib/threads.ts")).href);
+
+const msg = (id, minute, extra = {}) => ({
+  id,
+  thread_id: null,
+  session_id: null,
+  author: "worker-1",
+  kind: "note",
+  ref: null,
+  topic: null,
+  body: `message ${id}`,
+  created_at: `2026-11-26T10:${String(minute).padStart(2, "0")}:00Z`,
+  ...extra,
+});
+
+await test("message board: threads group replies of replies under their root, newest activity first", () => {
+  const rows = [
+    msg(1, 0, { kind: "question", topic: "Which cache?", ref: "#12" }),
+    msg(2, 5, { kind: "handoff", author: "planner-1", body: "Take #14 next\nsecond line" }),
+    msg(3, 10, { thread_id: 1, kind: "answer", author: "reviewer-1" }),
+    msg(4, 20, { thread_id: 3, author: "worker-2", body: "see pr#15" }),
+    msg(5, 15, { thread_id: 99, body: "orphan: parent outside the page" }),
+  ];
+  const built = threads.buildThreads([...rows].reverse());
+  assert.deepEqual(built.map((t) => t.root.id), [1, 5, 2], "newest activity first; an orphan starts its own thread");
+  const [first] = built;
+  assert.deepEqual(first.replies.map((m) => m.id), [3, 4], "replies of replies join the root, oldest first");
+  assert.equal(first.lastAt, rows[3].created_at);
+  assert.deepEqual(first.authors, ["worker-1", "reviewer-1", "worker-2"]);
+  assert.deepEqual(first.refs, ["#12", "#15"], "the ref column and refs cited in bodies");
+  assert.equal(first.waiting, null, "an answered question waits for nothing");
+  const handoff = built.find((t) => t.root.id === 2);
+  assert.equal(handoff.waiting, "unacknowledged");
+  assert.equal(threads.threadTitle(handoff.root), "Take #14 next", "the first line when there is no topic");
+  assert.equal(threads.threadTitle(first.root), "Which cache?");
+  assert.equal(threads.threadHeading(handoff.root), "Hand-off from planner-1", "a thread page without a topic names who posted what");
+  assert.equal(threads.threadHeading(first.root), "Which cache?");
+  assert.equal(threads.buildThreads([msg(1, 0, { kind: "question" })])[0].waiting, "unanswered");
+  const pickedUp = threads.buildThreads([
+    msg(1, 0, { kind: "handoff", author: "reviewer-cms-25", ref: "#25" }),
+    msg(2, 5, { kind: "handoff", author: "fixer-cms-25", ref: "#25" }),
+    msg(3, 6, { kind: "handoff", author: "fixer-cms-25", ref: "PR #25" }),
+  ]);
+  assert.equal(pickedUp.find((t) => t.root.id === 1).waiting, null, "a later message by another agent on the same ref picks a hand-off up");
+  assert.equal(pickedUp.find((t) => t.root.id === 3).waiting, "unacknowledged", "the newest hand-off on a ref still waits");
+  const known = ["reviewer", "worker"];
+  assert.equal(threads.roleOf({ author: "reviewer-cms-25b", session_id: "s1" }, {}, known), "reviewer", "the author's role prefix");
+  assert.equal(threads.roleOf({ author: "reviewer-cms-25b", session_id: "s1" }, { s1: "merger" }, known), "merger", "the session's role wins");
+  assert.equal(threads.roleOf({ author: "operator", session_id: null }, {}, known), null);
+  const cycle = threads.buildThreads([msg(1, 0, { thread_id: 2 }), msg(2, 1, { thread_id: 1 })]);
+  assert.equal(cycle.length, 1, "a thread_id cycle cannot loop forever");
+});
+
+await test("message board: kind and ref filters come from the URL and match whole threads", () => {
+  const built = threads.buildThreads([
+    msg(1, 0, { kind: "question", ref: "PR #12" }),
+    msg(2, 1, { thread_id: 1, kind: "answer" }),
+    msg(3, 2, { kind: "proposal", body: "about #7" }),
+  ]);
+  assert.deepEqual(threads.parseThreadFilter({ kind: "answer", ref: "12" }), { kind: "answer", ref: "#12" });
+  assert.deepEqual(threads.parseThreadFilter({ kind: "nonsense", ref: ["#7", "8"] }), { ref: "#7" });
+  assert.deepEqual(threads.parseThreadFilter({}), {});
+  const ids = (filter) => threads.filterThreads(built, filter).map((t) => t.root.id);
+  assert.deepEqual(ids({ kind: "answer" }), [1], "a kind matches when any message in the thread has it");
+  assert.deepEqual(ids({ kind: "proposal" }), [3]);
+  assert.deepEqual(ids({ ref: "#12" }), [1], "`PR #12` and `12` are the same ref");
+  assert.deepEqual(ids({ ref: "#7" }), [3], "a ref cited only in the body counts");
+  assert.deepEqual(ids({ kind: "question", ref: "#7" }), []);
+  assert.equal(threads.threadFilterHref({ kind: "question", ref: "#12" }), "/swarm/messages?kind=question&ref=12");
+  assert.equal(threads.threadFilterHref({}), "/swarm/messages");
+  assert.deepEqual(threads.refCounts(built), [["#7", 1], ["#12", 1]]);
+  assert.equal(threads.kindCounts(built).question, 1);
+  assert.equal(threads.kindCounts(built).answer, 1);
+  assert.equal(threads.refKey("  "), null);
+  assert.equal(threads.refKey("design-doc"), "design-doc");
+});
+
+await test("message board: bodies link #n and msg#n, and leave entities and URLs alone", () => {
+  const segments = threads.textSegments("Fixes #12 (see pr#3, msg#40) at https://x.test/a#9 &#39;ok&#39; #4");
+  assert.deepEqual(
+    segments.filter((s) => s.type !== "text").map((s) => [s.type, s.text]),
+    [["issue", "#12"], ["issue", "pr#3"], ["message", "msg#40"], ["issue", "#4"]],
+  );
+  assert.equal(segments.map((s) => s.text).join(""), "Fixes #12 (see pr#3, msg#40) at https://x.test/a#9 &#39;ok&#39; #4");
+});
+
+// The swarm UI's fleet graph adapter is TypeScript that a Next.js app compiles.
+// Node strips its types (on by default since Node 22.18 / 23.6); its relative
+// imports are extensionless, as the app's bundler expects, so resolve them to
+// the .ts file here.
+if (process.features.typescript) {
+  register(
+    `data:text/javascript,${encodeURIComponent(`
+      export async function resolve(specifier, context, next) {
+        try {
+          return await next(specifier, context);
+        } catch (error) {
+          if (/^\\.\\.?\\//.test(specifier) && context.parentURL?.endsWith(".ts")) return next(specifier + ".ts", context);
+          throw error;
+        }
+      }
+    `)}`,
+  );
+  const ui = (name) => import(pathToFileURL(resolve(root, "registry/rallypoint/swarm-ui/app/swarm", name)).href);
+  const { toSwarmInput, OTHER_SECTOR } = await ui("_lib/fleet-graph.ts");
+  const { buildSwarmGraph } = await ui("_graph/model.ts");
+  const { planReplay } = await ui("_graph/replay.ts");
+
+  const NOW = Date.parse("2026-11-26T12:00:00Z");
+  const ago = (hours) => new Date(NOW - hours * 3_600_000).toISOString();
+  const target = (id) => ({ id, name: id.toUpperCase(), color: "#123456", description: "" });
+  const session = (id, fields) => ({
+    id, agent: null, role: null, target: null, issue: null, pr: null, status: "ended", summary: null,
+    started_at: ago(10), last_seen_at: ago(9), ended_at: ago(9), ...fields,
+  });
+  const gh = (number, fields) => ({
+    number, title: `Item ${number}`, url: `https://github.com/o/r/issues/${number}`, isPullRequest: false, state: "open",
+    stateReason: null, mergedAt: null, labels: [], author: null, updatedAt: ago(5), createdAt: ago(20), closedAt: null, closes: [], ...fields,
+  });
+  const labels = (...names) => names.map((name) => ({ name, color: "ededed" }));
+  const empty = { sessions: [], progress: [], results: [], versions: [], buried: [], protocolChanges: [] };
+
+  await test("fleet graph: GitHub labels stage the work, sessions place the agents", () => {
+    const input = toSwarmInput({
+      ...empty,
+      now: NOW,
+      integrationBranch: "release",
+      targets: [target("api"), target("web")],
+      sessions: [
+        session("s1", { agent: "ada", role: "worker", target: "api", issue: 1, status: "working", started_at: ago(1), last_seen_at: ago(0.1), ended_at: null }),
+        session("s0", { agent: "ada", role: "planner", started_at: ago(30), last_seen_at: ago(29), ended_at: ago(29) }),
+        session("s2", { agent: "bo", role: "reviewer", target: "web", issue: 2, pr: 5, status: "working", started_at: ago(5), last_seen_at: ago(3), ended_at: null }),
+      ],
+      progress: [{ id: 1, session_id: "s1", note: "Token bucket in place", created_at: ago(0.2) }],
+      results: [{ id: 7, session_id: "s2", target: "web", issue: 2, pr: 5, passed: false, delta: null, created_at: ago(4) }],
+      versions: [{ id: 3, target: "web", version: "v1", pr: 6, created_at: ago(2) }],
+      buried: [{ id: 4, target: "api", issue: 3, pr: null, idea: "Cache everything", created_at: ago(8) }],
+      protocolChanges: [{ id: 2, version: "1.1", summary: "Name the criterion", created_at: ago(12) }],
+      github: [
+        gh(1, { labels: labels("target:api", "status:claimed") }),
+        gh(2, { labels: labels("target:web") }),
+        gh(3, { state: "closed", stateReason: "not_planned", closedAt: ago(8) }),
+        gh(4, { labels: labels("status:blocked") }),
+        gh(5, { isPullRequest: true, closes: [2], labels: labels("status:changes-requested") }),
+        gh(6, { isPullRequest: true, state: "closed", mergedAt: ago(2), closedAt: ago(2), closes: [7] }),
+        gh(7, { labels: labels("target:web"), state: "closed", stateReason: "completed", closedAt: ago(2) }),
+      ],
+    });
+    assert.equal(input.integrationBranch, "release");
+    assert.equal(input.asOf, new Date(NOW).toISOString());
+    assert.deepEqual(input.sectors.map((s) => s.id), ["api", "web", OTHER_SECTOR], "targets, then Other for #4");
+    const stage = Object.fromEntries(input.workItems.map((w) => [w.id, w.stage]));
+    assert.deepEqual(stage, { "issue-1": "claimed", "issue-2": "changes", "issue-3": "closed", "issue-4": "held", "issue-7": "merged" });
+    const one = input.workItems.find((w) => w.id === "issue-1");
+    assert.equal(one.branch, "agent/1-item-1", "the branch claim.mjs prescribes");
+    assert.equal(input.workItems.find((w) => w.id === "issue-2").pr, 5, "joined by Closes #2");
+    assert.equal(input.workItems.find((w) => w.id === "issue-7").sector, "web");
+    const ada = input.agents.find((a) => a.id === "ada");
+    assert.equal(ada.status, "working");
+    assert.equal(ada.role, "worker", "the latest session's role");
+    assert.equal(ada.workItem, "issue-1");
+    assert.equal(ada.activity, "Token bucket in place");
+    assert.equal(input.agents.find((a) => a.id === "bo").status, "idle", "working but silent for over two hours");
+    const ids = new Set(input.events.map((e) => e.id));
+    for (const id of ["session:s1:start", "progress:1", "result:7", "version:3", "buried:4", "protocol:2", "gh:pr:5:changes", "gh:pr:6:merged", "gh:issue:1:claimed"])
+      assert.ok(ids.has(id), `event ${id}`);
+    assert.ok(!ids.has("gh:issue:3:opened"), "a not-planned issue is not history");
+    assert.equal(input.events.find((e) => e.id === "result:7").outcome, "loss");
+    assert.equal(input.events.find((e) => e.id === "result:7").workItem, "issue-2");
+    assert.equal(input.sectors.find((s) => s.id === "web").count.value, 1, "one merged pull request");
+
+    const graph = buildSwarmGraph(input);
+    assert.ok(graph.nodes.some((n) => n.id === "hub:release"));
+    assert.ok(graph.flows.some((f) => f.kind === "merge"), "the merge flows through the trunk");
+    const whole = planReplay(graph.flows, graph.hubId, { mode: "all" });
+    assert.equal(whole.flows.length, graph.flows.length, "the whole run replays every flow");
+    assert.equal(whole.startAt, graph.flows[0].at);
+  });
+
+  await test("fleet graph degrades: no GitHub, no memory, one target", () => {
+    const bare = toSwarmInput({ ...empty, now: NOW, integrationBranch: "main", targets: [], github: null });
+    assert.deepEqual(bare.sectors, [], "nothing to place, nothing invented");
+    assert.equal(bare.events.length, 0);
+    assert.ok(buildSwarmGraph(bare).nodes.some((n) => n.kind === "hub"), "still draws the trunk");
+
+    const memoryOnly = toSwarmInput({
+      ...empty,
+      now: NOW,
+      integrationBranch: "main",
+      targets: [target("main")],
+      github: null,
+      sessions: [session("s1", { agent: "ada", role: "worker", issue: 9, status: "working", last_seen_at: ago(0.5), ended_at: null })],
+      versions: [{ id: 1, target: "main", version: "v2", pr: 3, created_at: ago(1) }],
+    });
+    assert.deepEqual(memoryOnly.workItems.map((w) => [w.id, w.stage, w.sector]), [["issue-9", "claimed", "main"]], "the one target takes untargeted work");
+    assert.deepEqual(memoryOnly.sectors[0].count, { value: 1, unit: "shipped", recent: 1, recentUnit: "today" });
+    assert.ok(memoryOnly.events.some((e) => e.id === "version:1"));
+  });
+
+  const { ANIMALS, animalOf, assignAnimals, preferredAnimalIndex } = await ui("_lib/animals.ts");
+
+  await test("fleet graph animals: stable per id, distinct within a fleet, order-free", () => {
+    assert.ok(ANIMALS.length >= 64, "Arena's set");
+    assert.equal(new Set(ANIMALS.map((a) => a.name)).size, ANIMALS.length, "every animal has its own name");
+    for (const a of ANIMALS) assert.match(a.d, /^[Mm]/, `${a.slug} is one SVG path`);
+
+    const fleet = [
+      "worker-cms-6", "worker-cms-7", "worker-leads-12", "worker-outreach-3", "worker-seo-9", "worker-2", "worker",
+      "reviewer-outreach-24", "reviewer-cms-8", "reviewer-leads-13", "reviewer-2",
+      "fixer-leads-26b", "fixer-cms-14", "fixer-seo-31", "merger-cms-25", "merger-leads-27",
+      "planner", "janitor", "steward", "strategist", "session 1a2b3c4d",
+    ];
+    const assigned = assignAnimals(fleet);
+    assert.equal(assigned.size, fleet.length);
+    assert.equal(new Set(assigned.values()).size, fleet.length, "no two agents in one fleet share an animal");
+    assert.deepEqual([...assignAnimals([...fleet].reverse(), undefined)], [...assigned], "the order rows arrive in does not matter");
+    assert.deepEqual([...assignAnimals([...fleet, "worker-cms-6"])], [...assigned], "a repeated id is one agent");
+    assert.equal(animalOf("worker-cms-6", assigned), animalOf("worker-cms-6", assignAnimals(fleet)), "the same on every load");
+    assert.equal(animalOf("chess/search"), animalOf("chess-search"), "Arena's two spellings of a seat agree");
+
+    // Two ids wanting one animal: the one that sorts first keeps it, the other probes to a free one.
+    const ids = Array.from({ length: 400 }, (_, i) => `worker-${i}`);
+    const [a, b] = ids.filter((id) => preferredAnimalIndex(id) === preferredAnimalIndex(ids[0])).sort();
+    const pair = assignAnimals([b, a]);
+    assert.equal(pair.get(a), preferredAnimalIndex(a));
+    assert.notEqual(pair.get(b), pair.get(a));
+
+    // An agent arriving later never displaces one already on screen.
+    const shown = assignAnimals([b]);
+    const later = assignAnimals([a, b], shown);
+    assert.equal(later.get(b), shown.get(b));
+    assert.notEqual(later.get(a), later.get(b));
+
+    // More agents than animals: every one still gets an animal, the first ANIMALS.length all distinct.
+    const crowd = assignAnimals(ids);
+    assert.equal(crowd.size, ids.length);
+    assert.equal(new Set(crowd.values()).size, ANIMALS.length);
+  });
+} else {
+  console.log("(skipping the fleet graph adapter tests: this Node cannot strip TypeScript types)");
+}
+
+// ---------------------------------------------------------------------------
+// swarm-ui setup and error banners (the TypeScript is loaded through Node's
+// type stripping; the scaffold's own imports are extensionless, so the two
+// modules are copied side by side with the import rewritten)
+// ---------------------------------------------------------------------------
+
+const uiLib = resolve(root, "registry/rallypoint/swarm-ui/app/swarm/_lib");
+const uiTmp = await mkdtemp(resolve(tmpdir(), "rallypoint-swarm-ui-lib-"));
+await writeFile(resolve(uiTmp, "package.json"), '{ "type": "module" }\n');
+await writeFile(resolve(uiTmp, "guidance.ts"), await readFile(resolve(uiLib, "guidance.ts"), "utf8"));
+await writeFile(
+  resolve(uiTmp, "github.ts"),
+  (await readFile(resolve(uiLib, "github.ts"), "utf8")).replace('from "./guidance"', 'from "./guidance.ts"'),
+);
+const guidance = await import(pathToFileURL(resolve(uiTmp, "guidance.ts")).href);
+const FAKE_TOKEN = "github_pat_11FAKEFAKEFAKE_do-not-print-me";
+const bannerText = (g) => JSON.stringify(g);
+const noToken = (g, label) => {
+  const text = bannerText(g);
+  assert.ok(!text.includes(FAKE_TOKEN) && !text.includes("do-not-print-me") && !text.includes("11FAKE"), `${label}: never shows the token`);
+  assert.ok(g.title && g.problem && g.steps.length > 0 && g.after, `${label}: what, steps and when`);
+};
+
+await test("GitHub banners: the cause, the steps and when it applies, never the token", () => {
+  const repo = "acme/app";
+  const anon404 = guidance.githubFailureGuidance({ status: 404, repo, token: undefined });
+  noToken(anon404, "404 without token");
+  assert.match(anon404.problem, /acme\/app/);
+  assert.match(anon404.problem, /private or the name is wrong/);
+  assert.ok(anon404.steps.some((s) => s.includes("https://github.com/settings/personal-access-tokens/new")));
+  assert.ok(anon404.steps.some((s) => /Only select repositories → `acme\/app`/.test(s)));
+  assert.ok(anon404.steps.some((s) => /Contents\*\*, \*\*Issues\*\* and \*\*Pull requests\*\* to Read-only/.test(s)));
+  assert.ok(anon404.steps.some((s) => /RALLYPOINT_GITHUB_TOKEN/.test(s) && /Vercel/.test(s) && /Sensitive/.test(s) && /\.env\.local/.test(s)));
+  assert.match(anon404.after, /redeploy/);
+
+  const token404 = guidance.githubFailureGuidance({ status: 404, repo, token: FAKE_TOKEN });
+  noToken(token404, "404 with token");
+  assert.match(token404.problem, /token has no access to this repository, or the name is wrong/);
+  assert.notEqual(token404.title, anon404.title);
+
+  const bad = guidance.githubFailureGuidance({ status: 401, repo, token: FAKE_TOKEN });
+  noToken(bad, "401");
+  assert.match(bad.problem, /invalid, expired or revoked/);
+
+  const limited = guidance.githubFailureGuidance({ status: 403, repo, token: FAKE_TOKEN, rateLimitRemaining: "0" });
+  noToken(limited, "403 rate limited");
+  assert.match(limited.title, /rate limit/);
+  assert.doesNotMatch(limited.title, /permission/);
+  const limitedAnon = guidance.githubFailureGuidance({ status: 403, repo, token: null, rateLimitRemaining: "0" });
+  assert.match(limitedAnon.problem, /60 requests an hour/);
+
+  const denied = guidance.githubFailureGuidance({ status: 403, repo, token: FAKE_TOKEN, rateLimitRemaining: "4999", resource: "contents" });
+  noToken(denied, "403 permission");
+  assert.match(denied.title, /permission/);
+  assert.match(denied.problem, /Contents/);
+
+  const noRepo = guidance.githubNoRepoGuidance(false);
+  noToken(noRepo, "no repo");
+  assert.match(noRepo.problem, /RALLYPOINT_GITHUB_REPO/);
+
+  for (const g of [
+    guidance.supabaseMissingGuidance(["NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL"]),
+    guidance.supabaseNoSchemaGuidance("x"),
+    guidance.supabaseUnreachableGuidance("x"),
+    guidance.privateGuidance(),
+    guidance.notAllowedGuidance(),
+    guidance.signInGuidance("Invalid login credentials"),
+  ]) noToken(g, g.title);
+  assert.ok(guidance.privateGuidance().steps.some((s) => s.includes("Authentication → Users → Add user")));
+  assert.ok(guidance.privateGuidance().steps.some((s) => s.includes("Authentication → URL Configuration")));
+  assert.ok(guidance.notAllowedGuidance().steps.some((s) => s.includes("swarm_readers")));
+});
+
+await test("Skills: an empty folder and a refused read are told apart", async () => {
+  const github = await import(pathToFileURL(resolve(uiTmp, "github.ts")).href);
+  const realFetch = globalThis.fetch;
+  const saved = { repo: process.env.RALLYPOINT_GITHUB_REPO, token: process.env.RALLYPOINT_GITHUB_TOKEN };
+  const respond = (routes) => {
+    globalThis.fetch = async (url, init) => {
+      const path = new URL(url).pathname;
+      if (init?.headers?.Authorization) assert.equal(init.headers.Authorization, `Bearer ${FAKE_TOKEN}`);
+      const status = routes(path) ?? 404;
+      return new Response(status === 200 ? "[]" : "{}", { status, headers: { "x-ratelimit-remaining": "4000" } });
+    };
+  };
+  try {
+    process.env.RALLYPOINT_GITHUB_REPO = "acme/app";
+    process.env.RALLYPOINT_GITHUB_TOKEN = FAKE_TOKEN;
+
+    // The folder is missing, the repository's files are readable: empty.
+    respond((p) => (p === "/repos/acme/app/contents/" ? 200 : 404));
+    assert.deepEqual(await github.listDirectory(".rallypoint/roles"), { ok: true, data: [], truncated: false });
+
+    // The token sees the repository but not its files (no Contents permission).
+    respond((p) => (p === "/repos/acme/app" ? 200 : 404));
+    const denied = await github.listDirectory(".rallypoint/roles");
+    assert.equal(denied.ok, false);
+    assert.match(denied.guidance.problem, /Contents/);
+    noToken(denied.guidance, "contents denied");
+
+    // GitHub refuses outright with 403.
+    respond(() => 403);
+    const refused = await github.listDirectory(".rallypoint/roles");
+    assert.equal(refused.ok, false);
+    assert.match(refused.guidance.title, /permission/);
+    const file = await github.readFile(".rallypoint/roles/worker.md");
+    assert.equal(file.ok, false);
+    assert.match(file.guidance.problem, /Contents/);
+
+    // No token, private repository: everything 404s.
+    delete process.env.RALLYPOINT_GITHUB_TOKEN;
+    respond(() => 404);
+    const anon = await github.listDirectory(".rallypoint/roles");
+    assert.equal(anon.ok, false);
+    assert.match(anon.guidance.problem, /private or the name is wrong/);
+    const items = await github.listItems();
+    assert.equal(items.ok, false);
+    assert.equal(items.message.includes("`"), false, "the one-line message is plain text");
+
+    process.env.RALLYPOINT_GITHUB_TOKEN = FAKE_TOKEN;
+    for (const status of [401, 403, 404]) {
+      respond(() => status);
+      noToken((await github.listItems()).guidance, `listItems ${status}`);
+    }
+  } finally {
+    globalThis.fetch = realFetch;
+    if (saved.repo === undefined) delete process.env.RALLYPOINT_GITHUB_REPO;
+    else process.env.RALLYPOINT_GITHUB_REPO = saved.repo;
+    if (saved.token === undefined) delete process.env.RALLYPOINT_GITHUB_TOKEN;
+    else process.env.RALLYPOINT_GITHUB_TOKEN = saved.token;
+    await rm(uiTmp, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // end to end: install + CLI against fake PostgREST and fake gh
 // ---------------------------------------------------------------------------
 
 const SECRET = "correct-horse-battery-staple";
 const db = { swarm_sessions: [], swarm_progress: [], swarm_retros: [], swarm_messages: [], swarm_results: [], swarm_versions: [], swarm_buried: [], swarm_concepts: [], swarm_concept_trials: [], swarm_protocol_changes: [], swarm_settings: [] };
+// ---------------------------------------------------------------------------
+// realtime SQL: static checks, plus an opt-in run against a real Postgres
+// ---------------------------------------------------------------------------
+
+const swarmDir = resolve(root, "registry/rallypoint/swarm");
+const schemaSql = await readFile(resolve(swarmDir, "schema.sql"), "utf8");
+const realtimeSql = await readFile(resolve(swarmDir, "realtime.sql"), "utf8");
+const realtimeBlock = (sql) => {
+  const start = sql.indexOf("-- >>> realtime");
+  const end = sql.indexOf("-- <<< realtime");
+  assert.ok(start >= 0 && end > start, "a -- >>> realtime … -- <<< realtime block");
+  return sql.slice(start, end);
+};
+const wantedTables = (sql) => {
+  const body = /function public\.swarm_realtime_wanted\(\)[\s\S]*?array\[([\s\S]*?)\]/.exec(sql);
+  assert.ok(body, "swarm_realtime_wanted() lists its tables");
+  return [...body[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+};
+
+await test("realtime.sql is schema.sql's realtime block, byte for byte", () => {
+  assert.equal(realtimeBlock(realtimeSql), realtimeBlock(schemaSql));
+  assert.equal(schemaSql.match(/-- >>> realtime/g).length, 1);
+});
+
+await test("realtime SQL is idempotent and safe without the publication", () => {
+  const block = realtimeBlock(schemaSql);
+  const code = block.replace(/--.*$/gm, "");
+  assert.equal((code.match(/alter publication/gi) ?? []).length, 1, "one alter publication, inside the guarded loop");
+  const doBlock = /do \$\$([\s\S]*?)end;\s*\$\$;/.exec(block)?.[1] ?? "";
+  const guard = doBlock.indexOf("from pg_publication where pubname = 'supabase_realtime'");
+  const member = doBlock.indexOf("from pg_publication_tables");
+  const alter = doBlock.search(/alter publication/i);
+  assert.ok(guard >= 0 && doBlock.slice(guard - 40, guard).includes("if not exists"), "returns early without the publication");
+  assert.ok(member >= 0 && member < alter, "checks membership before adding");
+  assert.match(doBlock.slice(member - 60, alter), /if not exists \(/);
+  assert.doesNotMatch(block, /^\s*alter publication/im, "no unguarded top-level alter");
+  assert.match(block, /create or replace function public\.swarm_realtime_status\(\)/);
+  assert.match(block, /grant execute on function public\.swarm_realtime_status\(\) to anon, authenticated/);
+  assert.match(block, /RLS/, "says why private projects stay private");
+});
+
+await test("realtime publishes the memory tables and never the secret, readers or settings", async () => {
+  const wanted = wantedTables(schemaSql);
+  assert.ok(wanted.length >= 7);
+  for (const table of ["swarm_sessions", "swarm_progress", "swarm_messages", "swarm_results", "swarm_versions", "swarm_retros", "swarm_buried"]) {
+    assert.ok(wanted.includes(table), table);
+  }
+  for (const table of ["swarm_secret", "swarm_readers", "swarm_settings"]) assert.ok(!wanted.includes(table), table);
+  // Every published table has the read policy, so Realtime has RLS to apply.
+  const policed = /foreach t in array array\[([\s\S]*?)\] loop\s*execute format\('alter table public\.%I enable row level security'/.exec(schemaSql);
+  for (const table of wanted) assert.ok(policed[1].includes(`'${table}'`), `${table} has RLS`);
+  // The dashboard listens to exactly the published tables.
+  const live = await readFile(resolve(root, "registry/rallypoint/swarm-ui/app/swarm/_lib/live.ts"), "utf8");
+  const listed = [.../LIVE_TABLES = \[([\s\S]*?)\]/.exec(live)[1].matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(listed, wanted);
+});
+
+// RALLYPOINT_SWARM_TEST_DATABASE_URL=postgres://… npm run swarm:test applies
+// schema.sql twice and realtime.sql twice to a scratch database, with and
+// without a supabase_realtime publication. Use a throwaway database.
+if (process.env.RALLYPOINT_SWARM_TEST_DATABASE_URL) {
+  await test("schema.sql and realtime.sql apply twice on real Postgres", async () => {
+    const url = process.env.RALLYPOINT_SWARM_TEST_DATABASE_URL;
+    const psql = (...args) => execFileSync("psql", [url, "-v", "ON_ERROR_STOP=1", "-qAt", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    // What Supabase provides and plain Postgres lacks: the API roles and auth.*.
+    psql("-c", `do $$ begin
+      if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
+      if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+      if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if;
+      create schema if not exists auth;
+      if to_regprocedure('auth.role()') is null then
+        create function auth.role() returns text language sql as 'select null::text';
+      end if;
+      if to_regprocedure('auth.jwt()') is null then
+        create function auth.jwt() returns jsonb language sql as 'select ''{}''::jsonb';
+      end if;
+    end $$;`);
+    const status = () => JSON.parse(psql("-c", "select public.swarm_realtime_status()"));
+    const schemaPath = resolve(swarmDir, "schema.sql");
+    const realtimePath = resolve(swarmDir, "realtime.sql");
+    const hadPublication = psql("-c", "select count(*) from pg_publication where pubname = 'supabase_realtime'").trim() === "1";
+    if (!hadPublication) {
+      psql("-f", schemaPath, "-f", schemaPath, "-f", realtimePath);
+      assert.equal(status().publication, false);
+      psql("-c", "create publication supabase_realtime");
+      psql("-c", "alter publication supabase_realtime add table public.swarm_sessions");
+    }
+    psql("-f", realtimePath, "-f", schemaPath, "-f", realtimePath);
+    assert.deepEqual(status(), { publication: true, missing: [] });
+  });
+}
+
+// What swarm_realtime_status() answers; null = the function is missing.
+let realtimeStatus = { publication: true, missing: [] };
 let nextId = 1;
 const reads = [];
 const secretsSet = [];
@@ -219,6 +693,9 @@ const server = createServer(async (req, res) => {
   if (path.startsWith("rpc/")) {
     const fn = path.slice(4);
     if (fn === "swarm_schema_version") return send(200, 1);
+    if (fn === "swarm_realtime_status") {
+      return realtimeStatus === null ? send(404, { code: "PGRST202", message: "Could not find the function public.swarm_realtime_status" }) : send(200, realtimeStatus);
+    }
     if (body.p_secret !== SECRET) return send(400, { code: "28P01", message: "invalid swarm secret" });
     if (fn === "swarm_check") return send(200, { ok: true, schema_version: 1 });
     if (fn === "swarm_write") {
@@ -324,7 +801,7 @@ try {
     await rp(["add", "loop"]);
     const out = await rp(["add", "swarm"]);
     assert.match(out, /Campaign ready\./);
-    for (const path of ["SWARM.md", ".rallypoint/swarm.json", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/schema.sql", ".claude/skills/swarm-genesis/SKILL.md"]) {
+    for (const path of ["SWARM.md", ".rallypoint/swarm.json", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/schema.sql", ".rallypoint/swarm/realtime.sql", ".claude/skills/swarm-genesis/SKILL.md"]) {
       await readFile(resolve(fixture, path));
     }
   });
@@ -348,6 +825,31 @@ try {
   await test("doctor passes with memory, secret and gh", async () => {
     const out = JSON.parse(await rp(["swarm", "doctor", "--json"]));
     assert.equal(out.ok, true, JSON.stringify(out.checks.filter((c) => !c.ok)));
+  });
+
+  await test("doctor checks realtime and names realtime.sql when it is missing, as a warning", async () => {
+    const realtimeCheck = async () => {
+      const out = JSON.parse(await rp(["swarm", "doctor", "--json"]));
+      assert.equal(out.ok, true, "realtime never fails doctor");
+      return out.checks.find((c) => c.name === "realtime");
+    };
+    try {
+      assert.equal((await realtimeCheck()).level, "ok");
+      realtimeStatus = { publication: true, missing: ["swarm_messages", "swarm_progress"] };
+      const partial = await realtimeCheck();
+      assert.equal(partial.level, "warn");
+      assert.match(partial.detail, /swarm_messages, swarm_progress/);
+      assert.match(partial.detail, /\.rallypoint\/swarm\/realtime\.sql/);
+      realtimeStatus = null;
+      const older = await realtimeCheck();
+      assert.equal(older.level, "warn");
+      assert.match(older.detail, /\.rallypoint\/swarm\/realtime\.sql/);
+      realtimeStatus = { publication: false, missing: ["swarm_sessions"] };
+      assert.match((await realtimeCheck()).detail, /no supabase_realtime publication/);
+      assert.match(await rp(["swarm", "doctor"]), /warn {2}realtime/);
+    } finally {
+      realtimeStatus = { publication: true, missing: [] };
+    }
   });
 
   await test("doctor fails on a wrong secret", async () => {
@@ -509,9 +1011,39 @@ try {
     await mkdir(resolve(fixture, "src/app"), { recursive: true });
     const out = await rp(["add", "swarm-ui"]);
     assert.match(out, /src\/app detected/);
+    assert.match(out, /npm install @supabase\/realtime-js@"\^2/, "names live updates' missing dependency");
+    assert.match(out, /npm install .*\bd3@"\^7/, "names the fleet graph's missing dependency");
+    assert.match(out, /npm install --save-dev @types\/d3@/);
+    await readFile(resolve(fixture, "src/app/swarm/_graph/render.ts"));
     await readFile(resolve(fixture, "src/app/swarm/page.tsx"));
     await readFile(resolve(fixture, "src/app/swarm/swarm.config.ts"));
     await assert.rejects(readFile(resolve(fixture, "app/swarm/page.tsx")), "no root app/ was created");
+  });
+
+  await test("every swarm-ui source file ships in both UI items", async () => {
+    // A file the scaffold imports but the manifest does not list installs a
+    // UI that cannot compile (guidance.ts once shipped this way).
+    const { readdir } = await import("node:fs/promises");
+    const { relative } = await import("node:path");
+    const sourceRoot = resolve(root, "registry/rallypoint");
+    const walk = async (dir) =>
+      (await readdir(dir, { withFileTypes: true })).flatMap((entry) => [resolve(dir, entry.name), entry.isDirectory()]);
+    const files = [];
+    const pending = [resolve(sourceRoot, "swarm-ui/app")];
+    while (pending.length) {
+      const pairs = await walk(pending.pop());
+      for (let i = 0; i < pairs.length; i += 2) (pairs[i + 1] ? pending : files).push(pairs[i]);
+    }
+    const manifest = JSON.parse(await readFile(resolve(root, "registry/manifest.json"), "utf8"));
+    for (const name of ["swarm-ui", "swarm-dashboard"]) {
+      const item = manifest.items.find((entry) => entry.name === name);
+      const listed = new Set(item.files.map((file) => file.source));
+      for (const file of files) {
+        const source = relative(sourceRoot, file).replace(/\\/g, "/");
+        if (source.endsWith("/swarm.config.ts")) continue; // generated by ui-config
+        assert.ok(listed.has(source), `${source} is not in the ${name} item of registry/manifest.json`);
+      }
+    }
   });
 
   await test("ui-config never overwrites without --force", async () => {
@@ -529,7 +1061,7 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, install, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, message board, UI banners, realtime SQL, install, doctor, session, score/checks modes, plan, labels, connect, learning, UI generation, fleet graph).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

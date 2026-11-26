@@ -5,9 +5,12 @@ import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
+import { LiveRefresh } from "./_components/live";
 import { SwarmNav } from "./_components/nav";
 import { cap, word } from "./_lib/format";
+import { LIVE_TABLES } from "./_lib/live";
 import { getSwarmContext, getWorkingCount, isSignedIn } from "./_lib/queries";
+import { readSupabaseEnv } from "./_lib/supabase";
 import { signOut } from "./sign-in/actions";
 import { swarmConfig } from "./swarm.config";
 
@@ -27,6 +30,9 @@ export default async function SwarmLayout({ children }: { children: ReactNode })
   const context = await getSwarmContext();
   const working = context.state === "ok" ? await getWorkingCount() : null;
   const style = swarmConfig.theme.cssVars as CSSProperties;
+  // Live updates need readable memory; the publishable key is public by design.
+  const { env } = readSupabaseEnv();
+  const live = context.state === "ok" && env ? { env, private: context.settings.visibility === "private" } : null;
 
   return (
     <div className={`rp-swarm ${sans.variable} ${display.variable} ${mono.variable}`} style={style}>
@@ -45,6 +51,14 @@ export default async function SwarmLayout({ children }: { children: ReactNode })
           <Link href="/swarm">{swarmConfig.project.name}</Link>
         </div>
         <div className="rp-top-end">
+          {live ? (
+            <LiveRefresh
+              publishableKey={live.env.key}
+              tables={LIVE_TABLES}
+              url={live.env.url}
+              withSession={live.private}
+            />
+          ) : null}
           {working === null ? null : working > 0 ? (
             <Link className="rp-live rp-live-on" href="/swarm/fleet">
               <span aria-hidden="true" className="rp-live-dot" />

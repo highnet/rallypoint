@@ -664,6 +664,13 @@ async function connectSwarm() {
   const key = value("--key") || (await ask.visible(withDefault("Publishable (anon) key", knownKey ? "keep current" : ""))) || knownKey;
   if (!key) throw new Error("the publishable (anon) key is required (Project settings > API keys); nothing was changed");
 
+  // --no-db never writes the secret, and the secret is verified against the
+  // database before anything is saved, so a freshly generated one can only
+  // fail. Say so before generating anything.
+  if (has("--generate") && has("--no-db")) {
+    throw new Error("--generate cannot be combined with --no-db: a new secret is not in the database yet, so it could never verify. Set the secret first (select public.swarm_set_secret('…') in the SQL editor, or store its bcrypt hash in public.swarm_secret), then pipe the same secret in: rallypoint swarm connect --no-db < secret-file. Nothing was changed");
+  }
+
   let secret = "";
   if (!has("--generate")) {
     secret = await ask.hidden(`Swarm secret (${MIN_SECRET}+ characters, hidden; leave empty to generate one): `);
@@ -673,6 +680,11 @@ async function connectSwarm() {
     }
   }
   const generated = !secret;
+  // The same holds for an empty answer under --no-db, which would otherwise
+  // generate a secret that can never verify.
+  if (generated && has("--no-db")) {
+    throw new Error("--no-db needs the secret that is already set in the database: pipe it in (rallypoint swarm connect --no-db < secret-file) or type it at the prompt. Nothing was changed");
+  }
   if (generated) secret = randomBytes(32).toString("base64url");
   if (secret.length < MIN_SECRET) {
     throw new Error(`the swarm secret must be at least ${MIN_SECRET} characters (the schema refuses shorter ones); nothing was changed`);

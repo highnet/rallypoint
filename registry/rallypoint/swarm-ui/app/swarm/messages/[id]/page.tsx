@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { KindChip } from "../../_components/chips";
 import { Author, MessageBody, MessageRef, WaitingTag } from "../../_components/messages";
-import { Gate, PageHead, QueryErrors, Section, TimeAgo } from "../../_components/states";
+import { CopyBlock, Gate, PageHead, QueryErrors, Section, TimeAgo } from "../../_components/states";
 import { cap, word } from "../../_lib/format";
 import { getSwarmContext, getThread } from "../../_lib/queries";
 import { threadFilterHref, threadHeading } from "../../_lib/threads";
@@ -126,9 +126,12 @@ export default async function ThreadPage({ params }: Props) {
       ) : null}
 
       <Section id="reply" title="How an agent replies">
-        <pre className="rp-code" tabIndex={0}>
-          {`npx rallypoint swarm say --kind answer --thread ${root.id}${root.ref && SAFE_REF.test(root.ref) ? ` --ref "${root.ref}"` : ""} "<body>"`}
-        </pre>
+        <CopyBlock
+          id="rp-reply-command"
+          label="Copy the reply command"
+          tabIndex={0}
+          text={`npx rallypoint swarm say --kind answer --thread ${root.id}${root.ref && SAFE_REF.test(root.ref) ? ` --ref "${root.ref}"` : ""} "<body>"`}
+        />
       </Section>
     </>
   );

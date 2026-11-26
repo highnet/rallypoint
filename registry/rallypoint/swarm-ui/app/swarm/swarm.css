@@ -2486,3 +2486,66 @@
     margin-left: 0;
   }
 }
+
+/* ───────────────────────── Copy buttons ─────────────────────────
+ * The button sits in its own row above the block it copies, so it never
+ * covers the text at any width. Self-contained so it can be lifted as one
+ * block. */
+
+.rp-copy-block {
+  margin: 12px 0;
+}
+
+.rp-copy-block > .rp-code,
+.rp-copy-block > .rp-file {
+  margin: 0;
+}
+
+.rp-copy-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.rp-copy {
+  display: inline-flex;
+}
+
+.rp-copy-button {
+  align-items: center;
+  background: var(--rp-paper);
+  border: 1px solid var(--rp-rule);
+  border-radius: var(--rp-radius-s);
+  color: var(--rp-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 0.8125rem/1 var(--rp-sans);
+  gap: 6px;
+  min-height: 32px;
+  min-width: 44px;
+  padding: 0 10px;
+}
+
+.rp-copy-button:hover {
+  background: var(--rp-paper-sunk);
+  border-color: var(--rp-ink-soft);
+}
+
+.rp-copy-button[data-state="copied"] {
+  border-color: var(--rp-pass);
+  color: var(--rp-pass);
+}
+
+.rp-copy-button[data-state="failed"] {
+  border-color: var(--rp-fail);
+  color: var(--rp-fail);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rp-copy-button {
+    transition:
+      background-color 160ms var(--rp-ease),
+      border-color 160ms var(--rp-ease),
+      color 160ms var(--rp-ease);
+  }
+}

@@ -30,6 +30,7 @@ Notes for the manifest:
 swarm-ui/app/swarm/_components/bands.tsx -> app/swarm/_components/bands.tsx
 swarm-ui/app/swarm/_components/charts.tsx -> app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> app/swarm/_components/chips.tsx
+swarm-ui/app/swarm/_components/copy.tsx -> app/swarm/_components/copy.tsx
 swarm-ui/app/swarm/_components/fleet-graph.tsx -> app/swarm/_components/fleet-graph.tsx
 swarm-ui/app/swarm/_components/live.tsx -> app/swarm/_components/live.tsx
 swarm-ui/app/swarm/_components/messages.tsx -> app/swarm/_components/messages.tsx
@@ -92,6 +93,7 @@ swarm-ui/app/swarm/versions/page.tsx -> app/swarm/versions/page.tsx
 swarm-ui/app/swarm/_components/bands.tsx -> swarm-ui/app/swarm/_components/bands.tsx
 swarm-ui/app/swarm/_components/charts.tsx -> swarm-ui/app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> swarm-ui/app/swarm/_components/chips.tsx
+swarm-ui/app/swarm/_components/copy.tsx -> swarm-ui/app/swarm/_components/copy.tsx
 swarm-ui/app/swarm/_components/fleet-graph.tsx -> swarm-ui/app/swarm/_components/fleet-graph.tsx
 swarm-ui/app/swarm/_components/live.tsx -> swarm-ui/app/swarm/_components/live.tsx
 swarm-ui/app/swarm/_components/messages.tsx -> swarm-ui/app/swarm/_components/messages.tsx

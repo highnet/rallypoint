@@ -14,6 +14,7 @@ import {
 } from "../_lib/guidance";
 import type { SwarmContext } from "../_lib/queries";
 import type { ReadError } from "../_lib/supabase";
+import { CopyButton } from "./copy";
 
 export function PageHead({ title, lede, children }: { title: string; lede?: ReactNode; children?: ReactNode }) {
   return (
@@ -55,6 +56,37 @@ export function Panel({ title, tone, children }: { title: string; tone?: "warn";
     <div className={tone === "warn" ? "rp-panel rp-panel-warn" : "rp-panel"} role="status">
       <h2>{title}</h2>
       {children}
+    </div>
+  );
+}
+
+/**
+ * Text meant to be pasted somewhere else: a prompt, a command, a file. The
+ * copy button sits in its own row above the block, so it never covers the
+ * text, and copies exactly the string shown. Only the button is a client
+ * component; the block itself stays server-rendered.
+ */
+export function CopyBlock({
+  text,
+  label,
+  id,
+  className = "rp-code",
+  tabIndex,
+}: {
+  text: string;
+  label: string;
+  id: string;
+  className?: string;
+  tabIndex?: number;
+}) {
+  return (
+    <div className="rp-copy-block">
+      <div className="rp-copy-bar">
+        <CopyButton label={label} targetId={id} text={text} />
+      </div>
+      <pre className={className} id={id} tabIndex={tabIndex}>
+        {text}
+      </pre>
     </div>
   );
 }
@@ -138,17 +170,23 @@ export function Fix({
   );
 }
 
+const ENV_TEMPLATE = `NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY=<publishable or anon key>
+RALLYPOINT_GITHUB_REPO=<owner>/<name>      # Rallypoint lanes, delivery, skills
+RALLYPOINT_GITHUB_TOKEN=<read-only token>  # private repos, rate limits`;
+
 /** What every page renders when memory cannot be read yet. */
 export function Gate({ context }: { context: Exclude<SwarmContext, { state: "ok" }> }) {
   if (context.state === "unconfigured") {
     return (
       <Fix guidance={supabaseMissingGuidance(context.missing)} tone="plain">
-        <pre className="rp-code rp-code-nowrap" tabIndex={0}>
-          {`NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY=<publishable or anon key>
-RALLYPOINT_GITHUB_REPO=<owner>/<name>      # Rallypoint lanes, delivery, skills
-RALLYPOINT_GITHUB_TOKEN=<read-only token>  # private repos, rate limits`}
-        </pre>
+        <CopyBlock
+          className="rp-code rp-code-nowrap"
+          id="rp-env-template"
+          label="Copy the environment variable template"
+          tabIndex={0}
+          text={ENV_TEMPLATE}
+        />
         <p>
           Then run <code>npx rallypoint swarm doctor</code> to check the connection.
         </p>

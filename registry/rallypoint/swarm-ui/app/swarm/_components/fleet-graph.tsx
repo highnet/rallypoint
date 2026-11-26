@@ -29,6 +29,7 @@ import {
   type SwarmReplayPlan,
 } from "../_graph/replay";
 import { ANIMAL_VIEWBOX, animalOf, assignAnimals } from "../_lib/animals";
+import { useLiveHold } from "./live";
 
 /**
  * The animated fleet view: Swarm Arena's swarm graph (`../_graph`), drawn from
@@ -153,6 +154,8 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
   const [plan, setPlan] = useState<SwarmReplayPlan | null>(null);
   const [liveNote, setLiveNote] = useState("");
   const replaying = plan !== null;
+  // The layout's live updates must not re-render the graph under a replay.
+  useLiveHold(replaying);
 
   // What the renderer's callbacks read, kept current without re-creating the renderer.
   const links = useRef({ repoUrl, router });

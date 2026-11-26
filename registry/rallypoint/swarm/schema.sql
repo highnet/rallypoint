@@ -336,7 +336,7 @@ grant select on public.swarm_fleet, public.swarm_metrics to anon, authenticated;
 -- checked first. Without the publication the dashboard polls once a minute.
 
 create or replace function public.swarm_realtime_wanted()
-returns text[] language sql immutable as $$
+returns text[] language sql immutable set search_path = '' as $$
   select array[
     'swarm_sessions', 'swarm_progress', 'swarm_retros', 'swarm_messages',
     'swarm_results', 'swarm_versions', 'swarm_buried', 'swarm_concepts',

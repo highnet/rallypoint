@@ -10,8 +10,6 @@ import { getSwarmContext, getThread } from "../../_lib/queries";
 import { threadFilterHref, threadHeading } from "../../_lib/threads";
 import type { MessageRow } from "../../_lib/types";
 
-export const dynamic = "force-dynamic";
-
 type Props = { params: Promise<{ id: string }> };
 
 /**

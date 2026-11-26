@@ -18,6 +18,9 @@ Notes for the manifest:
   tsconfig). It needs `d3`: the `swarm-ui` item declares `dependencies` / `devDependencies`,
   which the CLI names when the host app lacks them; `swarm-dashboard` lists them in its
   `package.json`.
+- `swarm-ui/app/swarm/_lib/animal-icons.ts` is Swarm Arena's `shared/src/animalIcons.ts`,
+  copied verbatim: game-icons.net silhouettes, CC BY 3.0, credited under the fleet graph.
+  `animals.ts` assigns them to agents and depends on their order.
 
 ## swarm-ui
 
@@ -39,6 +42,8 @@ swarm-ui/app/swarm/_graph/lifecycle.ts -> app/swarm/_graph/lifecycle.ts
 swarm-ui/app/swarm/_graph/model.ts -> app/swarm/_graph/model.ts
 swarm-ui/app/swarm/_graph/render.ts -> app/swarm/_graph/render.ts
 swarm-ui/app/swarm/_graph/replay.ts -> app/swarm/_graph/replay.ts
+swarm-ui/app/swarm/_lib/animal-icons.ts -> app/swarm/_lib/animal-icons.ts
+swarm-ui/app/swarm/_lib/animals.ts -> app/swarm/_lib/animals.ts
 swarm-ui/app/swarm/_lib/config-types.ts -> app/swarm/_lib/config-types.ts
 swarm-ui/app/swarm/_lib/fleet-graph.ts -> app/swarm/_lib/fleet-graph.ts
 swarm-ui/app/swarm/_lib/format.ts -> app/swarm/_lib/format.ts
@@ -92,6 +97,8 @@ swarm-ui/app/swarm/_graph/lifecycle.ts -> swarm-ui/app/swarm/_graph/lifecycle.ts
 swarm-ui/app/swarm/_graph/model.ts -> swarm-ui/app/swarm/_graph/model.ts
 swarm-ui/app/swarm/_graph/render.ts -> swarm-ui/app/swarm/_graph/render.ts
 swarm-ui/app/swarm/_graph/replay.ts -> swarm-ui/app/swarm/_graph/replay.ts
+swarm-ui/app/swarm/_lib/animal-icons.ts -> swarm-ui/app/swarm/_lib/animal-icons.ts
+swarm-ui/app/swarm/_lib/animals.ts -> swarm-ui/app/swarm/_lib/animals.ts
 swarm-ui/app/swarm/_lib/config-types.ts -> swarm-ui/app/swarm/_lib/config-types.ts
 swarm-ui/app/swarm/_lib/fleet-graph.ts -> swarm-ui/app/swarm/_lib/fleet-graph.ts
 swarm-ui/app/swarm/_lib/format.ts -> swarm-ui/app/swarm/_lib/format.ts

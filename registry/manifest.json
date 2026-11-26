@@ -440,6 +440,14 @@
           "target": "app/swarm/_graph/replay.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/_lib/animal-icons.ts",
+          "target": "app/swarm/_lib/animal-icons.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animals.ts",
+          "target": "app/swarm/_lib/animals.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/config-types.ts",
           "target": "app/swarm/_lib/config-types.ts"
         },
@@ -648,6 +656,14 @@
         {
           "source": "swarm-ui/app/swarm/_graph/replay.ts",
           "target": "swarm-ui/app/swarm/_graph/replay.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animal-icons.ts",
+          "target": "swarm-ui/app/swarm/_lib/animal-icons.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/animals.ts",
+          "target": "swarm-ui/app/swarm/_lib/animals.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/config-types.ts",

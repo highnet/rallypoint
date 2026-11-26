@@ -274,6 +274,46 @@ if (process.features.typescript) {
     assert.deepEqual(memoryOnly.sectors[0].count, { value: 1, unit: "shipped", recent: 1, recentUnit: "today" });
     assert.ok(memoryOnly.events.some((e) => e.id === "version:1"));
   });
+
+  const { ANIMALS, animalOf, assignAnimals, preferredAnimalIndex } = await ui("_lib/animals.ts");
+
+  await test("fleet graph animals: stable per id, distinct within a fleet, order-free", () => {
+    assert.ok(ANIMALS.length >= 64, "Arena's set");
+    assert.equal(new Set(ANIMALS.map((a) => a.name)).size, ANIMALS.length, "every animal has its own name");
+    for (const a of ANIMALS) assert.match(a.d, /^[Mm]/, `${a.slug} is one SVG path`);
+
+    const fleet = [
+      "worker-cms-6", "worker-cms-7", "worker-leads-12", "worker-outreach-3", "worker-seo-9", "worker-2", "worker",
+      "reviewer-outreach-24", "reviewer-cms-8", "reviewer-leads-13", "reviewer-2",
+      "fixer-leads-26b", "fixer-cms-14", "fixer-seo-31", "merger-cms-25", "merger-leads-27",
+      "planner", "janitor", "steward", "strategist", "session 1a2b3c4d",
+    ];
+    const assigned = assignAnimals(fleet);
+    assert.equal(assigned.size, fleet.length);
+    assert.equal(new Set(assigned.values()).size, fleet.length, "no two agents in one fleet share an animal");
+    assert.deepEqual([...assignAnimals([...fleet].reverse(), undefined)], [...assigned], "the order rows arrive in does not matter");
+    assert.deepEqual([...assignAnimals([...fleet, "worker-cms-6"])], [...assigned], "a repeated id is one agent");
+    assert.equal(animalOf("worker-cms-6", assigned), animalOf("worker-cms-6", assignAnimals(fleet)), "the same on every load");
+    assert.equal(animalOf("chess/search"), animalOf("chess-search"), "Arena's two spellings of a seat agree");
+
+    // Two ids wanting one animal: the one that sorts first keeps it, the other probes to a free one.
+    const ids = Array.from({ length: 400 }, (_, i) => `worker-${i}`);
+    const [a, b] = ids.filter((id) => preferredAnimalIndex(id) === preferredAnimalIndex(ids[0])).sort();
+    const pair = assignAnimals([b, a]);
+    assert.equal(pair.get(a), preferredAnimalIndex(a));
+    assert.notEqual(pair.get(b), pair.get(a));
+
+    // An agent arriving later never displaces one already on screen.
+    const shown = assignAnimals([b]);
+    const later = assignAnimals([a, b], shown);
+    assert.equal(later.get(b), shown.get(b));
+    assert.notEqual(later.get(a), later.get(b));
+
+    // More agents than animals: every one still gets an animal, the first ANIMALS.length all distinct.
+    const crowd = assignAnimals(ids);
+    assert.equal(crowd.size, ids.length);
+    assert.equal(new Set(crowd.values()).size, ANIMALS.length);
+  });
 } else {
   console.log("(skipping the fleet graph adapter tests: this Node cannot strip TypeScript types)");
 }

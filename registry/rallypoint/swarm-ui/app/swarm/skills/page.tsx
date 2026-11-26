@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Empty, Gate, PageHead, Panel, Section } from "../_components/states";
+import { CopyBlock, Empty, Gate, GithubProblem, PageHead, Section } from "../_components/states";
 import { getSkills, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Skills" };
@@ -17,6 +17,8 @@ export default async function SkillsPage({
   const context = await getSwarmContext();
   if (context.state !== "ok") return <Gate context={context} />;
   const { repo, folders, file } = await getSkills(selected);
+  // One banner for the whole page: the three folders fail for the same reason.
+  const firstError = folders.find((folder) => folder.error)?.error ?? null;
 
   return (
     <>
@@ -24,18 +26,17 @@ export default async function SkillsPage({
         title="Skills"
         lede="The role prompts, skills and playbooks the swarm works from, read from the repository. The improver tunes these; the referee, review and merge rules stay frozen."
       />
-      {!repo ? (
-        <Panel title="GitHub not connected">
-          <p>
-            Set <code>RALLYPOINT_GITHUB_REPO</code> to read these files from the repository.
-          </p>
-        </Panel>
-      ) : (
+      {firstError ? (
+        <GithubProblem failure={firstError}>
+          <p className="rp-soft">These files are read from the repository, so nothing below can be listed until then.</p>
+        </GithubProblem>
+      ) : null}
+      {!repo ? null : (
         <>
           {folders.map((folder) => (
             <Section key={folder.path} lede={<code>{folder.path}/</code>} title={folder.label}>
               {folder.error ? (
-                <p className="rp-soft">{folder.error}</p>
+                <p className="rp-soft">Not read: GitHub refused the request (see above). This is not an empty folder.</p>
               ) : folder.entries.length === 0 ? (
                 <Empty>No files here yet.</Empty>
               ) : (
@@ -60,7 +61,17 @@ export default async function SkillsPage({
           ))}
           {file ? (
             <Section id="file" title={file.path}>
-              {file.error ? <p className="rp-soft">{file.error}</p> : <pre className="rp-file">{file.text}</pre>}
+              {file.error ? (
+                <GithubProblem failure={file.error} />
+              ) : file.text === null ? null : (
+                <CopyBlock
+                  className="rp-file"
+                  id="rp-file-text"
+                  label={`Copy the contents of ${file.path}`}
+                  tabIndex={0}
+                  text={file.text}
+                />
+              )}
             </Section>
           ) : null}
         </>

@@ -21,6 +21,9 @@ Notes for the manifest:
 - `swarm-ui/app/swarm/_lib/animal-icons.ts` is Swarm Arena's `shared/src/animalIcons.ts`,
   copied verbatim: game-icons.net silhouettes, CC BY 3.0, credited under the fleet graph.
   `animals.ts` assigns them to agents and depends on their order.
+- `swarm-ui` declares `dependencies: {"@supabase/realtime-js": …}` for `_components/live.tsx`;
+  the CLI prints the `npm install` line when the host app lacks it. `swarm-dashboard` carries it
+  in `swarm-ui/standalone/package.json` instead.
 
 ## swarm-ui
 
@@ -28,6 +31,7 @@ swarm-ui/app/swarm/_components/bands.tsx -> app/swarm/_components/bands.tsx
 swarm-ui/app/swarm/_components/charts.tsx -> app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> app/swarm/_components/chips.tsx
 swarm-ui/app/swarm/_components/fleet-graph.tsx -> app/swarm/_components/fleet-graph.tsx
+swarm-ui/app/swarm/_components/live.tsx -> app/swarm/_components/live.tsx
 swarm-ui/app/swarm/_components/messages.tsx -> app/swarm/_components/messages.tsx
 swarm-ui/app/swarm/_components/icons.tsx -> app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> app/swarm/_components/nav.tsx
@@ -50,6 +54,8 @@ swarm-ui/app/swarm/_lib/fleet-graph.ts -> app/swarm/_lib/fleet-graph.ts
 swarm-ui/app/swarm/_lib/format.ts -> app/swarm/_lib/format.ts
 swarm-ui/app/swarm/_lib/github.ts -> app/swarm/_lib/github.ts
 swarm-ui/app/swarm/_lib/guidance.ts -> app/swarm/_lib/guidance.ts
+swarm-ui/app/swarm/_lib/live-token.ts -> app/swarm/_lib/live-token.ts
+swarm-ui/app/swarm/_lib/live.ts -> app/swarm/_lib/live.ts
 swarm-ui/app/swarm/_lib/protocol.ts -> app/swarm/_lib/protocol.ts
 swarm-ui/app/swarm/_lib/queries.ts -> app/swarm/_lib/queries.ts
 swarm-ui/app/swarm/_lib/supabase.ts -> app/swarm/_lib/supabase.ts
@@ -87,6 +93,7 @@ swarm-ui/app/swarm/_components/bands.tsx -> swarm-ui/app/swarm/_components/bands
 swarm-ui/app/swarm/_components/charts.tsx -> swarm-ui/app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> swarm-ui/app/swarm/_components/chips.tsx
 swarm-ui/app/swarm/_components/fleet-graph.tsx -> swarm-ui/app/swarm/_components/fleet-graph.tsx
+swarm-ui/app/swarm/_components/live.tsx -> swarm-ui/app/swarm/_components/live.tsx
 swarm-ui/app/swarm/_components/messages.tsx -> swarm-ui/app/swarm/_components/messages.tsx
 swarm-ui/app/swarm/_components/icons.tsx -> swarm-ui/app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> swarm-ui/app/swarm/_components/nav.tsx
@@ -109,6 +116,8 @@ swarm-ui/app/swarm/_lib/fleet-graph.ts -> swarm-ui/app/swarm/_lib/fleet-graph.ts
 swarm-ui/app/swarm/_lib/format.ts -> swarm-ui/app/swarm/_lib/format.ts
 swarm-ui/app/swarm/_lib/github.ts -> swarm-ui/app/swarm/_lib/github.ts
 swarm-ui/app/swarm/_lib/guidance.ts -> swarm-ui/app/swarm/_lib/guidance.ts
+swarm-ui/app/swarm/_lib/live-token.ts -> swarm-ui/app/swarm/_lib/live-token.ts
+swarm-ui/app/swarm/_lib/live.ts -> swarm-ui/app/swarm/_lib/live.ts
 swarm-ui/app/swarm/_lib/protocol.ts -> swarm-ui/app/swarm/_lib/protocol.ts
 swarm-ui/app/swarm/_lib/queries.ts -> swarm-ui/app/swarm/_lib/queries.ts
 swarm-ui/app/swarm/_lib/supabase.ts -> swarm-ui/app/swarm/_lib/supabase.ts

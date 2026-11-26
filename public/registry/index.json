@@ -10,12 +10,12 @@
     },
     {
       "name": "swarm",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "description": "Rallypoint Swarm: shared memory in your own Supabase, self-picking roles, a referee (score, checks or review), retros, buried ideas, concepts, genesis and a conductor loop. Install after loop.",
       "requires": [
         "loop"
       ],
-      "fileCount": 21
+      "fileCount": 22
     },
     {
       "name": "swarm-ui",
@@ -24,7 +24,7 @@
       "requires": [
         "swarm"
       ],
-      "fileCount": 55
+      "fileCount": 58
     },
     {
       "name": "swarm-dashboard",
@@ -33,7 +33,7 @@
       "requires": [
         "swarm"
       ],
-      "fileCount": 63
+      "fileCount": 66
     }
   ]
 }

@@ -96,6 +96,9 @@ export const createMemory = ({ url, key, secret, fetchImpl = globalThis.fetch } 
     select,
     rpc,
     schemaVersion: () => rpc("swarm_schema_version", {}),
+    // {publication: boolean, missing: string[]}: which memory tables the
+    // dashboard cannot hear live yet (schema.sql, "Realtime").
+    realtimeStatus: () => rpc("swarm_realtime_status", {}),
     check: () => rpc("swarm_check", { p_secret: requireSecret() }),
     insert: (table, row) => rpc("swarm_write", { p_secret: requireSecret(), p_table: table, p_row: row }),
     update: (table, id, patch) =>

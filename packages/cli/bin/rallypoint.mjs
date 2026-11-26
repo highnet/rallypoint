@@ -280,9 +280,10 @@ async function hasNextApp(cwd) {
   }
 }
 
-// npm packages an item's files import (swarm-ui's fleet graph needs d3). The
-// CLI never edits package.json or runs npm; it names what is missing from the
-// host app and the command that adds it.
+// npm packages an item's files import (swarm-ui's fleet graph needs d3, its
+// live updates @supabase/realtime-js). The CLI never edits package.json or
+// runs npm; it names what is missing from the host app and the command that
+// adds it.
 async function dependencyHint(item, cwd, dryRun) {
   const wanted = [
     ...Object.entries(item.dependencies ?? {}).map(([name, range]) => ({ name, range, dev: false })),

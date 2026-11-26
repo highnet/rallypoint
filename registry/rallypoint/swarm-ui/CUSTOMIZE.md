@@ -13,6 +13,7 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
 | `app/swarm/_lib/guidance.ts` | the copy of every setup and error banner: what is wrong, the steps, when it applies | to reword; keep it free of secrets |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
+| `app/swarm/_components/live.tsx`, `_lib/live.ts`, `_lib/live-token.ts` | live updates: the Realtime listener and its indicator, the watched tables and the hold signal, the private-mode token action | rarely; hold the signal with `useLiveHold(active)` instead of adding timers |
 | `app/swarm/_lib/threads.ts` | the message board's pure logic: threads from `swarm_messages`, refs, what a thread waits for, the `?kind=`/`?ref=` filters | freely; keep it pure (tested by `npm run swarm:test`) |
 | `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar, the message board's posts and tags (`messages.tsx`), the fleet graph's mount and replay bar (`fleet-graph.tsx`) | freely |
 | `app/swarm/_lib/fleet-graph.ts` | the adapter from sessions, memory and GitHub to the fleet graph's `SwarmInput` | freely; it decides what a sector, an agent and a work item are |
@@ -42,7 +43,13 @@ by hand or by the swarm itself through a `ui` target.
    name, a symbol or a shape); every chart has a text or table equivalent;
    keyboard focus stays visible; motion respects `prefers-reduced-motion`;
    nothing overflows at 375px.
-6. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
+6. **Let the layout keep pages live.** Do not add polling or
+   `router.refresh()` timers to pages: `<LiveRefresh>` already refreshes on
+   every memory change, and every 60 s when Realtime is down. A component
+   that must not be re-rendered mid-interaction (a replay, a drag) calls
+   `useLiveHold(true)` for as long as it lasts. Render from props, not from
+   change payloads.
+7. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
    and the nav from the config, not hard-coded project nouns.
 
 ## Nav icons

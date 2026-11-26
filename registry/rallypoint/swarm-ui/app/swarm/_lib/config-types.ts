@@ -116,6 +116,8 @@ export const NAV_ICON_NAMES = [
   "mail",
   "chart",
   "settings",
+  "globe",
+  "home",
   "page",
 ] as const;
 

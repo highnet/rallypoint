@@ -162,6 +162,17 @@ await test("ui-config generation follows the documented mapping", () => {
   assert.match(source, /export const swarmConfig: SwarmConfig/);
 });
 
+await test("swarm.css keeps the main column's padding when a hidden overview stays mounted", async () => {
+  // Under Cache Components a page navigated away from stays mounted in <main>,
+  // hidden by <Activity>. A selector keyed on <main> containing the overview
+  // keeps matching it, and strips every other page's padding.
+  const css = (await readFile(resolve(root, "registry/rallypoint/swarm-ui/app/swarm/swarm.css"), "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(css, /:has\(\s*>?\s*\.rp-overview\b/, "no rule may key the main column on the overview being mounted");
+  const overview = css.match(/\.rp-main\s*>\s*\.rp-overview\s*\{([^}]*)\}/);
+  assert.ok(overview, "the overview cancels the padding itself");
+  assert.match(overview[1], /margin:\s*calc\(-1 \* var\(--rp-main-top\)\) calc\(-1 \* var\(--rp-gutter\)\) calc\(-1 \* var\(--rp-main-bottom\)\)/);
+});
+
 await test("swarm-ui: every prompt, command and file block has a copy button", async () => {
   const swarmDir = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
   const files = (await readdir(swarmDir, { recursive: true })).filter((f) => f.endsWith(".tsx"));

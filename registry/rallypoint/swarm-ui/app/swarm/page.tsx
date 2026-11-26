@@ -173,7 +173,7 @@ export default async function ProgressPage() {
                   <li key={row.id}>
                     <RoleTag role={row.role} />
                     <span className="rp-now-what">
-                      {row.summary || row.latest_note || "Working"}
+                      {row.latest_note || "Working"}
                       <span className="rp-now-who">
                         <span className="rp-mono">{row.agent ?? ""}</span>
                         {row.issue || row.pr ? <IssuePr issue={row.issue} pr={row.pr} /> : null}

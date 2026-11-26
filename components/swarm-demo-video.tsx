@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import demoVideo from "@/lib/swarm-demo-video.json";
 
-export type SwarmDemoCut = { mp4: string; poster: string | null; playbackId?: string | null };
+export type SwarmDemoCut = { playbackId?: string | null; mp4?: string | null; poster: string | null };
 
 const FULL = (demoVideo as { full: SwarmDemoCut | null }).full;
 const SHORT = (demoVideo as { short: SwarmDemoCut | null }).short;
@@ -41,12 +41,13 @@ const RATES = [1, 1.25, 1.5, 1.75, 2];
 
 const cutFor = (length: Length) => (length === "short" ? SHORT ?? FULL : FULL ?? SHORT);
 
-// The Mux stream when the cut has one, else the MP4 on Vercel Blob.
+// The Mux stream; a plain MP4 URL works too, for a cut not on Mux.
 const load = (el: MuxPlayerElement, cut: SwarmDemoCut, at: number) => {
   el.startTime = at;
   if (cut.playbackId) el.playbackId = cut.playbackId;
-  else el.src = cut.mp4;
+  else if (cut.mp4) el.src = cut.mp4;
 };
+const sourceOf = (cut: SwarmDemoCut) => cut.playbackId ?? cut.mp4 ?? null;
 
 const setMuted = (el: MuxPlayerElement, muted: boolean) => {
   el.muted = muted;
@@ -74,8 +75,8 @@ const mayPreview = () =>
  * pattern as variantly's homepage film: the 90-second cut first, a switch to
  * the whole run, a muted looping preview while half the frame is on screen,
  * and a click to start over with sound and controls. Captions are burned in.
- * Films stream from Mux when a cut has a playbackId, else play the MP4 on
- * Vercel Blob. Renders nothing until lib/swarm-demo-video.json has a film.
+ * Films stream from Mux (npm run upload-swarm-video). Renders nothing until
+ * lib/swarm-demo-video.json has a film.
  */
 export function SwarmDemoVideo() {
   const [length, setLength] = useState<Length>(SHORT ? "short" : "full");
@@ -88,7 +89,7 @@ export function SwarmDemoVideo() {
     void customElements.whenDefined("mux-player").then(() => setPlayer(el));
   }, []);
   const cut = cutFor(length);
-  const source = cut ? cut.playbackId ?? cut.mp4 : null;
+  const source = cut ? sourceOf(cut) : null;
   const shown = useRef<{ length: Length; source: string } | null>(null);
 
   useEffect(() => {
@@ -118,7 +119,8 @@ export function SwarmDemoVideo() {
   const start = (value: Length) => {
     const chosen = cutFor(value);
     if (!player || !chosen) return;
-    const chosenSource = chosen.playbackId ?? chosen.mp4;
+    const chosenSource = sourceOf(chosen);
+    if (!chosenSource) return;
     if (shown.current?.source !== chosenSource) {
       shown.current = { length: value, source: chosenSource };
       load(player, chosen, 0);

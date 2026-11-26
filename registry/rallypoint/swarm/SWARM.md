@@ -93,6 +93,24 @@ into an existing Next.js app, where the UI is the product.
 `npx rallypoint@latest add swarm-dashboard` creates a standalone `swarm-ui/`
 app instead. Both read your memory and GitHub and never write.
 
+## Cloud sessions
+
+The runtime reaches GitHub through the loop's transport
+(`.rallypoint/scripts/lib/gh.mjs`), not through `gh` alone. In a Claude Code
+cloud session (`CLAUDE_CODE_REMOTE=true`) `gh` is installed but GitHub's
+GraphQL API answers 403, so `next`, `plan`, `init`, `ship` and `ui-config` use
+the REST API instead, and claims and leases are written with `git push`.
+`RALLYPOINT_TRANSPORT=rest|gh` forces either transport anywhere.
+
+`swarm doctor` reports the transport it chose and why, checks that the
+repository is reachable over it, and checks ref writes: a dry-run `git push`
+in a cloud session, the repository's push permission otherwise.
+
+A session that may not delete refs releases a claim instead of deleting it,
+leaving a `rallypoint: released` marker commit that every loop read treats as
+absent. Those refs pile up until something with delete rights prunes them; see
+`docs/AGENT_LOOP.md`, "Released refs pile up".
+
 ## Measure modes
 
 Not every swarm has a reward function.

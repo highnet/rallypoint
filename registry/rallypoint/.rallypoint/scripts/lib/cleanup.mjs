@@ -95,6 +95,9 @@ export const cleanup = ({
     return EXIT.inconclusive;
   }
 
+  // A ref left at a `rallypoint: released` marker reads as absent here too:
+  // `lib/gh.mjs` hides released coordination refs from every listing, which
+  // is how a session without ref-delete rights releases one.
   if (presence.kind === "absent") {
     stdout(`No reservation for closed issue #${issue}; already clean.`);
     return EXIT.ok;

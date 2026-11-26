@@ -86,11 +86,33 @@ const memory = memoryFromEnv(process.env);
 const git = (...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
+// GitHub goes through the loop's transport choice (.rallypoint/scripts/lib/
+// gh.mjs): the `gh` CLI where it works, its REST transport where it does not.
+// In a Claude Code cloud session `gh` is installed but GraphQL — which every
+// `gh pr|issue|label|repo` subcommand uses — answers 403, so only REST gets
+// through. The loop is a prerequisite of the swarm; if its transport cannot be
+// loaded, `gh` is used as before and `doctor` says why.
+const loopGh = await import(new URL("../scripts/lib/gh.mjs", import.meta.url).href).catch(() => null);
+let ghChoice = null;
+const transport = () =>
+  (ghChoice ??= loopGh?.transportChoice?.() ?? { kind: "gh", emulateGitData: false, reason: "loop transport not found (.rallypoint/scripts/lib/gh.mjs)" });
+let restGh = null;
+const originUrl = () => {
+  try {
+    return git("config", "--get", "remote.origin.url");
+  } catch {
+    return "";
+  }
+};
 const ghCommand = () => {
   const script = process.env.RALLYPOINT_GH_SCRIPT;
   return script ? { cmd: process.execPath, pre: [script] } : { cmd: "gh", pre: [] };
 };
 const gh = (...args) => {
+  if (transport().kind === "rest") {
+    restGh ??= loopGh.restOnly({ remote: originUrl() });
+    return restGh(...args);
+  }
   const { cmd, pre } = ghCommand();
   return execFileSync(cmd, [...pre, ...args], {
     cwd,
@@ -221,11 +243,37 @@ commands.doctor = async () => {
   } catch {
     add("git", false, "not inside a git work tree");
   }
+  const choice = transport();
+  add("transport", true, `${choice.kind === "rest" ? "REST" : "gh CLI"} (${choice.reason})`);
+  let repository = null;
   try {
-    const login = gh("api", "user", "--jq", ".login");
-    add("gh", true, `authenticated as ${login}`);
-  } catch {
-    add("gh", false, "GitHub CLI missing or not authenticated (gh auth login)");
+    repository = ghJson("repo", "view", "--json", "nameWithOwner")?.nameWithOwner ?? null;
+    add("github", Boolean(repository), repository ? `${repository} reachable` : "no repository reported");
+  } catch (error) {
+    add(
+      "github",
+      false,
+      choice.kind === "rest"
+        ? `REST API unreachable: ${error.message.split("\n")[0]}`
+        : "GitHub CLI missing or not authenticated (gh auth login), or GraphQL blocked (RALLYPOINT_TRANSPORT=rest)",
+    );
+  }
+  if (choice.emulateGitData) {
+    // Claims and leases are written with `git push` here, so that is what is
+    // probed: a dry run authenticates for push without writing anything.
+    try {
+      git("push", "--dry-run", "--quiet", "origin", "HEAD:refs/heads/rallypoint-doctor-probe");
+      add("ref writes", true, "git push to origin accepted (dry run)");
+    } catch (error) {
+      add("ref writes", false, `git push to origin refused: ${String(error.stderr || error.message).trim().split("\n")[0]}`);
+    }
+  } else if (repository) {
+    try {
+      const push = ghJson("api", `repos/${repository}`)?.permissions?.push;
+      add("ref writes", push === true, push === true ? "push permission on the repository" : "no push permission: claims and leases cannot be written");
+    } catch (error) {
+      add("ref writes", false, `permissions unreadable: ${error.message.split("\n")[0]}`, "warn");
+    }
   }
   add("loop", existsSync(join(cwd, ".rallypoint/config.json")), "vanilla Rallypoint installed (.rallypoint/config.json)");
 
@@ -653,7 +701,7 @@ commands.ship = async () => {
   let sha = option("sha") ?? null;
   if (!sha && pr) {
     try {
-      sha = gh("pr", "view", String(pr), "--json", "mergeCommit", "--jq", ".mergeCommit.oid") || null;
+      sha = ghJson("pr", "view", String(pr), "--json", "mergeCommit")?.mergeCommit?.oid || null;
     } catch {
       sha = null;
     }
@@ -991,7 +1039,7 @@ commands["ui-config"] = async () => {
   let repository = process.env.RALLYPOINT_GITHUB_REPO ?? null;
   if (!repository) {
     try {
-      repository = gh("repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner");
+      repository = ghJson("repo", "view", "--json", "nameWithOwner")?.nameWithOwner ?? null;
     } catch {
       repository = null;
     }

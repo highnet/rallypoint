@@ -26,6 +26,41 @@ A checkout whose copy of the protocol is older than the integration branch's
 exits `75`, also outside every table. Both codes mean "this could not run", not
 "this is the answer".
 
+### Cloud sessions
+
+Where `gh` cannot be used, the scripts speak GitHub's REST API directly
+(`.rallypoint/scripts/lib/api.mjs`), and `lib/gh.mjs` picks the transport:
+
+| Environment                         | Transport                                    |
+| ----------------------------------- | -------------------------------------------- |
+| `RALLYPOINT_TRANSPORT=rest` or `gh` | forced, either way                           |
+| `RALLYPOINT_GH_SCRIPT` set          | `gh` (a test's fake)                         |
+| `CLAUDE_CODE_REMOTE=true`           | REST, with ref writes over `git push`        |
+| `gh` on `PATH`                      | `gh`                                         |
+| otherwise                           | REST                                         |
+
+In a Claude Code cloud session `gh` is installed but GitHub's GraphQL API —
+which every `gh pr|issue|repo|label` subcommand uses — answers 403, and the
+session proxy also refuses GitHub's git-data writes (`POST /git/refs`,
+`POST /git/commits`) and ref deletion. So there the REST transport performs
+those writes with `git push` against `origin`, keeping their semantics: a ref
+create is still create-only (`--force-with-lease=<ref>:<expected>`), which is
+what makes a claim or a lease atomic.
+
+The credential is read from `GH_TOKEN` or `GITHUB_TOKEN` when either looks
+like a real token; a cloud session's placeholder is not sent, and its proxy
+authenticates instead. `RALLYPOINT_GITHUB_API_URL` points the transport at
+another API root, such as a GitHub Enterprise `…/api/v3`.
+
+**Released refs.** A session that may not delete a ref *releases* a claim or
+lease instead: it moves the ref to a commit whose subject starts
+`rallypoint: released`. Every read through `lib/gh.mjs`, on either transport,
+treats such a ref exactly as absent, and the next claimant may take it over.
+Only coordination refs (`claimRefPrefix`, `sessionRefPrefix`) are released
+this way; any other ref that cannot be deleted is reported as a failure.
+`git ls-remote` and the GitHub UI still show released refs — see
+[Released refs pile up](#released-refs-pile-up).
+
 ## Coordination state
 
 GitHub issues are the queue. Labels are state, and their names are configurable
@@ -302,6 +337,17 @@ node .rallypoint/scripts/delete-merged-branch.mjs --pr <N>
 Use this rather than `gh pr merge --delete-branch`, which couples the local and
 remote deletes, attempts the local one first, and abandons the remote delete
 when the authoring worktree is still checked out on the branch.
+
+### Released refs pile up
+
+A released claim or lease (see [Cloud sessions](#cloud-sessions)) reads as
+absent but still exists on GitHub, and nothing a cloud session runs can delete
+it. Released refs therefore accumulate until something with delete rights
+prunes them: `close-referenced-issues.mjs` deletes a closed issue's reservation
+when it runs in Actions, and a scheduled pruning workflow for the rest is a
+planned follow-up. Until then, an operator can list them with
+`git ls-remote origin 'refs/heads/rallypoint-*'` and delete the ones whose tip
+commit's subject starts with `rallypoint: released`.
 
 ## Self-improvement
 

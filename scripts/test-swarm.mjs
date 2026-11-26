@@ -542,7 +542,9 @@ else if (key === "issue list") console.log(JSON.stringify([{ number: 4, title: "
 else if (key === "label list") console.log(JSON.stringify([{ name: "target:api" }]));
 else if (key === "label create") console.log("");
 else if (key === "issue create") console.log("https://github.com/acme/app/issues/99");
-else if (key === "repo view") console.log("acme/app");
+else if (key === "repo view") console.log(args.includes("--jq") ? "acme/app" : JSON.stringify({ nameWithOwner: "acme/app" }));
+else if (key === "api repos/acme/app") console.log(JSON.stringify({ full_name: "acme/app", permissions: { push: true } }));
+else if (key === "pr view") console.log(JSON.stringify({ mergeCommit: { oid: "c".repeat(40) } }));
 else { console.error("fake gh: unhandled " + key); process.exit(1); }
 `);
 
@@ -610,6 +612,9 @@ try {
   await test("doctor passes with memory, secret and gh", async () => {
     const out = JSON.parse(await rp(["swarm", "doctor", "--json"]));
     assert.equal(out.ok, true, JSON.stringify(out.checks.filter((c) => !c.ok)));
+    const transport = out.checks.find((c) => c.name === "transport");
+    assert.match(transport.detail, /gh CLI \(RALLYPOINT_GH_SCRIPT fixture\)/, "a fixture's fake gh wins, even in a cloud session");
+    assert.match(out.checks.find((c) => c.name === "ref writes").detail, /push permission/);
   });
 
   await test("doctor fails on a wrong secret", async () => {
@@ -647,6 +652,7 @@ try {
     assert.equal(db.swarm_buried.at(-1).numbers.mode, "checks");
     await rp(["swarm", "ship", "--version", "v0.1", "--target", "web", "--pr", "21"]);
     assert.equal(db.swarm_versions.at(-1).version, "v0.1");
+    assert.equal(db.swarm_versions.at(-1).commit_sha, "c".repeat(40), "the merge commit, read without --jq");
     await rp(["swarm", "retro", "--well", "clear issue", "--friction", "slow build", "--suggest", "cache deps"]);
     assert.equal(db.swarm_sessions[0].status, "ended");
     assert.equal(db.swarm_retros.at(-1).role, "worker");
@@ -820,7 +826,108 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation, fleet graph).`);
+  // A Claude Code cloud session: `gh` is installed but GraphQL answers 403, so
+  // every GitHub call has to be REST. `gh` on PATH here is a tripwire that
+  // fails and logs; the GitHub API is a local stub. No network.
+  await test("cloud session: init, next, plan, ship, ui-config and doctor run on REST, never on gh", async () => {
+    const github = [];
+    const pull = { number: 21, title: "Faster parse", labels: [{ name: "review:approved" }], draft: false, body: "Closes #4", state: "open", head: { ref: "agent/4-x", sha: "a".repeat(40) }, base: { ref: "main" }, user: { login: "swarm-bot", type: "User" } };
+    const api = createServer(async (req, res) => {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : null;
+      github.push({ method: req.method, url: req.url, body, authorization: req.headers.authorization });
+      const send = (status, data) => {
+        res.writeHead(status, { "Content-Type": "application/json" });
+        res.end(data === undefined ? "" : JSON.stringify(data));
+      };
+      const route = `${req.method} ${req.url}`;
+      if (route === "GET /repos/acme/app") return send(200, { full_name: "acme/app", default_branch: "main", permissions: { push: true } });
+      if (route === "GET /repos/acme/app/pulls?state=open&per_page=100") return send(200, [pull]);
+      if (route === "GET /repos/acme/app/pulls/21") return send(200, { ...pull, state: "closed", merged_at: "2026-11-01T00:00:00Z", merge_commit_sha: "b".repeat(40) });
+      if (route === "GET /repos/acme/app/issues?state=open&per_page=100") {
+        return send(200, [
+          { number: 4, title: "Faster parse", labels: [{ name: "target:api" }, { name: "status:claimed" }], assignees: [], state: "open" },
+          { number: 5, title: "Hero", labels: [{ name: "target:web" }, { name: "prio:p1" }], assignees: [], state: "open" },
+          { number: 21, title: "Faster parse", labels: [], assignees: [], state: "open", pull_request: {} },
+        ]);
+      }
+      if (route === "GET /repos/acme/app/labels?per_page=100") return send(200, [{ name: "target:api", color: "ededed", description: "" }]);
+      if (route === "POST /repos/acme/app/labels") return send(201, { name: body.name });
+      if (route === "POST /repos/acme/app/issues") return send(201, { number: 77, html_url: "https://github.com/acme/app/issues/77" });
+      return send(404, { message: "Not Found" });
+    });
+    await new Promise((done) => api.listen(0, "127.0.0.1", done));
+
+    const tripwireDir = await mkdtemp(resolve(tmpdir(), "rallypoint-tripwire-"));
+    const tripwireLog = resolve(tripwireDir, "gh.log");
+    await writeFile(resolve(tripwireDir, "gh"), `#!/bin/sh\necho "$@" >> "${tripwireLog}"\necho "GraphQL: Resource not accessible (HTTP 403)" >&2\nexit 1\n`, { mode: 0o755 });
+    const origin = await mkdtemp(resolve(tmpdir(), "rallypoint-origin-"));
+    execFileSync("git", ["init", "-q", "--bare", origin]);
+    sh("git", "remote", "add", "origin", origin);
+
+    const cloud = {
+      RALLYPOINT_GH_SCRIPT: undefined,
+      RALLYPOINT_TRANSPORT: undefined,
+      RALLYPOINT_GITHUB_REPO: undefined,
+      CLAUDE_CODE_REMOTE: "true",
+      RALLYPOINT_GITHUB_API_URL: `http://127.0.0.1:${api.address().port}`,
+      GITHUB_REPOSITORY: "acme/app",
+      // What a cloud session carries: a placeholder the proxy replaces, never
+      // a token worth sending — and no real credential may reach the stub.
+      GH_TOKEN: "proxy-injected",
+      GITHUB_TOKEN: undefined,
+      NO_PROXY: "127.0.0.1,localhost",
+      no_proxy: "127.0.0.1,localhost",
+      PATH: `${tripwireDir}:${process.env.PATH}`,
+    };
+
+    try {
+      const doctor = JSON.parse(await rp(["swarm", "doctor", "--json"], { extraEnv: cloud }));
+      const check = (name) => doctor.checks.find((c) => c.name === name);
+      assert.match(check("transport").detail, /^REST \(CLAUDE_CODE_REMOTE=true/);
+      assert.equal(check("github").ok, true, check("github").detail);
+      assert.equal(check("ref writes").ok, true, check("ref writes").detail);
+      assert.match(check("ref writes").detail, /git push/);
+      assert.equal(doctor.ok, true, JSON.stringify(doctor.checks.filter((c) => !c.ok)));
+
+      const init = await rp(["swarm", "init", "--dry-run"], { extraEnv: cloud });
+      assert.match(init, /same +label target:api/);
+      assert.match(init, /add +label target:web/);
+
+      const next = JSON.parse(await rp(["swarm", "next", "--json"], { extraEnv: cloud }));
+      assert.equal(next.role, "merger");
+      assert.equal(next.ref, 21);
+
+      await writeFile(resolve(fixture, "plan.json"), JSON.stringify([{ title: "Cloud task", body: "AC: …", target: "web", prio: "p2" }]));
+      assert.match(await rp(["swarm", "plan", "plan.json"], { extraEnv: cloud }), /issues\/77/);
+      const createdLabels = github.filter((r) => r.method === "POST" && r.url === "/repos/acme/app/labels").map((r) => r.body.name);
+      assert.ok(createdLabels.includes("target:web") && createdLabels.includes("prio:p2"), createdLabels.join(","));
+      const issue = github.find((r) => r.method === "POST" && r.url === "/repos/acme/app/issues");
+      assert.deepEqual(issue.body.labels, ["prio:p2", "target:web"]);
+
+      await rp(["swarm", "prepare"], { extraEnv: cloud });
+      await rp(["swarm", "ship", "--version", "v0.9", "--target", "web", "--pr", "21"], { extraEnv: cloud });
+      assert.equal(db.swarm_versions.at(-1).commit_sha, "b".repeat(40), "the merge commit came from REST");
+
+      const beforeUi = github.length;
+      await rp(["swarm", "ui-config", "--out", "cloud.config.ts", "--force"], { extraEnv: cloud });
+      assert.ok(github.slice(beforeUi).some((r) => r.method === "GET" && r.url === "/repos/acme/app"), "the repository name came from REST");
+      assert.match(await readFile(resolve(fixture, "cloud.config.ts"), "utf8"), /swarmConfig/);
+
+      const tripped = await readFile(tripwireLog, "utf8").catch(() => "");
+      assert.equal(tripped, "", `gh was invoked in a cloud session:\n${tripped}`);
+      assert.ok(github.every((r) => !r.url.includes("graphql")), "no GraphQL request");
+      assert.ok(github.every((r) => r.authorization === undefined), "a placeholder token is never sent");
+    } finally {
+      api.close();
+      sh("git", "remote", "remove", "origin");
+      await rm(tripwireDir, { recursive: true, force: true });
+      await rm(origin, { recursive: true, force: true });
+    }
+  });
+
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation, fleet graph, cloud REST transport).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

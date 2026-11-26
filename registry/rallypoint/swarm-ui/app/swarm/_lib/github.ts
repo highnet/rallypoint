@@ -217,6 +217,23 @@ export async function listItems(): Promise<GithubReadResult<GithubItem[]>> {
   }
 }
 
+/**
+ * The repository's default branch (`GET /repos/{repo}`), which is where most
+ * Rallypoint projects integrate. Null when GitHub cannot be read.
+ */
+export async function readDefaultBranch(): Promise<string | null> {
+  const repo = readGithubRepo();
+  if (!repo) return null;
+  try {
+    const res = await githubFetch(`/repos/${repo}`);
+    if (!res.ok) return null;
+    const body = (await res.json()) as { default_branch?: unknown };
+    return typeof body.default_branch === "string" && body.default_branch ? body.default_branch : null;
+  } catch {
+    return null;
+  }
+}
+
 export type RepoEntry = {
   name: string;
   path: string;

@@ -230,7 +230,7 @@ These match Swarm Arena's navigation one to one. The arena's words come from
 | Results | Games `/games` | `/swarm/results`, `/swarm/results/[id]` | referee runs (`swarm_results`) with checks or scores |
 | Results | Versions `/versions` | `/swarm/versions` | `swarm_versions` |
 | Results | Ideas buried `/graveyard` | `/swarm/buried` | `swarm_buried` |
-| Swarm | Fleet `/fleet` | `/swarm/fleet` | `swarm_fleet` |
+| Swarm | Fleet `/fleet` | `/swarm/fleet` | an animated fleet graph with replay (sessions, progress, results, versions, buried, protocol changes, GitHub issues and PRs), then `swarm_fleet` |
 | Swarm | Sessions `/sessions` | `/swarm/sessions` | sessions plus retros and progress |
 | Swarm | Rallypoint `/rallypoint` | `/swarm/rallypoint` | GitHub lanes: backlog, claimed, held, in review, changes asked, approved, merged |
 | Swarm | Board `/board` | `/swarm/board` | the full record from memory: results, versions, buried, protocol changes, messages, in one timeline with filters |
@@ -241,6 +241,7 @@ These match Swarm Arena's navigation one to one. The arena's words come from
 | Learn | Skills `/skills` | `/swarm/skills` | role prompts, skills and playbooks, read from the repo through GitHub contents (`.rallypoint/roles/`, `.rallypoint/swarm/skills/`, `.rallypoint/swarm/playbooks/`) |
 | — | — | `/swarm/sign-in` | private mode only |
 
-Private folders: `app/swarm/_lib`, `app/swarm/_components`. Styling:
+Private folders: `app/swarm/_lib`, `app/swarm/_components`, `app/swarm/_graph`
+(the fleet graph engine, `@rallypoint/swarm-graph`; it needs `d3`). Styling:
 `app/swarm/swarm.css`, scoped under `.rp-swarm`, Rallypoint tokens as CSS
 variables. No Tailwind dependency and no `@/` alias: relative imports only.

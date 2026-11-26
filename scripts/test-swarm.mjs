@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
+import { register } from "node:module";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -160,6 +161,162 @@ await test("ui-config generation follows the documented mapping", () => {
   assert.match(source, /"\/swarm\/targets": "Engines"/);
   assert.match(source, /export const swarmConfig: SwarmConfig/);
 });
+
+// The swarm UI's fleet graph adapter is TypeScript that a Next.js app compiles.
+// Node strips its types (on by default since Node 22.18 / 23.6); its relative
+// imports are extensionless, as the app's bundler expects, so resolve them to
+// the .ts file here.
+if (process.features.typescript) {
+  register(
+    `data:text/javascript,${encodeURIComponent(`
+      export async function resolve(specifier, context, next) {
+        try {
+          return await next(specifier, context);
+        } catch (error) {
+          if (/^\\.\\.?\\//.test(specifier) && context.parentURL?.endsWith(".ts")) return next(specifier + ".ts", context);
+          throw error;
+        }
+      }
+    `)}`,
+  );
+  const ui = (name) => import(pathToFileURL(resolve(root, "registry/rallypoint/swarm-ui/app/swarm", name)).href);
+  const { toSwarmInput, OTHER_SECTOR } = await ui("_lib/fleet-graph.ts");
+  const { buildSwarmGraph } = await ui("_graph/model.ts");
+  const { planReplay } = await ui("_graph/replay.ts");
+
+  const NOW = Date.parse("2026-11-26T12:00:00Z");
+  const ago = (hours) => new Date(NOW - hours * 3_600_000).toISOString();
+  const target = (id) => ({ id, name: id.toUpperCase(), color: "#123456", description: "" });
+  const session = (id, fields) => ({
+    id, agent: null, role: null, target: null, issue: null, pr: null, status: "ended", summary: null,
+    started_at: ago(10), last_seen_at: ago(9), ended_at: ago(9), ...fields,
+  });
+  const gh = (number, fields) => ({
+    number, title: `Item ${number}`, url: `https://github.com/o/r/issues/${number}`, isPullRequest: false, state: "open",
+    stateReason: null, mergedAt: null, labels: [], author: null, updatedAt: ago(5), createdAt: ago(20), closedAt: null, closes: [], ...fields,
+  });
+  const labels = (...names) => names.map((name) => ({ name, color: "ededed" }));
+  const empty = { sessions: [], progress: [], results: [], versions: [], buried: [], protocolChanges: [] };
+
+  await test("fleet graph: GitHub labels stage the work, sessions place the agents", () => {
+    const input = toSwarmInput({
+      ...empty,
+      now: NOW,
+      integrationBranch: "release",
+      targets: [target("api"), target("web")],
+      sessions: [
+        session("s1", { agent: "ada", role: "worker", target: "api", issue: 1, status: "working", started_at: ago(1), last_seen_at: ago(0.1), ended_at: null }),
+        session("s0", { agent: "ada", role: "planner", started_at: ago(30), last_seen_at: ago(29), ended_at: ago(29) }),
+        session("s2", { agent: "bo", role: "reviewer", target: "web", issue: 2, pr: 5, status: "working", started_at: ago(5), last_seen_at: ago(3), ended_at: null }),
+      ],
+      progress: [{ id: 1, session_id: "s1", note: "Token bucket in place", created_at: ago(0.2) }],
+      results: [{ id: 7, session_id: "s2", target: "web", issue: 2, pr: 5, passed: false, delta: null, created_at: ago(4) }],
+      versions: [{ id: 3, target: "web", version: "v1", pr: 6, created_at: ago(2) }],
+      buried: [{ id: 4, target: "api", issue: 3, pr: null, idea: "Cache everything", created_at: ago(8) }],
+      protocolChanges: [{ id: 2, version: "1.1", summary: "Name the criterion", created_at: ago(12) }],
+      github: [
+        gh(1, { labels: labels("target:api", "status:claimed") }),
+        gh(2, { labels: labels("target:web") }),
+        gh(3, { state: "closed", stateReason: "not_planned", closedAt: ago(8) }),
+        gh(4, { labels: labels("status:blocked") }),
+        gh(5, { isPullRequest: true, closes: [2], labels: labels("status:changes-requested") }),
+        gh(6, { isPullRequest: true, state: "closed", mergedAt: ago(2), closedAt: ago(2), closes: [7] }),
+        gh(7, { labels: labels("target:web"), state: "closed", stateReason: "completed", closedAt: ago(2) }),
+      ],
+    });
+    assert.equal(input.integrationBranch, "release");
+    assert.equal(input.asOf, new Date(NOW).toISOString());
+    assert.deepEqual(input.sectors.map((s) => s.id), ["api", "web", OTHER_SECTOR], "targets, then Other for #4");
+    const stage = Object.fromEntries(input.workItems.map((w) => [w.id, w.stage]));
+    assert.deepEqual(stage, { "issue-1": "claimed", "issue-2": "changes", "issue-3": "closed", "issue-4": "held", "issue-7": "merged" });
+    const one = input.workItems.find((w) => w.id === "issue-1");
+    assert.equal(one.branch, "agent/1-item-1", "the branch claim.mjs prescribes");
+    assert.equal(input.workItems.find((w) => w.id === "issue-2").pr, 5, "joined by Closes #2");
+    assert.equal(input.workItems.find((w) => w.id === "issue-7").sector, "web");
+    const ada = input.agents.find((a) => a.id === "ada");
+    assert.equal(ada.status, "working");
+    assert.equal(ada.role, "worker", "the latest session's role");
+    assert.equal(ada.workItem, "issue-1");
+    assert.equal(ada.activity, "Token bucket in place");
+    assert.equal(input.agents.find((a) => a.id === "bo").status, "idle", "working but silent for over two hours");
+    const ids = new Set(input.events.map((e) => e.id));
+    for (const id of ["session:s1:start", "progress:1", "result:7", "version:3", "buried:4", "protocol:2", "gh:pr:5:changes", "gh:pr:6:merged", "gh:issue:1:claimed"])
+      assert.ok(ids.has(id), `event ${id}`);
+    assert.ok(!ids.has("gh:issue:3:opened"), "a not-planned issue is not history");
+    assert.equal(input.events.find((e) => e.id === "result:7").outcome, "loss");
+    assert.equal(input.events.find((e) => e.id === "result:7").workItem, "issue-2");
+    assert.equal(input.sectors.find((s) => s.id === "web").count.value, 1, "one merged pull request");
+
+    const graph = buildSwarmGraph(input);
+    assert.ok(graph.nodes.some((n) => n.id === "hub:release"));
+    assert.ok(graph.flows.some((f) => f.kind === "merge"), "the merge flows through the trunk");
+    const whole = planReplay(graph.flows, graph.hubId, { mode: "all" });
+    assert.equal(whole.flows.length, graph.flows.length, "the whole run replays every flow");
+    assert.equal(whole.startAt, graph.flows[0].at);
+  });
+
+  await test("fleet graph degrades: no GitHub, no memory, one target", () => {
+    const bare = toSwarmInput({ ...empty, now: NOW, integrationBranch: "main", targets: [], github: null });
+    assert.deepEqual(bare.sectors, [], "nothing to place, nothing invented");
+    assert.equal(bare.events.length, 0);
+    assert.ok(buildSwarmGraph(bare).nodes.some((n) => n.kind === "hub"), "still draws the trunk");
+
+    const memoryOnly = toSwarmInput({
+      ...empty,
+      now: NOW,
+      integrationBranch: "main",
+      targets: [target("main")],
+      github: null,
+      sessions: [session("s1", { agent: "ada", role: "worker", issue: 9, status: "working", last_seen_at: ago(0.5), ended_at: null })],
+      versions: [{ id: 1, target: "main", version: "v2", pr: 3, created_at: ago(1) }],
+    });
+    assert.deepEqual(memoryOnly.workItems.map((w) => [w.id, w.stage, w.sector]), [["issue-9", "claimed", "main"]], "the one target takes untargeted work");
+    assert.deepEqual(memoryOnly.sectors[0].count, { value: 1, unit: "shipped", recent: 1, recentUnit: "today" });
+    assert.ok(memoryOnly.events.some((e) => e.id === "version:1"));
+  });
+
+  const { ANIMALS, animalOf, assignAnimals, preferredAnimalIndex } = await ui("_lib/animals.ts");
+
+  await test("fleet graph animals: stable per id, distinct within a fleet, order-free", () => {
+    assert.ok(ANIMALS.length >= 64, "Arena's set");
+    assert.equal(new Set(ANIMALS.map((a) => a.name)).size, ANIMALS.length, "every animal has its own name");
+    for (const a of ANIMALS) assert.match(a.d, /^[Mm]/, `${a.slug} is one SVG path`);
+
+    const fleet = [
+      "worker-cms-6", "worker-cms-7", "worker-leads-12", "worker-outreach-3", "worker-seo-9", "worker-2", "worker",
+      "reviewer-outreach-24", "reviewer-cms-8", "reviewer-leads-13", "reviewer-2",
+      "fixer-leads-26b", "fixer-cms-14", "fixer-seo-31", "merger-cms-25", "merger-leads-27",
+      "planner", "janitor", "steward", "strategist", "session 1a2b3c4d",
+    ];
+    const assigned = assignAnimals(fleet);
+    assert.equal(assigned.size, fleet.length);
+    assert.equal(new Set(assigned.values()).size, fleet.length, "no two agents in one fleet share an animal");
+    assert.deepEqual([...assignAnimals([...fleet].reverse(), undefined)], [...assigned], "the order rows arrive in does not matter");
+    assert.deepEqual([...assignAnimals([...fleet, "worker-cms-6"])], [...assigned], "a repeated id is one agent");
+    assert.equal(animalOf("worker-cms-6", assigned), animalOf("worker-cms-6", assignAnimals(fleet)), "the same on every load");
+    assert.equal(animalOf("chess/search"), animalOf("chess-search"), "Arena's two spellings of a seat agree");
+
+    // Two ids wanting one animal: the one that sorts first keeps it, the other probes to a free one.
+    const ids = Array.from({ length: 400 }, (_, i) => `worker-${i}`);
+    const [a, b] = ids.filter((id) => preferredAnimalIndex(id) === preferredAnimalIndex(ids[0])).sort();
+    const pair = assignAnimals([b, a]);
+    assert.equal(pair.get(a), preferredAnimalIndex(a));
+    assert.notEqual(pair.get(b), pair.get(a));
+
+    // An agent arriving later never displaces one already on screen.
+    const shown = assignAnimals([b]);
+    const later = assignAnimals([a, b], shown);
+    assert.equal(later.get(b), shown.get(b));
+    assert.notEqual(later.get(a), later.get(b));
+
+    // More agents than animals: every one still gets an animal, the first ANIMALS.length all distinct.
+    const crowd = assignAnimals(ids);
+    assert.equal(crowd.size, ids.length);
+    assert.equal(new Set(crowd.values()).size, ANIMALS.length);
+  });
+} else {
+  console.log("(skipping the fleet graph adapter tests: this Node cannot strip TypeScript types)");
+}
 
 // ---------------------------------------------------------------------------
 // swarm-ui setup and error banners (the TypeScript is loaded through Node's
@@ -614,6 +771,9 @@ try {
     await mkdir(resolve(fixture, "src/app"), { recursive: true });
     const out = await rp(["add", "swarm-ui"]);
     assert.match(out, /src\/app detected/);
+    assert.match(out, /npm install d3@"\^7/, "names the fleet graph's missing dependency");
+    assert.match(out, /npm install --save-dev @types\/d3@/);
+    await readFile(resolve(fixture, "src/app/swarm/_graph/render.ts"));
     await readFile(resolve(fixture, "src/app/swarm/page.tsx"));
     await readFile(resolve(fixture, "src/app/swarm/swarm.config.ts"));
     await assert.rejects(readFile(resolve(fixture, "app/swarm/page.tsx")), "no root app/ was created");
@@ -634,7 +794,7 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation, fleet graph).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

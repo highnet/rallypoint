@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Empty, Gate, PageHead, Panel, Section } from "../_components/states";
+import { CopyBlock, Empty, Gate, PageHead, Panel, Section } from "../_components/states";
 import { getSkills, getSwarmContext } from "../_lib/queries";
 
 export const metadata: Metadata = { title: "Skills" };
@@ -60,7 +60,17 @@ export default async function SkillsPage({
           ))}
           {file ? (
             <Section id="file" title={file.path}>
-              {file.error ? <p className="rp-soft">{file.error}</p> : <pre className="rp-file">{file.text}</pre>}
+              {file.text === null ? (
+                <p className="rp-soft">{file.error}</p>
+              ) : (
+                <CopyBlock
+                  className="rp-file"
+                  id="rp-file-text"
+                  label={`Copy the contents of ${file.path}`}
+                  tabIndex={0}
+                  text={file.text}
+                />
+              )}
             </Section>
           ) : null}
         </>

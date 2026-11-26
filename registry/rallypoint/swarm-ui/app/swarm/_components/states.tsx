@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { formatDate, timeAgo } from "../_lib/format";
 import type { SwarmContext } from "../_lib/queries";
 import type { ReadError } from "../_lib/supabase";
+import { CopyButton } from "./copy";
 
 export function PageHead({ title, lede, children }: { title: string; lede?: ReactNode; children?: ReactNode }) {
   return (
@@ -49,6 +50,37 @@ export function Panel({ title, tone, children }: { title: string; tone?: "warn";
   );
 }
 
+/**
+ * Text meant to be pasted somewhere else: a prompt, a command, a file. The
+ * copy button sits in its own row above the block, so it never covers the
+ * text, and copies exactly the string shown. Only the button is a client
+ * component; the block itself stays server-rendered.
+ */
+export function CopyBlock({
+  text,
+  label,
+  id,
+  className = "rp-code",
+  tabIndex,
+}: {
+  text: string;
+  label: string;
+  id: string;
+  className?: string;
+  tabIndex?: number;
+}) {
+  return (
+    <div className="rp-copy-block">
+      <div className="rp-copy-bar">
+        <CopyButton label={label} targetId={id} text={text} />
+      </div>
+      <pre className={className} id={id} tabIndex={tabIndex}>
+        {text}
+      </pre>
+    </div>
+  );
+}
+
 /** Reads that failed after the connection itself worked. */
 export function QueryErrors({ errors }: { errors: ReadError[] }) {
   if (errors.length === 0) return null;
@@ -72,6 +104,11 @@ export function QueryErrors({ errors }: { errors: ReadError[] }) {
   );
 }
 
+const ENV_TEMPLATE = `NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY=<publishable or anon key>
+RALLYPOINT_GITHUB_REPO=<owner>/<name>      # Rallypoint lanes, delivery, skills
+RALLYPOINT_GITHUB_TOKEN=<optional token>   # rate limits, private repos`;
+
 /** What every page renders when memory cannot be read yet. */
 export function Gate({ context }: { context: Exclude<SwarmContext, { state: "ok" }> }) {
   if (context.state === "unconfigured") {
@@ -88,12 +125,13 @@ export function Gate({ context }: { context: Exclude<SwarmContext, { state: "ok"
             </li>
           ))}
         </ul>
-        <pre className="rp-code rp-code-nowrap" tabIndex={0}>
-          {`NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY=<publishable or anon key>
-RALLYPOINT_GITHUB_REPO=<owner>/<name>      # Rallypoint lanes, delivery, skills
-RALLYPOINT_GITHUB_TOKEN=<optional token>   # rate limits, private repos`}
-        </pre>
+        <CopyBlock
+          className="rp-code rp-code-nowrap"
+          id="rp-env-template"
+          label="Copy the environment variable template"
+          tabIndex={0}
+          text={ENV_TEMPLATE}
+        />
         <p>
           Then apply <code>.rallypoint/swarm/schema.sql</code> in the Supabase SQL editor and run{" "}
           <code>npx rallypoint swarm doctor</code>.

@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -159,6 +159,35 @@ await test("ui-config generation follows the documented mapping", () => {
   assert.match(source, /"shipped": "landed"/);
   assert.match(source, /"\/swarm\/targets": "Engines"/);
   assert.match(source, /export const swarmConfig: SwarmConfig/);
+});
+
+await test("swarm-ui: every prompt, command and file block has a copy button", async () => {
+  const swarmDir = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
+  const files = (await readdir(swarmDir, { recursive: true })).filter((f) => f.endsWith(".tsx"));
+  const copy = await readFile(resolve(swarmDir, "_components/copy.tsx"), "utf8");
+  assert.match(copy, /^"use client";/, "only the button is a client component");
+  assert.match(copy, /navigator\.clipboard\?\.writeText/);
+  assert.match(copy, /selectNodeContents/, "falls back to selecting the shown text");
+  assert.match(copy, /aria-live="polite"/);
+  assert.match(copy, /<button aria-label=\{label\}[^>]*type="button"/);
+  for (const file of files) {
+    const source = await readFile(resolve(swarmDir, file), "utf8");
+    const pres = source.match(/<pre\b/g)?.length ?? 0;
+    if (file === "_components/states.tsx") {
+      assert.equal(pres, 1, "states.tsx renders <pre> only inside CopyBlock");
+      assert.match(source, /<CopyButton label=\{label\} targetId=\{id\} text=\{text\} \/>[\s\S]*<pre className=\{className\} id=\{id\}/);
+      assert.doesNotMatch(source, /"use client"/, "CopyBlock stays server-rendered");
+    } else {
+      assert.equal(pres, 0, `${file} renders a <pre> without a copy button; use CopyBlock`);
+    }
+  }
+  for (const page of ["protocol/page.tsx", "skills/page.tsx"]) {
+    const source = await readFile(resolve(swarmDir, page), "utf8");
+    assert.match(source, /<CopyBlock/, `${page} uses CopyBlock`);
+    assert.doesNotMatch(source, /"use client"/, `${page} stays server-rendered`);
+  }
+  const protocol = await readFile(resolve(swarmDir, "protocol/page.tsx"), "utf8");
+  assert.match(protocol, /text=\{data\.repoUrl \? `Repository: \$\{data\.repoUrl\}\\n\$\{prompt\.prompt\}` : prompt\.prompt\}/, "copies the prompt with its Repository: line");
 });
 
 // ---------------------------------------------------------------------------

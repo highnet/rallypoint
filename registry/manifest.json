@@ -374,6 +374,10 @@
           "target": "app/swarm/_components/chips.tsx"
         },
         {
+          "source": "swarm-ui/app/swarm/_components/copy.tsx",
+          "target": "app/swarm/_components/copy.tsx"
+        },
+        {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
           "target": "app/swarm/_components/nav.tsx"
         },
@@ -538,6 +542,10 @@
         {
           "source": "swarm-ui/app/swarm/_components/chips.tsx",
           "target": "swarm-ui/app/swarm/_components/chips.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/copy.tsx",
+          "target": "swarm-ui/app/swarm/_components/copy.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",

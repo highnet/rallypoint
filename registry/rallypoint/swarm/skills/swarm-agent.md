@@ -14,9 +14,24 @@ idea with its numbers, a hand-off message.
    `.rallypoint/swarm.json`.
 2. Run `swarm doctor`. If it fails, stop and report what failed. Never invent
    a workaround for a missing secret or schema.
-3. Run `swarm prepare --agent <your agent id>`.
+3. Open your session.
+   - **Dispatched for a job** (your prompt names a role, and maybe a target,
+     an issue or a pull request): pass all of it, and skip `swarm next`.
+
+     ```bash
+     swarm prepare --agent <your agent id> --role <role> [--target <t>] [--issue <n> | --pr <n>]
+     ```
+
+   - **Not dispatched**: `swarm prepare --agent <your agent id>`, then take
+     your role in step 2.
+
+   `prepare --role` records the role, target, issue and pull request on your
+   session, exactly as `swarm next` would, so the fleet shows what you are
+   doing. It prints `ROLE`, `TARGET` and the files to `READ`, as `next` does.
 
 ## 2. Take your role
+
+Skip this step if `prepare --role` already named it.
 
 ```bash
 swarm next            # or: swarm next <target>, swarm next --only merger,reviewer
@@ -27,6 +42,12 @@ completely, then do exactly that role, as the vanilla role prompt describes.
 The order is finish-first: merger → fixer → reviewer → improver → worker →
 planner → janitor. Exit code `4` means nothing waits for you: leave a retro
 and stop.
+
+Your session's issue and pull request stay current on their own: `claim.mjs`
+records the issue it claims, `review.mjs record` the pull request it judged,
+and `lease.mjs` the pull request it leased. When you move to work none of
+those took (a pull request you opened, for example), say so with
+`swarm assign --pr <n>`.
 
 Read the confirmed brief in `docs/briefs/` and `PRODUCT.md` before you change
 what the product does. Read `DESIGN.md` too before you change how it looks.

@@ -12,5 +12,22 @@ import process from "node:process";
 
 import { gh, loadConfig } from "./lib/gh.mjs";
 import { lease } from "./lib/lease.mjs";
+import { noteSwarmWork } from "./lib/swarm-session.mjs";
 
-process.exit(lease({ argv: process.argv.slice(2), config: loadConfig(), gh }));
+const argv = process.argv.slice(2);
+const code = lease({ argv, config: loadConfig(), gh });
+
+// A lease acquired from a checkout with a Rallypoint Swarm session open is
+// that session's job: record the role and pull request on it. Best-effort,
+// and never on a release or a sweep. A conductor leasing on a dispatched
+// session's behalf has no session open in its own checkout, so it records
+// nothing.
+if (code === 0 && !argv.includes("--release") && !argv.includes("--sweep")) {
+  const valueOf = (name) => {
+    const index = argv.indexOf(name);
+    return index < 0 ? null : (argv[index + 1] ?? null);
+  };
+  noteSwarmWork({ work: { role: valueOf("--role"), pr: valueOf("--pr") } });
+}
+
+process.exit(code);

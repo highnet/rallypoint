@@ -362,6 +362,79 @@ try {
     await rp(["swarm", "log", "after end"], { expect: 2 });
   });
 
+  // A conductor dispatches each session for a role it already chose, and the
+  // session skips `swarm next`. `prepare --role` must then write the same
+  // session fields `next` writes, or the fleet and roles views stay empty.
+  await test("a dispatched session records its role, target, issue and PR", async () => {
+    const before = db.swarm_sessions.length;
+    for (const bad of [
+      ["--role", "captain"],
+      ["--role"],
+      ["--role", "reviewer", "--target", "nope"],
+      ["--role", "worker", "--issue", "abc"],
+      ["--role", "reviewer", "--pr", "0"],
+    ]) {
+      await rp(["swarm", "prepare", "--agent", "reviewer-7", ...bad], { expect: 2 });
+    }
+    assert.equal(db.swarm_sessions.length, before, "a refused assignment opens no session");
+
+    const opened = JSON.parse(await rp(["swarm", "prepare", "--agent", "reviewer-7", "--role", "reviewer", "--target", "api", "--pr", "21", "--json"]));
+    const row = db.swarm_sessions.at(-1);
+    assert.equal(db.swarm_sessions.length, before + 1);
+    assert.deepEqual(
+      { agent: row.agent, role: row.role, target: row.target, pr: row.pr, issue: row.issue ?? null },
+      { agent: "reviewer-7", role: "reviewer", target: "api", pr: 21, issue: null },
+    );
+    assert.deepEqual(opened.read, [".rallypoint/roles/reviewer.md"], "prepare names the files to read, as next does");
+    assert.match(await rp(["swarm", "prepare", "--role", "reviewer", "--pr", "21"]), /ROLE reviewer\nTARGET PR #21\nREAD \.rallypoint\/roles\/reviewer\.md/);
+
+    // Already open: the assignment lands on the same session, not a new one.
+    const reused = JSON.parse(await rp(["swarm", "prepare", "--agent", "reviewer-7", "--role", "planner", "--json"]));
+    assert.equal(reused.reused, true);
+    assert.equal(db.swarm_sessions.length, before + 1);
+    assert.equal(row.role, "planner");
+    assert.deepEqual(reused.read, [".rallypoint/swarm/skills/swarm-strategist.md", ".rallypoint/roles/planner.md"]);
+
+    await rp(["swarm", "assign", "--role", "worker", "--issue", "5"]);
+    assert.deepEqual([row.role, row.issue, row.pr, row.target], ["worker", 5, 21, "api"], "assign patches only the fields it is given");
+    await rp(["swarm", "assign"], { expect: 2 });
+
+    // The loop's scripts report through lib/swarm-session.mjs. It spawns the
+    // runtime synchronously, so drive it from a child process: a sync spawn
+    // here would block the fake memory server.
+    const { swarmAssignArgs } = await import(pathToFileURL(resolve(fixture, ".rallypoint/scripts/lib/swarm-session.mjs")).href);
+    assert.deepEqual(swarmAssignArgs({ issue: 9 }), ["assign", "--issue", "9", "--if-open", "--json"]);
+    assert.deepEqual(swarmAssignArgs({ role: "reviewer", pr: "21" }), ["assign", "--role", "reviewer", "--pr", "21", "--if-open", "--json"]);
+    assert.equal(swarmAssignArgs({ role: null, pr: null }), null);
+    const note = (work, extraEnv = {}) =>
+      new Promise((done, fail) => {
+        const code = `import(${JSON.stringify(pathToFileURL(resolve(fixture, ".rallypoint/scripts/lib/swarm-session.mjs")).href)}).then((m) => console.log(m.noteSwarmWork({ work: ${JSON.stringify(work)} })))`;
+        const childEnv = Object.fromEntries(Object.entries({ ...env, ...extraEnv }).filter(([, v]) => v !== undefined));
+        const child = spawn(process.execPath, ["--input-type=module", "-e", code], { cwd: tmpdir(), env: childEnv });
+        let output = "";
+        child.stdout.on("data", (d) => (output += d));
+        child.stderr.on("data", (d) => (output += d));
+        child.on("close", (status) => (status === 0 ? done(output) : fail(new Error(output))));
+      });
+    assert.match(await note({ issue: 6 }), /recorded/, "run from anywhere, it finds its own checkout");
+    assert.equal(row.issue, 6, "claim.mjs's issue reaches the session");
+    assert.match(await note({ role: "reviewer", pr: 22 }), /recorded/);
+    assert.deepEqual([row.role, row.pr], ["reviewer", 22], "a verdict or lease's pull request reaches the session");
+    assert.match(await note({ pr: 23 }, { RALLYPOINT_SWARM_SECRET: undefined }), /Swarm: could not record[^\n]*GitHub side is unaffected\.\s+failed/, "a failed write is one line, never a throw");
+    assert.equal(row.pr, 22);
+
+    for (const script of ["claim.mjs", "review.mjs", "lease.mjs"]) {
+      const source = await readFile(resolve(fixture, ".rallypoint/scripts", script), "utf8");
+      assert.match(source, /noteSwarmWork\(\{ work: \{/, `${script} tells the open session what it took`);
+    }
+
+    await rp(["swarm", "retro", "--well", "named my job", "--friction", "none", "--suggest", "none"]);
+    assert.equal(row.status, "ended");
+    assert.match(await note({ issue: 7 }), /skipped/, "with no session open the hook is a silent no-op");
+    assert.deepEqual(JSON.parse(await rp(["swarm", "assign", "--pr", "1", "--if-open", "--json"])), { assigned: false, reason: "no open session" });
+    await rp(["swarm", "assign", "--pr", "1"], { expect: 2 });
+  });
+
   await test("referee fails with exit 3 when a check fails", async () => {
     swarmJson.measure.checks.push({ name: "e2e", command: "node -e \"process.exit(1)\"" });
     await writeFile(swarmJsonPath, JSON.stringify(swarmJson, null, 2));

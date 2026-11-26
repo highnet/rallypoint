@@ -99,6 +99,7 @@ import { resolveTransport } from "./lib/gh.mjs";
 import { git as realGit } from "./lib/git.mjs";
 // The authority for every exit code below; see the comment above `EXIT`'s use.
 import { EXIT } from "./lib/review-exit-codes.mjs";
+import { noteSwarmWork } from "./lib/swarm-session.mjs";
 import {
   legacyVerdictAtHead,
   MARKER,
@@ -710,6 +711,10 @@ if (command === "record") {
     setChangesRequested(true);
     console.log(`Recorded request-changes for #${pullRequest} at ${head}.`);
   }
+
+  // A Rallypoint Swarm session open in this checkout records the pull request
+  // it reviewed. Best-effort: it never changes this exit code.
+  noteSwarmWork({ work: { role: "reviewer", pr: pullRequest } });
 
   process.exit(0);
 }

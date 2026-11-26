@@ -22,7 +22,7 @@ import process from "node:process";
 
 import { allTargets, parseSwarmConfig } from "./lib/config.mjs";
 import { MemoryError, memoryFromEnv } from "./lib/memory.mjs";
-import { ROLE_WHEN, computeQueues, pickRole } from "./lib/roles.mjs";
+import { DEFAULT_ROLE_ORDER, ROLE_WHEN, computeQueues, pickRole } from "./lib/roles.mjs";
 import { referee } from "./lib/referee.mjs";
 import { renderUiConfig } from "./lib/ui-config.mjs";
 
@@ -55,7 +55,7 @@ const positionals = () => {
   }
   return out;
 };
-const BOOLEAN_FLAGS = new Set(["json", "dry-run", "force", "no-record", "help", "kept", "reverted", "abandon", "no-color", "since-change", "first"]);
+const BOOLEAN_FLAGS = new Set(["json", "dry-run", "force", "no-record", "help", "kept", "reverted", "abandon", "no-color", "since-change", "first", "if-open"]);
 
 const asJson = flag("json");
 const tty = process.stdout.isTTY && !flag("no-color") && !asJson;
@@ -181,9 +181,14 @@ ${strong("Setup")}
                                  generate the project's app/swarm/swarm.config.ts
 
 ${strong("A session")}
-  prepare [--agent <name>]       open a session
+  prepare [--agent <name>] [--role r] [--target t] [--issue n] [--pr n]
+                                 open a session; a dispatched session names
+                                 its role here and skips "next"
   next [target] [--only a,b]     take your role (merger → fixer → reviewer →
                                  improver → worker → planner → janitor)
+  assign [--role r] [--target t] [--issue n] [--pr n] [--if-open]
+                                 record what the open session is working on
+                                 (claim.mjs, review.mjs and lease.mjs do this)
   log "<note>"                   progress as you go
   say --kind question|proposal|handoff|answer|note [--ref #n] [--thread id] "<body>"
   inbox [--ref #n] [--limit n]   recent messages
@@ -359,17 +364,112 @@ commands.init = async () => {
   return EXIT.OK;
 };
 
+// What a session is working on: the same columns `swarm next` writes
+// (role, target, issue, pr), read from flags and checked before anything is
+// written. Only the flags given are returned, so a later call can add the
+// issue a claim took without clearing the role.
+const readAssignment = () => {
+  const assignment = {};
+  const valueOf = (name) => {
+    if (!rest.includes(`--${name}`)) return undefined;
+    const value = option(name);
+    if (value === undefined || value.trim() === "") throw new UsageError(`--${name} needs a value`);
+    return value.trim();
+  };
+  const role = valueOf("role");
+  if (role !== undefined) {
+    if (!DEFAULT_ROLE_ORDER.includes(role)) {
+      throw new UsageError(`unknown role "${role}"; roles: ${DEFAULT_ROLE_ORDER.join(", ")}`);
+    }
+    assignment.role = role;
+  }
+  const target = valueOf("target");
+  if (target !== undefined) {
+    const { config } = loadSwarmConfig();
+    if (!allTargets(config).some((t) => t.id === target)) {
+      throw new UsageError(`unknown target "${target}"; targets: ${allTargets(config).map((t) => t.id).join(", ") || "(none)"}`);
+    }
+    assignment.target = target;
+  }
+  for (const name of ["issue", "pr"]) {
+    const raw = valueOf(name);
+    if (raw === undefined) continue;
+    const number = intOrNull(raw);
+    if (number === null || number < 1) throw new UsageError(`--${name} must be a positive number, not "${raw}"`);
+    assignment[name] = number;
+  }
+  return assignment;
+};
+
+const describeAssignment = (assignment) => {
+  const lines = [];
+  if (assignment.role) lines.push(`ROLE ${assignment.role}`);
+  const ref = assignment.pr ? `PR #${assignment.pr}` : assignment.issue ? `#${assignment.issue}` : null;
+  if (ref || assignment.target) lines.push(`TARGET ${ref ?? "-"}${assignment.target ? ` ${muted(`(target ${assignment.target})`)}` : ""}`);
+  if (assignment.role) lines.push(...roleFiles(assignment.role).map((file) => `READ ${file}`));
+  return lines;
+};
+
+const sessionWith = (session, assignment) => ({
+  ...session,
+  ...(assignment.role ? { role: assignment.role } : {}),
+  ...(assignment.target ? { target: assignment.target } : {}),
+});
+
 commands.prepare = async () => {
+  const assignment = readAssignment();
+  const assigned = Object.keys(assignment).length > 0;
+  const read = assignment.role ? roleFiles(assignment.role) : [];
   const existing = readSession();
   if (existing?.id && !flag("force")) {
-    out({ session: existing, reused: true }, `${muted("session already open:")} ${existing.id} ${muted("(use --force for a new one)")}`);
+    if (!assigned) {
+      out({ session: existing, reused: true }, `${muted("session already open:")} ${existing.id} ${muted("(use --force for a new one)")}`);
+      return EXIT.OK;
+    }
+    // A dispatched session that already prepared: record the assignment on
+    // the open session rather than opening a second one.
+    await touch(existing, assignment);
+    const session = sessionWith(existing, assignment);
+    writeSession(session);
+    out(
+      { session, reused: true, assignment, read },
+      [`${muted("session already open:")} ${existing.id} ${muted("· assignment recorded")}`, ...describeAssignment(assignment)].join("\n"),
+    );
     return EXIT.OK;
   }
   const agent = option("agent") ?? process.env.RALLYPOINT_AGENT ?? `agent-${randomBytes(3).toString("hex")}`;
-  const row = await memory.insert("swarm_sessions", { agent });
-  const session = { id: row.id, agent, startedAt: row.started_at };
+  const row = await memory.insert("swarm_sessions", { agent, ...assignment });
+  const session = sessionWith({ id: row.id, agent, startedAt: row.started_at }, assignment);
   writeSession(session);
-  out({ session }, `${green("session")} ${session.id} ${muted(`as ${agent}`)}\nNext: ${strong("swarm next")}`);
+  out(
+    { session, assignment, read },
+    [
+      `${green("session")} ${session.id} ${muted(`as ${agent}`)}`,
+      ...(assignment.role
+        ? describeAssignment(assignment)
+        : [...describeAssignment(assignment), `Next: ${strong("swarm next")}`]),
+    ].join("\n"),
+  );
+  return EXIT.OK;
+};
+
+commands.assign = async () => {
+  const assignment = readAssignment();
+  if (Object.keys(assignment).length === 0) throw new UsageError("assign needs --role, --target, --issue or --pr");
+  const session = readSession();
+  if (!session?.id) {
+    // The loop's scripts call this after every claim, verdict and lease, in
+    // repositories with and without a swarm session open.
+    if (flag("if-open")) {
+      out({ assigned: false, reason: "no open session" });
+      return EXIT.OK;
+    }
+    throw new UsageError("no open session: run “swarm prepare” first");
+  }
+  await touch(session, assignment);
+  const updated = sessionWith(session, assignment);
+  writeSession(updated);
+  out({ assigned: true, session: updated, assignment }, [`${green("assigned")} ${session.id}`, ...describeAssignment(assignment)].join("\n"));
   return EXIT.OK;
 };
 

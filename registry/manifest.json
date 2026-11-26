@@ -206,6 +206,10 @@
           "target": ".rallypoint/scripts/lib/review-exit-codes.mjs"
         },
         {
+          "source": ".rallypoint/scripts/lib/swarm-session.mjs",
+          "target": ".rallypoint/scripts/lib/swarm-session.mjs"
+        },
+        {
           "source": ".rallypoint/scripts/preflight.mjs",
           "target": ".rallypoint/scripts/preflight.mjs",
           "executable": true

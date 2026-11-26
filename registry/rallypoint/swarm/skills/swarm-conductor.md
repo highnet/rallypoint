@@ -44,12 +44,21 @@ There are three layers, and only the middle one writes:
    A lease refused because someone holds it means skip that job. Any other
    refusal (a usage error, an unreadable source) means stop and escalate.
 5. Start **one separate session per dispatch** (in Claude Code, the
-   remote-session tools; elsewhere, a new agent process). Use this prompt,
-   filled in:
+   remote-session tools; elsewhere, a new agent process). You already chose
+   its role, target and job, so the session names them when it opens and
+   skips `swarm next`. Use this prompt, filled in; keep `--pr` for a merger,
+   fixer or reviewer, `--issue` when you chose the issue, and drop
+   `--target` when the job has none:
 
    > Repository: <owner/repo> (default branch <branch>).
    > Run a swarm agent. Follow .claude/skills/swarm-agent/SKILL.md exactly.
-   > Take your role with `swarm next <target> --only <role>`. Do that one role, log progress, leave a retro.
+   > You are dispatched as the <role> for target <target>, on <PR #N | issue #N>.
+   > Open your session with `swarm prepare --agent <a unique agent id> --role <role> --target <target> --pr <N>`
+   > and do not run `swarm next`. Do that one role, log progress, leave a retro.
+
+   A worker gets no `--issue`: `claim.mjs` picks the issue and records it on
+   the session itself. Without `--role`, nothing tells the swarm's memory
+   what the session is doing, and the fleet and roles views stay empty.
 
 6. Count every dispatch against `budget`. At the budget, stop dispatching and
    say so.

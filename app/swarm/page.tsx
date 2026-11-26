@@ -361,7 +361,8 @@ export default function SwarmPage() {
               The planner runs as the strategist: it reads <code>swarm brief</code> (goal, targets,
               versions, buried ideas, concept trials, open work) and opens issues with{" "}
               <code>swarm plan</code>. The orchestrator runs as the conductor: it starts the fleet,
-              and each session it starts takes its role with <code>swarm next</code>.
+              choosing each session&rsquo;s role itself, and the session records it with{" "}
+              <code>swarm prepare --role</code> instead of running <code>swarm next</code>.
             </p>
           </div>
         </section>

@@ -19,6 +19,7 @@ import { claim } from "./lib/claim.mjs";
 import { EXIT_STALE_CHECKOUT, freshness } from "./lib/freshness.mjs";
 import { loadConfig, resolveTransport } from "./lib/gh.mjs";
 import { git as realGit } from "./lib/git.mjs";
+import { noteSwarmWork } from "./lib/swarm-session.mjs";
 
 /** @param {string[]} args */
 const git = (...args) => realGit(args);
@@ -40,13 +41,18 @@ process.exit(
     // hosts from its first minute — the exposure the worktree guard states
     // it cannot reach. Best-effort: it reports refusals and never changes the
     // exit code above.
-    afterClaim: ({ branch }) =>
+    //
+    // A Rallypoint Swarm session open in this checkout is told the issue
+    // too, so the swarm's memory shows what it works on. Also best-effort.
+    afterClaim: ({ issue, branch }) => {
       beaconPush({
         branch,
         config,
         git,
         stdout: console.log,
         stderr: console.error,
-      }),
+      });
+      noteSwarmWork({ work: { issue } });
+    },
   }),
 );

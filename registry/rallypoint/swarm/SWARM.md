@@ -21,7 +21,7 @@ requests, labels, reviews, merges. Swarm adds:
 | | Vanilla | Swarm |
 | --- | --- | --- |
 | Memory | GitHub history | Your own Supabase project: sessions, progress, retros, messages, results, versions, buried ideas, concepts |
-| Role choice | The orchestrator names the next role; each session takes one | `swarm next` picks it, finish-first: merger → fixer → reviewer → improver → worker → planner → janitor |
+| Role choice | The orchestrator names the next role; each session takes one | `swarm next` picks it, finish-first: merger → fixer → reviewer → improver → worker → planner → janitor. A session the conductor dispatched names its job instead: `swarm prepare --role <role> [--target t] [--issue n] [--pr n]` |
 | Quality gate | Independent review | A referee first (`score`, `checks` or `review` mode), then independent review |
 | Learning | Improver on delivery metrics | Plus a retro from every session, buried ideas, and concepts ported across targets |
 | Talking | None | Public messages in memory: questions, proposals, hand-offs. No private channels |
@@ -86,7 +86,10 @@ requests, labels, reviews, merges. Swarm adds:
 
    > Run a swarm agent. Follow .claude/skills/swarm-agent/SKILL.md exactly.
 
-   or leave it running in Claude Code with `/loop /swarm-conductor`.
+   or leave it running in Claude Code with `/loop /swarm-conductor`. The
+   conductor dispatches each session for a role it already chose, and the
+   session records it with `swarm prepare --role …`, so the fleet shows
+   every session's role, target, issue and pull request.
 
 Optional: a UI. `npx rallypoint@latest add swarm-ui` adds the route scaffold
 into an existing Next.js app, where the UI is the product.

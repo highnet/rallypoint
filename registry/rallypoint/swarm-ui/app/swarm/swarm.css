@@ -350,6 +350,55 @@
   }
 }
 
+/* Live updates (_components/live.tsx): a quiet word beside the working pill. */
+.rp-sync {
+  align-items: center;
+  color: var(--rp-ink-soft);
+  display: inline-flex;
+  font-size: 0.75rem;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.rp-sync-dot {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  height: 6px;
+  width: 6px;
+}
+
+.rp-sync[data-state="live"] .rp-sync-dot {
+  background: var(--rp-live);
+  border-color: var(--rp-live);
+}
+
+.rp-sync[data-state="polling"] .rp-sync-dot,
+.rp-sync[data-state="held"] .rp-sync-dot {
+  background: currentColor;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rp-sync[data-state="connecting"] .rp-sync-dot,
+  .rp-sync[data-state="reconnecting"] .rp-sync-dot {
+    animation: rp-sync-wait 1.6s var(--rp-ease) infinite alternate;
+  }
+}
+
+@keyframes rp-sync-wait {
+  to {
+    opacity: 0.3;
+  }
+}
+
+@media (max-width: 599px) {
+  .rp-sync > [aria-hidden="true"]:not(.rp-sync-dot) {
+    display: none;
+  }
+}
+
 .rp-sidebar {
   background: var(--rp-paper-sunk);
   border-right: 1px solid var(--rp-rule);

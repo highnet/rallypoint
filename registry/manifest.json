@@ -249,7 +249,7 @@
     },
     {
       "name": "swarm",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "requires": [
         "loop"
       ],
@@ -291,6 +291,10 @@
         {
           "source": "swarm/schema.sql",
           "target": ".rallypoint/swarm/schema.sql"
+        },
+        {
+          "source": "swarm/realtime.sql",
+          "target": ".rallypoint/swarm/realtime.sql"
         },
         {
           "source": "swarm/skills/swarm-agent.md",
@@ -344,7 +348,7 @@
     },
     {
       "name": "swarm-ui",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "requires": [
         "swarm"
       ],
@@ -354,6 +358,9 @@
       "generate": {
         "command": "ui-config",
         "out": "app/swarm/swarm.config.ts"
+      },
+      "dependencies": {
+        "@supabase/realtime-js": "^2.119.2"
       },
       "description": "The swarm UI route scaffold, installed into an existing Next.js App Router app (the UI is the product): Progress, News, Targets, Results, Versions, Ideas buried, Fleet, Sessions, Rallypoint, Board, Messages, How it works, Protocol, Concepts, Skills. Read-only. Generates a project-owned app/swarm/swarm.config.ts.",
       "files": [
@@ -372,6 +379,10 @@
         {
           "source": "swarm-ui/app/swarm/_components/chips.tsx",
           "target": "app/swarm/_components/chips.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/live.tsx",
+          "target": "app/swarm/_components/live.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
@@ -400,6 +411,14 @@
         {
           "source": "swarm-ui/app/swarm/_lib/github.ts",
           "target": "app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/live-token.ts",
+          "target": "app/swarm/_lib/live-token.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/live.ts",
+          "target": "app/swarm/_lib/live.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/protocol.ts",
@@ -513,7 +532,7 @@
     },
     {
       "name": "swarm-dashboard",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "requires": [
         "swarm"
       ],
@@ -538,6 +557,10 @@
         {
           "source": "swarm-ui/app/swarm/_components/chips.tsx",
           "target": "swarm-ui/app/swarm/_components/chips.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_components/live.tsx",
+          "target": "swarm-ui/app/swarm/_components/live.tsx"
         },
         {
           "source": "swarm-ui/app/swarm/_components/nav.tsx",
@@ -566,6 +589,14 @@
         {
           "source": "swarm-ui/app/swarm/_lib/github.ts",
           "target": "swarm-ui/app/swarm/_lib/github.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/live-token.ts",
+          "target": "swarm-ui/app/swarm/_lib/live-token.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/_lib/live.ts",
+          "target": "swarm-ui/app/swarm/_lib/live.ts"
         },
         {
           "source": "swarm-ui/app/swarm/_lib/protocol.ts",

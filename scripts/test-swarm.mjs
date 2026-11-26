@@ -167,6 +167,100 @@ await test("ui-config generation follows the documented mapping", () => {
 
 const SECRET = "correct-horse-battery-staple";
 const db = { swarm_sessions: [], swarm_progress: [], swarm_retros: [], swarm_messages: [], swarm_results: [], swarm_versions: [], swarm_buried: [], swarm_concepts: [], swarm_concept_trials: [], swarm_protocol_changes: [], swarm_settings: [] };
+// ---------------------------------------------------------------------------
+// realtime SQL: static checks, plus an opt-in run against a real Postgres
+// ---------------------------------------------------------------------------
+
+const swarmDir = resolve(root, "registry/rallypoint/swarm");
+const schemaSql = await readFile(resolve(swarmDir, "schema.sql"), "utf8");
+const realtimeSql = await readFile(resolve(swarmDir, "realtime.sql"), "utf8");
+const realtimeBlock = (sql) => {
+  const start = sql.indexOf("-- >>> realtime");
+  const end = sql.indexOf("-- <<< realtime");
+  assert.ok(start >= 0 && end > start, "a -- >>> realtime … -- <<< realtime block");
+  return sql.slice(start, end);
+};
+const wantedTables = (sql) => {
+  const body = /function public\.swarm_realtime_wanted\(\)[\s\S]*?array\[([\s\S]*?)\]/.exec(sql);
+  assert.ok(body, "swarm_realtime_wanted() lists its tables");
+  return [...body[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+};
+
+await test("realtime.sql is schema.sql's realtime block, byte for byte", () => {
+  assert.equal(realtimeBlock(realtimeSql), realtimeBlock(schemaSql));
+  assert.equal(schemaSql.match(/-- >>> realtime/g).length, 1);
+});
+
+await test("realtime SQL is idempotent and safe without the publication", () => {
+  const block = realtimeBlock(schemaSql);
+  const code = block.replace(/--.*$/gm, "");
+  assert.equal((code.match(/alter publication/gi) ?? []).length, 1, "one alter publication, inside the guarded loop");
+  const doBlock = /do \$\$([\s\S]*?)end;\s*\$\$;/.exec(block)?.[1] ?? "";
+  const guard = doBlock.indexOf("from pg_publication where pubname = 'supabase_realtime'");
+  const member = doBlock.indexOf("from pg_publication_tables");
+  const alter = doBlock.search(/alter publication/i);
+  assert.ok(guard >= 0 && doBlock.slice(guard - 40, guard).includes("if not exists"), "returns early without the publication");
+  assert.ok(member >= 0 && member < alter, "checks membership before adding");
+  assert.match(doBlock.slice(member - 60, alter), /if not exists \(/);
+  assert.doesNotMatch(block, /^\s*alter publication/im, "no unguarded top-level alter");
+  assert.match(block, /create or replace function public\.swarm_realtime_status\(\)/);
+  assert.match(block, /grant execute on function public\.swarm_realtime_status\(\) to anon, authenticated/);
+  assert.match(block, /RLS/, "says why private projects stay private");
+});
+
+await test("realtime publishes the memory tables and never the secret, readers or settings", async () => {
+  const wanted = wantedTables(schemaSql);
+  assert.ok(wanted.length >= 7);
+  for (const table of ["swarm_sessions", "swarm_progress", "swarm_messages", "swarm_results", "swarm_versions", "swarm_retros", "swarm_buried"]) {
+    assert.ok(wanted.includes(table), table);
+  }
+  for (const table of ["swarm_secret", "swarm_readers", "swarm_settings"]) assert.ok(!wanted.includes(table), table);
+  // Every published table has the read policy, so Realtime has RLS to apply.
+  const policed = /foreach t in array array\[([\s\S]*?)\] loop\s*execute format\('alter table public\.%I enable row level security'/.exec(schemaSql);
+  for (const table of wanted) assert.ok(policed[1].includes(`'${table}'`), `${table} has RLS`);
+  // The dashboard listens to exactly the published tables.
+  const live = await readFile(resolve(root, "registry/rallypoint/swarm-ui/app/swarm/_lib/live.ts"), "utf8");
+  const listed = [.../LIVE_TABLES = \[([\s\S]*?)\]/.exec(live)[1].matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(listed, wanted);
+});
+
+// RALLYPOINT_SWARM_TEST_DATABASE_URL=postgres://… npm run swarm:test applies
+// schema.sql twice and realtime.sql twice to a scratch database, with and
+// without a supabase_realtime publication. Use a throwaway database.
+if (process.env.RALLYPOINT_SWARM_TEST_DATABASE_URL) {
+  await test("schema.sql and realtime.sql apply twice on real Postgres", async () => {
+    const url = process.env.RALLYPOINT_SWARM_TEST_DATABASE_URL;
+    const psql = (...args) => execFileSync("psql", [url, "-v", "ON_ERROR_STOP=1", "-qAt", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    // What Supabase provides and plain Postgres lacks: the API roles and auth.*.
+    psql("-c", `do $$ begin
+      if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
+      if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+      if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role; end if;
+      create schema if not exists auth;
+      if to_regprocedure('auth.role()') is null then
+        create function auth.role() returns text language sql as 'select null::text';
+      end if;
+      if to_regprocedure('auth.jwt()') is null then
+        create function auth.jwt() returns jsonb language sql as 'select ''{}''::jsonb';
+      end if;
+    end $$;`);
+    const status = () => JSON.parse(psql("-c", "select public.swarm_realtime_status()"));
+    const schemaPath = resolve(swarmDir, "schema.sql");
+    const realtimePath = resolve(swarmDir, "realtime.sql");
+    const hadPublication = psql("-c", "select count(*) from pg_publication where pubname = 'supabase_realtime'").trim() === "1";
+    if (!hadPublication) {
+      psql("-f", schemaPath, "-f", schemaPath, "-f", realtimePath);
+      assert.equal(status().publication, false);
+      psql("-c", "create publication supabase_realtime");
+      psql("-c", "alter publication supabase_realtime add table public.swarm_sessions");
+    }
+    psql("-f", realtimePath, "-f", schemaPath, "-f", realtimePath);
+    assert.deepEqual(status(), { publication: true, missing: [] });
+  });
+}
+
+// What swarm_realtime_status() answers; null = the function is missing.
+let realtimeStatus = { publication: true, missing: [] };
 let nextId = 1;
 const reads = [];
 const secretsSet = [];
@@ -190,6 +284,9 @@ const server = createServer(async (req, res) => {
   if (path.startsWith("rpc/")) {
     const fn = path.slice(4);
     if (fn === "swarm_schema_version") return send(200, 1);
+    if (fn === "swarm_realtime_status") {
+      return realtimeStatus === null ? send(404, { code: "PGRST202", message: "Could not find the function public.swarm_realtime_status" }) : send(200, realtimeStatus);
+    }
     if (body.p_secret !== SECRET) return send(400, { code: "28P01", message: "invalid swarm secret" });
     if (fn === "swarm_check") return send(200, { ok: true, schema_version: 1 });
     if (fn === "swarm_write") {
@@ -295,7 +392,7 @@ try {
     await rp(["add", "loop"]);
     const out = await rp(["add", "swarm"]);
     assert.match(out, /Campaign ready\./);
-    for (const path of ["SWARM.md", ".rallypoint/swarm.json", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/schema.sql", ".claude/skills/swarm-genesis/SKILL.md"]) {
+    for (const path of ["SWARM.md", ".rallypoint/swarm.json", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/schema.sql", ".rallypoint/swarm/realtime.sql", ".claude/skills/swarm-genesis/SKILL.md"]) {
       await readFile(resolve(fixture, path));
     }
   });
@@ -319,6 +416,31 @@ try {
   await test("doctor passes with memory, secret and gh", async () => {
     const out = JSON.parse(await rp(["swarm", "doctor", "--json"]));
     assert.equal(out.ok, true, JSON.stringify(out.checks.filter((c) => !c.ok)));
+  });
+
+  await test("doctor checks realtime and names realtime.sql when it is missing, as a warning", async () => {
+    const realtimeCheck = async () => {
+      const out = JSON.parse(await rp(["swarm", "doctor", "--json"]));
+      assert.equal(out.ok, true, "realtime never fails doctor");
+      return out.checks.find((c) => c.name === "realtime");
+    };
+    try {
+      assert.equal((await realtimeCheck()).level, "ok");
+      realtimeStatus = { publication: true, missing: ["swarm_messages", "swarm_progress"] };
+      const partial = await realtimeCheck();
+      assert.equal(partial.level, "warn");
+      assert.match(partial.detail, /swarm_messages, swarm_progress/);
+      assert.match(partial.detail, /\.rallypoint\/swarm\/realtime\.sql/);
+      realtimeStatus = null;
+      const older = await realtimeCheck();
+      assert.equal(older.level, "warn");
+      assert.match(older.detail, /\.rallypoint\/swarm\/realtime\.sql/);
+      realtimeStatus = { publication: false, missing: ["swarm_sessions"] };
+      assert.match((await realtimeCheck()).detail, /no supabase_realtime publication/);
+      assert.match(await rp(["swarm", "doctor"]), /warn {2}realtime/);
+    } finally {
+      realtimeStatus = { publication: true, missing: [] };
+    }
   });
 
   await test("doctor fails on a wrong secret", async () => {
@@ -480,6 +602,7 @@ try {
     await mkdir(resolve(fixture, "src/app"), { recursive: true });
     const out = await rp(["add", "swarm-ui"]);
     assert.match(out, /src\/app detected/);
+    assert.match(out, /npm install @supabase\/realtime-js@"\^2/, "names live updates' missing dependency");
     await readFile(resolve(fixture, "src/app/swarm/page.tsx"));
     await readFile(resolve(fixture, "src/app/swarm/swarm.config.ts"));
     await assert.rejects(readFile(resolve(fixture, "app/swarm/page.tsx")), "no root app/ was created");
@@ -500,7 +623,7 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, install, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, realtime SQL, install, doctor, session, score/checks modes, plan, labels, connect, learning, UI generation).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

@@ -12,6 +12,7 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/queries.ts` | every read the pages make, one function per page | extend it; keep it read-only |
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
+| `app/swarm/_components/live.tsx`, `_lib/live.ts`, `_lib/live-token.ts` | live updates: the Realtime listener and its indicator, the watched tables and the hold signal, the private-mode token action | rarely; hold the signal with `useLiveHold(active)` instead of adding timers |
 | `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar | freely |
 | `app/swarm/**/page.tsx` | thin pages: `getSwarmContext()`, one query, render | freely |
 | `app/swarm/swarm.css` | scoped styles and theme variables | freely |
@@ -34,7 +35,13 @@ by hand or by the swarm itself through a `ui` target.
    name, a symbol or a shape); every chart has a text or table equivalent;
    keyboard focus stays visible; motion respects `prefers-reduced-motion`;
    nothing overflows at 375px.
-6. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
+6. **Let the layout keep pages live.** Do not add polling or
+   `router.refresh()` timers to pages: `<LiveRefresh>` already refreshes on
+   every memory change, and every 60 s when Realtime is down. A component
+   that must not be re-rendered mid-interaction (a replay, a drag) calls
+   `useLiveHold(true)` for as long as it lasts. Render from props, not from
+   change payloads.
+7. **Words come from `swarmConfig`.** Use `word("shipped")`, target names
    and the nav from the config, not hard-coded project nouns.
 
 ## Letting the swarm build it

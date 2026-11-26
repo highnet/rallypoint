@@ -35,6 +35,7 @@ requests, labels, reviews, merges. Swarm adds:
 | `.rallypoint/swarm.json` | goal, measure, targets, UI words, conductor settings | no (frozen) |
 | `.rallypoint/swarm/swarm.mjs`, `lib/` | the runtime (`npx rallypoint swarm …`) | no (frozen) |
 | `.rallypoint/swarm/schema.sql` | the memory schema for your Supabase project | no (frozen) |
+| `.rallypoint/swarm/realtime.sql` | turns on live dashboard updates for a project on an older schema | no (frozen) |
 | `.rallypoint/swarm/skills/` | agent, conductor, strategist, steward, genesis, concepts | yes |
 | `.rallypoint/swarm/playbooks/` | one per target: what works, what failed, why | yes |
 | `.claude/skills/swarm-*/SKILL.md` | pointers so Claude Code finds the skills | no |
@@ -49,7 +50,10 @@ requests, labels, reviews, merges. Swarm adds:
    ```
 
 2. Create a Supabase project, or use one you have. Apply
-   `.rallypoint/swarm/schema.sql` in its SQL editor.
+   `.rallypoint/swarm/schema.sql` in its SQL editor. It also adds the memory
+   tables to Supabase Realtime, so the dashboard updates live (RLS still
+   decides who hears a change). Applied an older `schema.sql`? Re-apply it,
+   or run just `.rallypoint/swarm/realtime.sql`; `swarm doctor` says when.
 
 3. Connect it. This asks for the project URL, the publishable (anon) key,
    the service-role key (hidden, used once, never saved) and the swarm

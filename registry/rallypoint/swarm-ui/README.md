@@ -8,6 +8,9 @@ dashboard. Your project (or its own swarm) grows it; see `CUSTOMIZE.md`.
 It never writes. Agents write memory through the CLI with the swarm secret;
 the browser only reads, server-side.
 
+It is live by default: every page re-renders within a couple of seconds of
+an agent writing memory, through Supabase Realtime (see "Live updates").
+
 ## Two shapes
 
 | Item | Command | Installs |
@@ -15,8 +18,9 @@ the browser only reads, server-side.
 | `swarm-ui` | `npx rallypoint@latest add swarm-ui` | `app/swarm/**` into your existing Next.js App Router app |
 | `swarm-dashboard` | `npx rallypoint@latest add swarm-dashboard` | a standalone Next.js app in `swarm-ui/` (the same `app/swarm/**` plus a root layout, `package.json`, `.env.example`) |
 
-Both need Next.js 15 or 16, React 19, and nothing else: no Tailwind, no
-Supabase SDK, no `@/` alias. `app/swarm/swarm.config.ts` is generated from
+Both need Next.js 15 or 16, React 19 and `@supabase/realtime-js` (the
+Realtime client alone, not `supabase-js`; the CLI prints the `npm install`
+line when it is missing), and nothing else: no Tailwind, no `@/` alias. `app/swarm/swarm.config.ts` is generated from
 `.rallypoint/swarm.json` on install and is yours from then on: Rallypoint
 writes it only when it is absent and never overwrites it.
 
@@ -47,6 +51,29 @@ All of them are read on the server at request time. Without the Supabase
 pair, every page shows a "Not connected yet" panel naming the missing
 variables and pointing at `.rallypoint/swarm/schema.sql`. If the schema is
 not applied, pages say so. Nothing crashes.
+
+## Live updates
+
+`schema.sql` adds the memory tables to the `supabase_realtime` publication.
+The layout mounts `<LiveRefresh>` (`_components/live.tsx`) once: it listens
+for changes on those tables and calls `router.refresh()`, debounced to 1.5 s,
+so the server-rendered pages stay the source of truth and no page needs
+client data code. The top bar says "Live", "Reconnecting…", "Every minute"
+or "Paused".
+
+- **Fallback.** Without Realtime (plain Postgres, a blocked WebSocket, an
+  expired session) the pages refresh every 60 s instead.
+- **Waits.** Nothing refreshes while the tab is hidden or while a component
+  holds the live signal (`useLiveHold(active)` from `_components/live.tsx`,
+  for example during a replay); one refresh follows if anything changed.
+- **Private mode stays private.** Realtime applies the same RLS as
+  PostgREST, with the reader's own access token. The session cookie stays
+  httpOnly; the `liveToken()` Server Action (`_lib/live-token.ts`) returns
+  that token only to a request that already carries a valid session cookie.
+  The service-role key and the swarm secret never reach the app.
+- **An existing project** that applied an older `schema.sql`: run
+  `.rallypoint/swarm/realtime.sql` in the SQL editor. `npx rallypoint swarm
+  doctor` names it when the publication is incomplete.
 
 ## Theming
 

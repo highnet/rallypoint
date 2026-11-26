@@ -1,7 +1,10 @@
 import { cache } from "react";
 
 import { swarmConfig } from "../swarm.config";
+import type { SwarmInput } from "../_graph/model";
 import type { MeasureMode, SwarmTarget } from "./config-types";
+import { toSwarmInput } from "./fleet-graph";
+import { word } from "./format";
 import {
   deliveryOf,
   githubRepoUrl,
@@ -10,9 +13,11 @@ import {
   listDirectory,
   listItems,
   readFile,
+  readDefaultBranch,
   readGithubRepo,
   targetsOf,
   type Delivery,
+  type GithubFailure,
   type GithubItem,
   type LaneId,
   type RepoEntry,
@@ -99,7 +104,9 @@ export const getSwarmContext = cache(async (): Promise<SwarmContext> => {
     if (isAuthError(read.error)) return { state: "locked", signedIn, expired };
     return { state: "unreachable", message: read.error.message };
   }
-  if (read.data.length === 0 && !signedIn) return { state: "locked", signedIn, expired };
+  // Signed in but nothing readable: not on the `swarm_readers` allowlist, or
+  // `swarm init` has not stored settings yet. Say so instead of empty pages.
+  if (read.data.length === 0) return { state: "locked", signedIn, expired };
   const settings = foldSettings(read.data);
   if (settings.visibility === "private" && !signedIn) {
     return { state: "locked", signedIn, expired };
@@ -147,7 +154,7 @@ export function findTarget(id: string): SwarmTarget | null {
 
 export type GithubState =
   | { ok: true; items: GithubItem[]; truncated: boolean }
-  | { ok: false; reason: "no-repo" | "error"; message: string };
+  | GithubFailure;
 
 const getGithubItems = cache(async (): Promise<GithubState> => {
   const read = await listItems();
@@ -406,6 +413,60 @@ export async function getFleet(): Promise<{ fleet: FleetRow[]; errors: Errors }>
   return { fleet, errors };
 }
 
+/* ───────────────────────── Fleet graph ───────────────────────── */
+
+export type FleetGraphData = {
+  input: SwarmInput;
+  /** Why the graph shows memory only, when GitHub could not be read. */
+  githubNote: string | null;
+  errors: Errors;
+};
+
+/**
+ * Everything the fleet graph draws, as its `SwarmInput` (see
+ * `_lib/fleet-graph.ts` for the mapping). Reads the history the replay plays
+ * back: recent sessions, progress notes, referee results, shipped versions,
+ * buried ideas and protocol changes, plus GitHub's issues and pull requests.
+ * Any read may fail; the graph then draws what the others returned.
+ */
+export async function getFleetGraph(): Promise<FleetGraphData> {
+  const errors: Errors = [];
+  const [sessions, progress, results, versions, buried, changes, github, defaultBranch] = await Promise.all([
+    selectRows("swarm_sessions", { order: "started_at.desc", limit: 500 }),
+    selectRows("swarm_progress", { order: "created_at.desc", limit: 1000 }),
+    selectRows("swarm_results", { order: "created_at.desc", limit: 500 }),
+    selectRows("swarm_versions", { order: "created_at.desc", limit: 500 }),
+    selectRows("swarm_buried", { order: "created_at.desc", limit: 300 }),
+    selectRows("swarm_protocol_changes", { order: "created_at.desc", limit: 200 }),
+    getGithubItems(),
+    swarmConfig.integrationBranch ? Promise.resolve(null) : readDefaultBranch(),
+  ]);
+  const sessionRows = take(sessions, [], errors);
+  const resultRows = take(results, [], errors);
+  const versionRows = take(versions, [], errors);
+  const buriedRows = take(buried, [], errors);
+  const input = toSwarmInput({
+    now: Date.now(),
+    integrationBranch: swarmConfig.integrationBranch || defaultBranch || "main",
+    branchPrefix: swarmConfig.branchPrefix,
+    targets: resolveTargets([
+      ...sessionRows.map((row) => row.target),
+      ...resultRows.map((row) => row.target),
+      ...versionRows.map((row) => row.target),
+      ...buriedRows.map((row) => row.target),
+    ]),
+    sessions: sessionRows,
+    progress: take(progress, [], errors),
+    results: resultRows,
+    versions: versionRows,
+    buried: buriedRows,
+    protocolChanges: take(changes, [], errors),
+    github: github.ok ? github.items : null,
+    shippedUnit: word("shipped"),
+  });
+  return { input, githubNote: github.ok ? null : github.message, errors };
+}
+
 /* ───────────────────────── Sessions ───────────────────────── */
 
 export type SessionWithMemory = SessionRow & { retros: RetroRow[]; progress: ProgressRow[] };
@@ -657,7 +718,8 @@ export type SkillFolder = {
   path: string;
   label: string;
   entries: RepoEntry[];
-  error: string | null;
+  /** Set when the folder could not be read; an empty folder has none. */
+  error: GithubFailure | null;
 };
 
 export async function getSkills(selected?: string) {
@@ -668,17 +730,17 @@ export async function getSkills(selected?: string) {
       return {
         ...folder,
         entries: read.ok ? read.data.filter((entry) => entry.type === "file") : [],
-        error: read.ok ? null : read.message,
+        error: read.ok ? null : read,
       };
     }),
   );
-  let file: { path: string; text: string | null; error: string | null } | null = null;
+  let file: { path: string; text: string | null; error: GithubFailure | null } | null = null;
   // Only files the listing returned can be opened, so the query string cannot
   // read anything else in the repository.
   const allowed = folders.flatMap((folder) => folder.entries.map((entry) => entry.path));
   if (selected && allowed.includes(selected)) {
     const read = await readFile(selected);
-    file = { path: selected, text: read.ok ? read.data : null, error: read.ok ? null : read.message };
+    file = { path: selected, text: read.ok ? read.data : null, error: read.ok ? null : read };
   }
   return { repo, folders, file };
 }

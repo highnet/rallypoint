@@ -6,7 +6,7 @@
       "name": "loop",
       "version": "0.5.0",
       "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, an improver that tunes the loop on measured results, and an orchestrator that dispatches them.",
-      "fileCount": 55
+      "fileCount": 56
     },
     {
       "name": "swarm",
@@ -19,21 +19,21 @@
     },
     {
       "name": "swarm-ui",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "The swarm UI route scaffold, installed into an existing Next.js App Router app (the UI is the product): Progress, News, Targets, Results, Versions, Ideas buried, Fleet, Sessions, Rallypoint, Board, Messages, How it works, Protocol, Concepts, Skills. Read-only. Generates a project-owned app/swarm/swarm.config.ts.",
       "requires": [
         "swarm"
       ],
-      "fileCount": 41
+      "fileCount": 55
     },
     {
       "name": "swarm-dashboard",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "The same swarm UI scaffold as a standalone Next.js app in swarm-ui/, for projects without a Next.js app or that keep the dashboard separate. Read-only. Generates a project-owned swarm-ui/app/swarm/swarm.config.ts.",
       "requires": [
         "swarm"
       ],
-      "fileCount": 49
+      "fileCount": 63
     }
   ]
 }

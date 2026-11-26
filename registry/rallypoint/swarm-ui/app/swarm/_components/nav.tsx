@@ -55,7 +55,7 @@ export function SwarmNav({
             {section.items.map((item) => (
               <li key={item.href}>
                 <Link aria-current={isCurrent(pathname, item.href) ? "page" : undefined} href={item.href}>
-                  <NavIcon href={item.href} />
+                  <NavIcon item={item} />
                   <span>{item.label}</span>
                 </Link>
               </li>

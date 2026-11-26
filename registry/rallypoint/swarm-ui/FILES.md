@@ -28,6 +28,7 @@ swarm-ui/app/swarm/_components/bands.tsx -> app/swarm/_components/bands.tsx
 swarm-ui/app/swarm/_components/charts.tsx -> app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> app/swarm/_components/chips.tsx
 swarm-ui/app/swarm/_components/fleet-graph.tsx -> app/swarm/_components/fleet-graph.tsx
+swarm-ui/app/swarm/_components/messages.tsx -> app/swarm/_components/messages.tsx
 swarm-ui/app/swarm/_components/icons.tsx -> app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> app/swarm/_components/nav.tsx
 swarm-ui/app/swarm/_components/results.tsx -> app/swarm/_components/results.tsx
@@ -52,6 +53,7 @@ swarm-ui/app/swarm/_lib/guidance.ts -> app/swarm/_lib/guidance.ts
 swarm-ui/app/swarm/_lib/protocol.ts -> app/swarm/_lib/protocol.ts
 swarm-ui/app/swarm/_lib/queries.ts -> app/swarm/_lib/queries.ts
 swarm-ui/app/swarm/_lib/supabase.ts -> app/swarm/_lib/supabase.ts
+swarm-ui/app/swarm/_lib/threads.ts -> app/swarm/_lib/threads.ts
 swarm-ui/app/swarm/_lib/types.ts -> app/swarm/_lib/types.ts
 swarm-ui/app/swarm/board/page.tsx -> app/swarm/board/page.tsx
 swarm-ui/app/swarm/buried/page.tsx -> app/swarm/buried/page.tsx
@@ -59,6 +61,7 @@ swarm-ui/app/swarm/concepts/page.tsx -> app/swarm/concepts/page.tsx
 swarm-ui/app/swarm/fleet/page.tsx -> app/swarm/fleet/page.tsx
 swarm-ui/app/swarm/how-it-works/page.tsx -> app/swarm/how-it-works/page.tsx
 swarm-ui/app/swarm/layout.tsx -> app/swarm/layout.tsx
+swarm-ui/app/swarm/messages/[id]/page.tsx -> app/swarm/messages/[id]/page.tsx
 swarm-ui/app/swarm/messages/page.tsx -> app/swarm/messages/page.tsx
 swarm-ui/app/swarm/news/page.tsx -> app/swarm/news/page.tsx
 swarm-ui/app/swarm/not-found.tsx -> app/swarm/not-found.tsx
@@ -84,6 +87,7 @@ swarm-ui/app/swarm/_components/bands.tsx -> swarm-ui/app/swarm/_components/bands
 swarm-ui/app/swarm/_components/charts.tsx -> swarm-ui/app/swarm/_components/charts.tsx
 swarm-ui/app/swarm/_components/chips.tsx -> swarm-ui/app/swarm/_components/chips.tsx
 swarm-ui/app/swarm/_components/fleet-graph.tsx -> swarm-ui/app/swarm/_components/fleet-graph.tsx
+swarm-ui/app/swarm/_components/messages.tsx -> swarm-ui/app/swarm/_components/messages.tsx
 swarm-ui/app/swarm/_components/icons.tsx -> swarm-ui/app/swarm/_components/icons.tsx
 swarm-ui/app/swarm/_components/nav.tsx -> swarm-ui/app/swarm/_components/nav.tsx
 swarm-ui/app/swarm/_components/results.tsx -> swarm-ui/app/swarm/_components/results.tsx
@@ -108,6 +112,7 @@ swarm-ui/app/swarm/_lib/guidance.ts -> swarm-ui/app/swarm/_lib/guidance.ts
 swarm-ui/app/swarm/_lib/protocol.ts -> swarm-ui/app/swarm/_lib/protocol.ts
 swarm-ui/app/swarm/_lib/queries.ts -> swarm-ui/app/swarm/_lib/queries.ts
 swarm-ui/app/swarm/_lib/supabase.ts -> swarm-ui/app/swarm/_lib/supabase.ts
+swarm-ui/app/swarm/_lib/threads.ts -> swarm-ui/app/swarm/_lib/threads.ts
 swarm-ui/app/swarm/_lib/types.ts -> swarm-ui/app/swarm/_lib/types.ts
 swarm-ui/app/swarm/board/page.tsx -> swarm-ui/app/swarm/board/page.tsx
 swarm-ui/app/swarm/buried/page.tsx -> swarm-ui/app/swarm/buried/page.tsx
@@ -115,6 +120,7 @@ swarm-ui/app/swarm/concepts/page.tsx -> swarm-ui/app/swarm/concepts/page.tsx
 swarm-ui/app/swarm/fleet/page.tsx -> swarm-ui/app/swarm/fleet/page.tsx
 swarm-ui/app/swarm/how-it-works/page.tsx -> swarm-ui/app/swarm/how-it-works/page.tsx
 swarm-ui/app/swarm/layout.tsx -> swarm-ui/app/swarm/layout.tsx
+swarm-ui/app/swarm/messages/[id]/page.tsx -> swarm-ui/app/swarm/messages/[id]/page.tsx
 swarm-ui/app/swarm/messages/page.tsx -> swarm-ui/app/swarm/messages/page.tsx
 swarm-ui/app/swarm/news/page.tsx -> swarm-ui/app/swarm/news/page.tsx
 swarm-ui/app/swarm/not-found.tsx -> swarm-ui/app/swarm/not-found.tsx

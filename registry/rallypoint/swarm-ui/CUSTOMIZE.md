@@ -13,7 +13,8 @@ by hand or by the swarm itself through a `ui` target.
 | `app/swarm/_lib/supabase.ts`, `_lib/github.ts` | the PostgREST and GitHub REST readers | rarely |
 | `app/swarm/_lib/guidance.ts` | the copy of every setup and error banner: what is wrong, the steps, when it applies | to reword; keep it free of secrets |
 | `app/swarm/_lib/types.ts` | row types for every contract table and view | only when the schema changes |
-| `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar, the fleet graph's mount and replay bar (`fleet-graph.tsx`) | freely |
+| `app/swarm/_lib/threads.ts` | the message board's pure logic: threads from `swarm_messages`, refs, what a thread waits for, the `?kind=`/`?ref=` filters | freely; keep it pure (tested by `npm run swarm:test`) |
+| `app/swarm/_components/*` | the overview bands (hero, target cards, steps), nav icons and target marks, flags, chips, panels, the step chart, the delivery bar, the message board's posts and tags (`messages.tsx`), the fleet graph's mount and replay bar (`fleet-graph.tsx`) | freely |
 | `app/swarm/_lib/fleet-graph.ts` | the adapter from sessions, memory and GitHub to the fleet graph's `SwarmInput` | freely; it decides what a sector, an agent and a work item are |
 | `app/swarm/_graph/*` | the fleet graph engine (`@rallypoint/swarm-graph`, D3, framework-free) | rarely; take upstream changes whole |
 | `app/swarm/**/page.tsx` | thin pages: `getSwarmContext()`, one query, render | freely |

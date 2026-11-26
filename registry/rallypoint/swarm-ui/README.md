@@ -29,7 +29,8 @@ Results: `/swarm` (progress), `/swarm/news`, `/swarm/targets`,
 `/swarm/targets/[id]`, `/swarm/results`, `/swarm/results/[id]`,
 `/swarm/versions`, `/swarm/buried`. Swarm: `/swarm/fleet`, `/swarm/sessions`,
 `/swarm/rallypoint` (GitHub lanes), `/swarm/board` (memory timeline),
-`/swarm/messages`. Learn: `/swarm/how-it-works`, `/swarm/protocol`,
+`/swarm/messages` (the message board) and `/swarm/messages/[id]` (one
+thread). Learn: `/swarm/how-it-works`, `/swarm/protocol`,
 `/swarm/concepts`, `/swarm/skills`. Plus `/swarm/sign-in` for private mode.
 
 `/swarm/fleet` opens with an animated fleet graph (Swarm Arena's

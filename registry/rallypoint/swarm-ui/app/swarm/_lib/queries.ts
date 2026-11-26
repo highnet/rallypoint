@@ -32,13 +32,13 @@ import {
   type ReadError,
   type ReadResult,
 } from "./supabase";
+import { buildThreads, filterThreads, type ThreadFilter } from "./threads";
 import type {
   BuriedRow,
   ConceptRow,
   ConceptTrialRow,
   FleetRow,
   GoalSetting,
-  MessageKind,
   MessageRow,
   MetricsRow,
   ProgressRow,
@@ -559,30 +559,94 @@ export async function getBoard(filter: { kind?: BoardKind; target?: string }) {
 
 /* ───────────────────────── Messages ───────────────────────── */
 
-export type Thread = { root: MessageRow; replies: MessageRow[]; lastAt: string };
+export type { Thread } from "./threads";
 
-export async function getThreads(kind?: MessageKind) {
+/** How many messages the board reads: the newest, so a long history never hides today's threads. */
+const MESSAGE_PAGE = 1000;
+
+/** Session id → role, for the sessions that posted these messages. */
+async function rolesOf(messages: MessageRow[], errors: Errors): Promise<Record<string, string>> {
+  const ids = [...new Set(messages.map((message) => message.session_id).filter((id): id is string => Boolean(id)))];
+  const chunks: string[][] = [];
+  for (let index = 0; index < ids.length; index += 100) chunks.push(ids.slice(index, index + 100));
+  const reads = await Promise.all(
+    chunks.map((chunk) => selectRows("swarm_sessions", { filters: { id: `in.(${chunk.join(",")})` }, limit: chunk.length })),
+  );
+  const roles: Record<string, string> = {};
+  for (const read of reads) for (const session of take(read, [], errors)) if (session.role) roles[session.id] = session.role;
+  return roles;
+}
+
+export async function getThreads(filter: ThreadFilter = {}) {
   const errors: Errors = [];
-  const messages = take(await selectRows("swarm_messages", { order: "created_at.asc", limit: 500 }), [], errors);
-  const byId = new Map<number, Thread>();
-  const threads: Thread[] = [];
-  for (const message of messages) {
-    const parent = message.thread_id !== null ? byId.get(message.thread_id) : undefined;
-    if (parent) {
-      parent.replies.push(message);
-      parent.lastAt = message.created_at;
-      byId.set(message.id, parent);
-    } else {
-      const thread = { root: message, replies: [], lastAt: message.created_at };
-      threads.push(thread);
-      byId.set(message.id, thread);
+  const messages = take(
+    await selectRows("swarm_messages", { order: "created_at.desc", limit: MESSAGE_PAGE }),
+    [],
+    errors,
+  );
+  const all = buildThreads(messages);
+  const roles = await rolesOf(messages, errors);
+  return {
+    threads: filterThreads(all, filter),
+    all,
+    roles,
+    truncated: messages.length === MESSAGE_PAGE,
+    errors,
+  };
+}
+
+/**
+ * One thread by any of its message ids: walks `thread_id` up to the root,
+ * then reads replies level by level, so a thread older than the board's page
+ * still opens whole. `null` means no such message.
+ */
+export async function getThread(id: string) {
+  if (!/^\d+$/.test(id)) return null;
+  const errors: Errors = [];
+  const found = new Map<number, MessageRow>();
+  let current = first(await selectRows("swarm_messages", { filters: { id: `eq.${id}` }, limit: 1 }), errors);
+  if (!current) return errors.length > 0 ? { thread: null, roles: {}, requested: Number(id), errors } : null;
+  found.set(current.id, current);
+  for (let hop = 0; hop < 20 && current.thread_id !== null && !found.has(current.thread_id); hop += 1) {
+    const parent: MessageRow | null = first(
+      await selectRows("swarm_messages", { filters: { id: `eq.${current.thread_id}` }, limit: 1 }),
+      errors,
+    );
+    if (!parent) break;
+    found.set(parent.id, parent);
+    current = parent;
+  }
+  const rootId = current.id;
+  let frontier = [rootId];
+  for (let depth = 0; depth < 20 && frontier.length > 0; depth += 1) {
+    const children = take(
+      await selectRows("swarm_messages", {
+        filters: { thread_id: `in.(${frontier.join(",")})` },
+        order: "created_at.asc",
+        limit: MESSAGE_PAGE,
+      }),
+      [],
+      errors,
+    );
+    frontier = [];
+    for (const child of children) {
+      if (found.has(child.id)) continue;
+      found.set(child.id, child);
+      frontier.push(child.id);
     }
   }
-  const filtered = kind
-    ? threads.filter((thread) => thread.root.kind === kind || thread.replies.some((reply) => reply.kind === kind))
-    : threads;
-  filtered.sort((a, b) => b.lastAt.localeCompare(a.lastAt));
-  return { threads: filtered, errors };
+  // Later messages on the root's ref decide whether a hand-off was picked up.
+  if (current.ref) {
+    const related = take(
+      await selectRows("swarm_messages", { filters: { ref: `eq.${current.ref}` }, order: "created_at.desc", limit: 200 }),
+      [],
+      errors,
+    );
+    for (const message of related) if (!found.has(message.id)) found.set(message.id, message);
+  }
+  const messages = [...found.values()];
+  const thread = buildThreads(messages).find((entry) => entry.root.id === rootId) ?? null;
+  return { thread, roles: await rolesOf(messages, errors), requested: Number(id), errors };
 }
 
 /* ───────────────────────── Protocol, concepts ───────────────────────── */

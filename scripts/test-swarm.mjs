@@ -162,6 +162,95 @@ await test("ui-config generation follows the documented mapping", () => {
   assert.match(source, /export const swarmConfig: SwarmConfig/);
 });
 
+// The message board's grouping and filters live in a type-only TypeScript
+// module so the dashboard and this script share one implementation. Node 22.18+
+// strips the types; CI runs Node 24.
+const threads = await import(pathToFileURL(resolve(root, "registry/rallypoint/swarm-ui/app/swarm/_lib/threads.ts")).href);
+
+const msg = (id, minute, extra = {}) => ({
+  id,
+  thread_id: null,
+  session_id: null,
+  author: "worker-1",
+  kind: "note",
+  ref: null,
+  topic: null,
+  body: `message ${id}`,
+  created_at: `2026-11-26T10:${String(minute).padStart(2, "0")}:00Z`,
+  ...extra,
+});
+
+await test("message board: threads group replies of replies under their root, newest activity first", () => {
+  const rows = [
+    msg(1, 0, { kind: "question", topic: "Which cache?", ref: "#12" }),
+    msg(2, 5, { kind: "handoff", author: "planner-1", body: "Take #14 next\nsecond line" }),
+    msg(3, 10, { thread_id: 1, kind: "answer", author: "reviewer-1" }),
+    msg(4, 20, { thread_id: 3, author: "worker-2", body: "see pr#15" }),
+    msg(5, 15, { thread_id: 99, body: "orphan: parent outside the page" }),
+  ];
+  const built = threads.buildThreads([...rows].reverse());
+  assert.deepEqual(built.map((t) => t.root.id), [1, 5, 2], "newest activity first; an orphan starts its own thread");
+  const [first] = built;
+  assert.deepEqual(first.replies.map((m) => m.id), [3, 4], "replies of replies join the root, oldest first");
+  assert.equal(first.lastAt, rows[3].created_at);
+  assert.deepEqual(first.authors, ["worker-1", "reviewer-1", "worker-2"]);
+  assert.deepEqual(first.refs, ["#12", "#15"], "the ref column and refs cited in bodies");
+  assert.equal(first.waiting, null, "an answered question waits for nothing");
+  const handoff = built.find((t) => t.root.id === 2);
+  assert.equal(handoff.waiting, "unacknowledged");
+  assert.equal(threads.threadTitle(handoff.root), "Take #14 next", "the first line when there is no topic");
+  assert.equal(threads.threadTitle(first.root), "Which cache?");
+  assert.equal(threads.threadHeading(handoff.root), "Hand-off from planner-1", "a thread page without a topic names who posted what");
+  assert.equal(threads.threadHeading(first.root), "Which cache?");
+  assert.equal(threads.buildThreads([msg(1, 0, { kind: "question" })])[0].waiting, "unanswered");
+  const pickedUp = threads.buildThreads([
+    msg(1, 0, { kind: "handoff", author: "reviewer-cms-25", ref: "#25" }),
+    msg(2, 5, { kind: "handoff", author: "fixer-cms-25", ref: "#25" }),
+    msg(3, 6, { kind: "handoff", author: "fixer-cms-25", ref: "PR #25" }),
+  ]);
+  assert.equal(pickedUp.find((t) => t.root.id === 1).waiting, null, "a later message by another agent on the same ref picks a hand-off up");
+  assert.equal(pickedUp.find((t) => t.root.id === 3).waiting, "unacknowledged", "the newest hand-off on a ref still waits");
+  const known = ["reviewer", "worker"];
+  assert.equal(threads.roleOf({ author: "reviewer-cms-25b", session_id: "s1" }, {}, known), "reviewer", "the author's role prefix");
+  assert.equal(threads.roleOf({ author: "reviewer-cms-25b", session_id: "s1" }, { s1: "merger" }, known), "merger", "the session's role wins");
+  assert.equal(threads.roleOf({ author: "operator", session_id: null }, {}, known), null);
+  const cycle = threads.buildThreads([msg(1, 0, { thread_id: 2 }), msg(2, 1, { thread_id: 1 })]);
+  assert.equal(cycle.length, 1, "a thread_id cycle cannot loop forever");
+});
+
+await test("message board: kind and ref filters come from the URL and match whole threads", () => {
+  const built = threads.buildThreads([
+    msg(1, 0, { kind: "question", ref: "PR #12" }),
+    msg(2, 1, { thread_id: 1, kind: "answer" }),
+    msg(3, 2, { kind: "proposal", body: "about #7" }),
+  ]);
+  assert.deepEqual(threads.parseThreadFilter({ kind: "answer", ref: "12" }), { kind: "answer", ref: "#12" });
+  assert.deepEqual(threads.parseThreadFilter({ kind: "nonsense", ref: ["#7", "8"] }), { ref: "#7" });
+  assert.deepEqual(threads.parseThreadFilter({}), {});
+  const ids = (filter) => threads.filterThreads(built, filter).map((t) => t.root.id);
+  assert.deepEqual(ids({ kind: "answer" }), [1], "a kind matches when any message in the thread has it");
+  assert.deepEqual(ids({ kind: "proposal" }), [3]);
+  assert.deepEqual(ids({ ref: "#12" }), [1], "`PR #12` and `12` are the same ref");
+  assert.deepEqual(ids({ ref: "#7" }), [3], "a ref cited only in the body counts");
+  assert.deepEqual(ids({ kind: "question", ref: "#7" }), []);
+  assert.equal(threads.threadFilterHref({ kind: "question", ref: "#12" }), "/swarm/messages?kind=question&ref=12");
+  assert.equal(threads.threadFilterHref({}), "/swarm/messages");
+  assert.deepEqual(threads.refCounts(built), [["#7", 1], ["#12", 1]]);
+  assert.equal(threads.kindCounts(built).question, 1);
+  assert.equal(threads.kindCounts(built).answer, 1);
+  assert.equal(threads.refKey("  "), null);
+  assert.equal(threads.refKey("design-doc"), "design-doc");
+});
+
+await test("message board: bodies link #n and msg#n, and leave entities and URLs alone", () => {
+  const segments = threads.textSegments("Fixes #12 (see pr#3, msg#40) at https://x.test/a#9 &#39;ok&#39; #4");
+  assert.deepEqual(
+    segments.filter((s) => s.type !== "text").map((s) => [s.type, s.text]),
+    [["issue", "#12"], ["issue", "pr#3"], ["message", "msg#40"], ["issue", "#4"]],
+  );
+  assert.equal(segments.map((s) => s.text).join(""), "Fixes #12 (see pr#3, msg#40) at https://x.test/a#9 &#39;ok&#39; #4");
+});
+
 // The swarm UI's fleet graph adapter is TypeScript that a Next.js app compiles.
 // Node strips its types (on by default since Node 22.18 / 23.6); its relative
 // imports are extensionless, as the app's bundler expects, so resolve them to
@@ -820,7 +909,7 @@ try {
     assert.match(await rp(["swarm", "referee", "--no-record"]), /PASS/);
   });
 
-  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation, fleet graph).`);
+  console.log(`Swarm tests passed: ${passed} checks (roles, referee, config, ui-config, message board, UI banners, install, session, score/checks modes, plan, labels, connect, learning, UI generation, fleet graph).`);
 } finally {
   server.close();
   await rm(fixture, { recursive: true, force: true });

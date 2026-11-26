@@ -448,9 +448,11 @@
 }
 
 .rp-main {
+  --rp-main-top: 48px;
+  --rp-main-bottom: 112px;
   grid-area: main;
   min-width: 0;
-  padding: 48px var(--rp-gutter) 112px;
+  padding: var(--rp-main-top) var(--rp-gutter) var(--rp-main-bottom);
   width: 100%;
 }
 
@@ -460,12 +462,16 @@
   max-width: var(--rp-measure);
 }
 
-/* The overview runs edge to edge: its bands carry their own gutters. */
-.rp-main:has(> .rp-overview) {
-  padding: 0;
-}
-
+/*
+ * The overview runs edge to edge: its bands carry their own gutters, so it
+ * cancels the main column's padding with negative margins. Never do this with
+ * `.rp-main:has(> .rp-overview)`: with Cache Components, Next.js keeps the
+ * pages you navigated away from mounted inside <main>, hidden by <Activity>
+ * with `display: none`. A hidden overview still matched, and every page you
+ * opened from it lost its padding and gutter.
+ */
 .rp-main > .rp-overview {
+  margin: calc(-1 * var(--rp-main-top)) calc(-1 * var(--rp-gutter)) calc(-1 * var(--rp-main-bottom));
   max-width: none;
 }
 
@@ -551,7 +557,7 @@
   }
 
   .rp-main {
-    padding-top: 32px;
+    --rp-main-top: 32px;
   }
 }
 

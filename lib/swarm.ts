@@ -425,6 +425,15 @@ export type WizardTarget = {
 export type MeasureMode = "score" | "checks" | "review";
 export type WizardCheck = { name: string; command: string };
 
+export const conductorRuntimes = {
+  "claude-local": { name: "Claude Code local", icon: "claude", starts: "claude -p", setup: "Install and sign in to Claude Code, then run npx rallypoint swarm doctor --runtime claude-local." },
+  "claude-cloud": { name: "Claude Code cloud", icon: "claude", starts: "Remote sessions", setup: "Open Claude Code with remote-session tools enabled. Run npx rallypoint swarm doctor in the remote checkout." },
+  "codex-local": { name: "Codex local", icon: "openai", starts: "codex exec", setup: "Install the Codex CLI, run codex login, then run npx rallypoint swarm doctor --runtime codex-local." },
+  "codex-cloud": { name: "Codex cloud", icon: "openai", starts: "Codex Cloud tasks", setup: "Configure GitHub and Rallypoint memory in the Codex Cloud environment. If the CLI cannot see it, start each role task from the Codex Cloud UI and verify its retro before continuing." },
+} as const;
+
+export type ConductorRuntime = keyof typeof conductorRuntimes;
+
 export type WizardState = {
   pitch: string;
   title: string;
@@ -445,6 +454,7 @@ export type WizardState = {
   uiShape: UiShape;
   visibility: "public" | "private";
   includeUiTarget: boolean;
+  runtime: ConductorRuntime;
   concurrency: number;
   budget: number | null;
   focus: Focus;
@@ -470,6 +480,7 @@ export const emptyWizard: WizardState = {
   uiShape: "product",
   visibility: "public",
   includeUiTarget: true,
+  runtime: "claude-cloud",
   concurrency: 4,
   budget: null,
   focus: "balanced",
@@ -566,15 +577,18 @@ export function buildSwarmConfig(state: WizardState) {
   };
 }
 
-export function conductorPrompt(state: WizardState) {
+export const conductorPrompt = (state: WizardState) => {
   const names = state.targets.map((t) => t.id?.trim() || targetId(t.name)).filter(Boolean);
   return [
-    swarmCommands.conductor,
+    state.runtime.startsWith("claude") ? swarmCommands.conductor : "Read .rallypoint/swarm/skills/swarm-conductor.md and run the conductor.",
+    state.runtime === "claude-cloud"
+      ? "Start each role with Claude Code remote-session tools."
+      : `Start each role with npx rallypoint swarm dispatch --runtime ${state.runtime}.`,
     `Concurrency: ${state.concurrency} sessions at a time.`,
     `Targets: ${names.length ? names.join(", ") : "every target in .rallypoint/swarm.json"}.`,
     `Budget: ${state.budget === null ? "unbounded; keep going until I stop you" : `${state.budget} sessions, then stop and report`}.`,
     `Focus: ${state.focus}.`,
-    "Dispatch only through separate sessions; subagents stay inside a role.",
+    "Give each role a unique agent ID. Wait for the role to finish and verify its retro.",
     "Escalate needs:human to me; never work around them.",
   ].join("\n");
-}
+};

@@ -5,8 +5,9 @@ change product code or review anything.
 
 1. Read `swarm brief`, `.rallypoint/swarm.json`, every playbook in
    `.rallypoint/swarm/playbooks/`, and `.rallypoint/swarm/skills/concepts.md`.
-2. Look at the open issues: `gh issue list --state open`. Do not duplicate
-   them.
+2. Look at the open issues:
+   `node .rallypoint/scripts/gh.mjs issue list --state open --limit 500 --json number,title,labels`.
+   Do not duplicate them.
 3. Write `plan.json`, an array of small tasks:
 
    ```json

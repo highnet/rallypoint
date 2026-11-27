@@ -809,7 +809,9 @@ import { appendFileSync } from "node:fs";
 const args = process.argv.slice(2);
 appendFileSync(${JSON.stringify(ghLog)}, JSON.stringify(args) + "\\n");
 const key = args.slice(0, 2).join(" ");
-if (key === "api user") console.log("swarm-bot");
+// The loop's transport probes \`gh --version\` before its first call.
+if (key === "--version") console.log("gh version 0.0.0-fake");
+else if (key === "api user") console.log("swarm-bot");
 else if (key === "pr list") console.log(JSON.stringify([{ number: 21, title: "Faster parse", labels: [{ name: "review:approved" }], isDraft: false, body: "Closes #4", headRefName: "agent/4-x" }]));
 else if (key === "issue list") console.log(JSON.stringify([{ number: 4, title: "Faster parse", labels: [{ name: "target:api" }, { name: "status:claimed" }], assignees: [] }, { number: 5, title: "Hero", labels: [{ name: "target:web" }, { name: "prio:p1" }], assignees: [] }]));
 else if (key === "label list") console.log(JSON.stringify([{ name: "target:api" }]));

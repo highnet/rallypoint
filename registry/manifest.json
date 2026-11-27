@@ -4,7 +4,7 @@
   "items": [
     {
       "name": "loop",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, an improver that tunes the loop on measured results, and an orchestrator that dispatches them.",
       "files": [
         {
@@ -96,6 +96,11 @@
         {
           "source": ".rallypoint/scripts/freshness.mjs",
           "target": ".rallypoint/scripts/freshness.mjs",
+          "executable": true
+        },
+        {
+          "source": ".rallypoint/scripts/gh.mjs",
+          "target": ".rallypoint/scripts/gh.mjs",
           "executable": true
         },
         {
@@ -253,7 +258,7 @@
     },
     {
       "name": "swarm",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "requires": [
         "loop"
       ],

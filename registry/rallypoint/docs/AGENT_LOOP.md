@@ -14,12 +14,25 @@ read repository state
 
 ## Prerequisites
 
-Every script here shells out to the GitHub CLI. A missing or unauthenticated
-`gh` exits `69` — deliberately outside every exit table below, so no caller can
-mistake an absent prerequisite for a real verdict.
+Every script here reaches GitHub through one transport, chosen by
+`.rallypoint/scripts/lib/gh.mjs`: the GitHub CLI by default, and the REST
+transport in `lib/api.mjs` where `gh` is missing, in a Claude Code cloud session
+(`CLAUDE_CODE_REMOTE`), where GitHub GraphQL is blocked and every `gh pr …` /
+`gh issue …` fails with `HTTP 403`, or from the first `gh` call refused that way.
+`RALLYPOINT_TRANSPORT=gh|rest` pins the choice. Where `gh` is the transport, a
+missing or unauthenticated `gh` exits `69` — deliberately outside every exit
+table below, so no caller can mistake an absent prerequisite for a real verdict.
 
 ```bash
 gh auth login
+```
+
+Run `gh` commands of your own — the merger's `pr view` and `pr merge` — through
+the same transport, so they work where the binary cannot:
+
+```bash
+node .rallypoint/scripts/gh.mjs pr view <N> --json mergeable,statusCheckRollup
+node .rallypoint/scripts/gh.mjs --which    # which transport, and why
 ```
 
 A checkout whose copy of the protocol is older than the integration branch's

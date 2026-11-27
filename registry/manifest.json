@@ -299,6 +299,10 @@
           "target": ".rallypoint/swarm/lib/codex-cloud.mjs"
         },
         {
+          "source": "swarm/lib/local-runtime.mjs",
+          "target": ".rallypoint/swarm/lib/local-runtime.mjs"
+        },
+        {
           "source": "swarm/lib/memory.mjs",
           "target": ".rallypoint/swarm/lib/memory.mjs"
         },

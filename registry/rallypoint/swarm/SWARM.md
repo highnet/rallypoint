@@ -112,7 +112,40 @@ When both the `schema` and `secret` checks report `fetch failed`, retry with the
 proxy enabled before applying schema changes. Continue when doctor reports
 `Ready.`.
 
-### Dispatch to Codex Cloud
+### Claude Code local
+
+Install Claude Code, run `claude auth login`, then run
+`npx rallypoint swarm doctor --runtime claude-local` in the checkout. Use
+`swarm dispatch --runtime claude-local --prompt "<role prompt>"` to run one
+foreground `claude -p` process with the role prompt on stdin.
+
+### Claude Code cloud
+
+Use Claude Code's remote-session tools to start one separate remote session
+per role. Set up GitHub access and Rallypoint memory in the remote checkout.
+Run `swarm doctor` there before using the environment for roles.
+
+### Codex local
+
+Install the Codex CLI, run `codex login`, and run
+`npx rallypoint swarm doctor --runtime codex-local`. Read
+`.rallypoint/swarm/skills/swarm-conductor.md` in the conductor session.
+Use `swarm dispatch --runtime codex-local --prompt "<role prompt>"` to run
+one foreground `codex exec --full-auto -` process from the repository root.
+
+Both local runtimes inherit your environment and stream output. The command
+returns the role process's exit status. The default wait is two hours.
+Override it with `--max-wait-seconds`. After a timeout, inspect the role's
+checkout, pull request and retro before retrying. After a normal exit, check
+the role's retro before reusing its slot.
+
+### Codex cloud
+
+The CLI may see no environments created under Settings → Codex Cloud
+([openai/codex#50182](https://github.com/openai/codex/issues/50182)). If it
+cannot see yours, start each role as a separate task in the Codex Cloud UI
+with the same role prompt. Keep its slot occupied until the task finishes
+and verify its retro before starting another role.
 
 Choose a Codex Cloud environment for this repository that the submitting
 Codex CLI account can access. Configure GitHub access and the Rallypoint
@@ -123,7 +156,7 @@ using it for dispatches.
 
 ```bash
 export RALLYPOINT_CODEX_CLOUD_ENV='<environment ID or name>'
-node .rallypoint/swarm/swarm.mjs dispatch --branch main --prompt \
+node .rallypoint/swarm/swarm.mjs dispatch --runtime codex-cloud --branch main --prompt \
   'Read .rallypoint/swarm/skills/swarm-agent.md and follow it. Take one CMS worker role with swarm next cms --only worker. Log progress and leave a retro.'
 ```
 

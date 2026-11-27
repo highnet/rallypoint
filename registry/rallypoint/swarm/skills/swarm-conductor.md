@@ -12,6 +12,29 @@ There are three layers, and only the middle one writes:
 2. **Role session**: one role on one target, then it ends.
 3. **Subagents**: research, prototypes and second reads inside one role.
 
+## Runtime setup
+
+Choose one runtime for the run. Each runtime starts one separate role
+session and uses the same lease, slot, budget and retro checks below.
+
+- **Claude Code local**. Sign in with `claude auth login` and run
+  `swarm doctor --runtime claude-local`. Dispatch with
+  `swarm dispatch --runtime claude-local --prompt '<role prompt>'`.
+- **Claude Code cloud**. Enable the Claude remote-session tools and run
+  `swarm doctor` in the remote checkout. Start each role with a fresh
+  remote session.
+- **Codex local**. Run `codex login` and
+  `swarm doctor --runtime codex-local`. Dispatch with
+  `swarm dispatch --runtime codex-local --prompt '<role prompt>'`.
+- **Codex cloud**. Set `RALLYPOINT_CODEX_CLOUD_ENV` or pass `--env` and run
+  `swarm doctor --runtime codex-cloud` (pass `--env` to doctor as well
+  when using an explicit environment). Dispatch with
+  `swarm dispatch --runtime codex-cloud --branch <branch> --prompt '<role prompt>'`.
+  If `codex cloud exec` cannot see an environment created under Settings →
+  Codex Cloud ([openai/codex#50182](https://github.com/openai/codex/issues/50182)),
+  open a separate task in the Codex Cloud UI with the same role prompt and
+  track it until it finishes.
+
 ## Each tick
 
 1. Run `swarm status`. It gives the queues per role and per target, the live
@@ -43,24 +66,23 @@ There are three layers, and only the middle one writes:
 
    A lease refused because someone holds it means skip that job. Any other
    refusal (a usage error, an unreadable source) means stop and escalate.
-5. Start **one separate session per dispatch** from the repository root.
-   When `RALLYPOINT_CODEX_CLOUD_ENV` is configured or the operator supplies a
-   Codex Cloud environment, use `swarm dispatch --branch <branch> --prompt '<prompt>'`.
-   Pass `--env <environment>` for an explicit environment. The selected
-   environment must check out this repository. The command waits for one
-   hosted task and prints its URL as soon as it is accepted. Count it toward
-   the budget and reserve its slot even before it appears in `fleet`.
-   If submission or status is uncertain, stop and inspect the Cloud task
-   before retrying. A terminal Cloud state still requires checking the
-   Rallypoint retro. If the worker could not open a session, inspect the
-   task's final output for its doctor failure.
-   Otherwise use the host’s remote-session tools or a local agent process.
-   Wait for the session to finish before reusing its slot. Use this prompt,
+5. Start **one separate session per dispatch** using the selected runtime.
+   When `RALLYPOINT_CODEX_CLOUD_ENV` is set and no runtime was selected,
+   `swarm dispatch` defaults to Codex Cloud. Local commands stream in the
+   foreground and return the role process's exit status. Reserve the slot
+   from dispatch through completion. On local timeout or uncertain Cloud
+   submission or status, inspect the role before retrying. Use this prompt,
    filled in:
 
    > Repository: <owner/repo> (default branch <branch>).
-   > Run a swarm agent. Follow .claude/skills/swarm-agent/SKILL.md exactly.
-   > Take your role with `swarm next <target> --only <role>`. Do that one role, log progress, leave a retro.
+   > Read .rallypoint/swarm/skills/swarm-agent.md and follow it.
+   > Use <unique role agent ID> for swarm prepare and all role commands.
+   > Take your role with `swarm next <target> --only <role>`. Do that one role, log progress, leave a retro and report the session ID.
+
+   Verify the retro with `swarm retros --session <session ID> --limit 1 --json`
+   before reusing the slot. If the role could not open a session, inspect
+   its output for its doctor failure. If a hosted task is still running or
+   its status is uncertain, keep its slot reserved.
 
 6. Count every dispatch against `budget`. At the budget, stop dispatching and
    say so.

@@ -986,9 +986,13 @@ await test("git-data: chooseGitData — push in a cloud session, API elsewhere, 
 const stubGit = ({ refs = {}, commits = {} } = {}) => {
   const calls = [];
   let next = 0;
-  const git = (...args) => {
+  const git = (...given) => {
+    // `-c key=value` pairs ahead of the command (the fallback identity).
+    const args = [...given];
+    while (args[0] === "-c") args.splice(0, 2);
     calls.push(args);
     const [command] = args;
+    if (command === "var") return "Rallypoint <r@e> 0 +0000";
     if (command === "cat-file" || command === "fetch") return "";
     if (command === "ls-remote") return refs[args[2]] ? `${refs[args[2]]}\t${args[2]}` : "";
     if (command === "log") return commits[args.at(-1)] ?? "";

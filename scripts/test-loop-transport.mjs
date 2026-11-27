@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { relative, resolve } from "node:path";
+import { relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -125,7 +125,8 @@ try {
     const listed = new Set(manifest.items.find((item) => item.name === "loop").files.map((file) => file.source));
     for (const name of await readdir(libDir)) {
       if (!name.endsWith(".mjs")) continue;
-      const source = relative(sourceRoot, resolve(libDir, name));
+      // Manifest sources use `/`; `relative` answers with `\` on Windows.
+      const source = relative(sourceRoot, resolve(libDir, name)).split(sep).join("/");
       assert.ok(listed.has(source), `${source} is not in the loop item of registry/manifest.json`);
     }
   });

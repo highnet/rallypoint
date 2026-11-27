@@ -156,6 +156,27 @@ export const createGitDataEmulation = ({
     return "";
   };
 
+  /** @type {string[] | undefined} */
+  let identity;
+  /**
+   * `git commit-tree`, with a Rallypoint identity when the checkout has none:
+   * a marker or a reservation wrapper must not fail on a runner whose git was
+   * never told who it is.
+   *
+   * @param {string[]} args
+   */
+  const commitTree = (...args) => {
+    if (identity === undefined) {
+      try {
+        git("var", "GIT_COMMITTER_IDENT");
+        identity = [];
+      } catch {
+        identity = ["-c", "user.name=Rallypoint", "-c", "user.email=rallypoint@users.noreply.github.com"];
+      }
+    }
+    return git(...identity, "commit-tree", ...args);
+  };
+
   const released = (/** @type {string} */ sha) => {
     have(sha);
     return isReleasedMessage(git("log", "-1", "--format=%s", sha));
@@ -173,8 +194,7 @@ export const createGitDataEmulation = ({
       const tree = one("tree", fields);
       const parents = fields.parents ?? [];
       for (const parent of parents) have(parent);
-      const sha = git(
-        "commit-tree",
+      const sha = commitTree(
         tree,
         ...parents.flatMap((parent) => ["-p", parent]),
         "-m",
@@ -202,8 +222,7 @@ export const createGitDataEmulation = ({
       // pushed as itself; wrapping it would hide those trailers.
       const unique = /^Rallypoint-Lease-Role:/m.test(git("log", "-1", "--format=%B", sha))
         ? sha
-        : git(
-            "commit-tree",
+        : commitTree(
             git("rev-parse", `${sha}^{tree}`),
             "-p",
             sha,
@@ -245,8 +264,7 @@ export const createGitDataEmulation = ({
         );
       }
 
-      const mark = git(
-        "commit-tree",
+      const mark = commitTree(
         git("rev-parse", `${current}^{tree}`),
         "-p",
         current,

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.11.0...rallypoint-v0.12.0) (2026-11-27)
+
+
+### Features
+
+* **swarm:** dispatch local Claude Code and Codex roles ([cee5c4f](https://github.com/highnet/rallypoint/commit/cee5c4fc73bfebac20a0ac440217a83e9473f170))
+* **swarm:** dispatch local Claude Code and Codex roles ([9f47787](https://github.com/highnet/rallypoint/commit/9f47787c8595ca598ee903a39752e049c6feb008))
+
+
+### Bug Fixes
+
+* **swarm:** run Claude unattended and report child exit codes ([7fc9170](https://github.com/highnet/rallypoint/commit/7fc9170aeb5a9509667240f175b1eff3e4ff9774))
+
 ## [0.11.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.10.1...rallypoint-v0.11.0) (2026-11-27)
 
 

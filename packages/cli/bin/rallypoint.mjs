@@ -13,7 +13,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
-const VERSION = "0.10.0"; // x-release-please-version
+const VERSION = "0.10.1"; // x-release-please-version
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const command = args[0];

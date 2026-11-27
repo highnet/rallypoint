@@ -222,7 +222,9 @@ await test("swarm.css keeps the main column's padding when a hidden overview sta
 
 await test("swarm-ui: every prompt, command and file block has a copy button", async () => {
   const swarmDir = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
-  const files = (await readdir(swarmDir, { recursive: true })).filter((f) => f.endsWith(".tsx"));
+  const files = (await readdir(swarmDir, { recursive: true }))
+    .map((file) => file.split("\\").join("/"))
+    .filter((f) => f.endsWith(".tsx"));
   const copy = await readFile(resolve(swarmDir, "_components/copy.tsx"), "utf8");
   assert.match(copy, /^"use client";/, "only the button is a client component");
   assert.match(copy, /navigator\.clipboard\?\.writeText/);

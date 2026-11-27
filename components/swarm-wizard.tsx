@@ -11,6 +11,8 @@ import {
   arenaUrl,
   buildSwarmConfig,
   conductorPrompt,
+  conductorRuntimes,
+  type ConductorRuntime,
   emptyWizard,
   genesisPrompt,
   measureModes,
@@ -862,6 +864,14 @@ export function SwarmWizard() {
         <legend data-step-heading tabIndex={-1}>
           <span className="step-index">6</span> The conductor <Decide />
         </legend>
+        <label className="wiz-label" htmlFor={`${base}-runtime`}>Runtime</label>
+        <select className="wiz-input" id={`${base}-runtime`} value={state.runtime}
+          onChange={(event) => set("runtime", event.target.value as ConductorRuntime)}>
+          {Object.entries(conductorRuntimes).map(([id, runtime]) => (
+            <option key={id} value={id}>{runtime.name}</option>
+          ))}
+        </select>
+        <p className="install-detail">{conductorRuntimes[state.runtime].setup}</p>
         <div className="wiz-grid wiz-grid-3">
           <div>
             <label className="wiz-label" htmlFor={`${base}-concurrency`}>
@@ -1009,12 +1019,9 @@ export function SwarmWizard() {
           <div className="wiz-prompt">
             <p className="step-title">Leave it running: the conductor</p>
             <p className="install-detail">
-              The prompt below is for Claude Code with remote session tools. A copyable Codex conductor
-              command requires the native Codex skills from{" "}
-              <a href="https://github.com/highnet/rallypoint/issues/93">Rallypoint #93</a>.
-              Stop the conductor to stop the swarm.
+              {conductorRuntimes[effective.runtime].setup}
             </p>
-            <CommandCopy className="command-block" command={conductor} id="wiz-conductor" label="Claude Code conductor prompt" shell={false} />
+            <CommandCopy className="command-block" command={conductor} id="wiz-conductor" label={`${conductorRuntimes[effective.runtime].name} conductor prompt`} shell={false} />
           </div>
           {prompts.map((item) => (
             <div className="wiz-prompt" key={item.id}>

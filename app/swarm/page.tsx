@@ -17,6 +17,7 @@ import {
   arenaPitch,
   arenaUrl,
   conductorPrompt,
+  conductorRuntimes,
   emptyWizard,
   genesisPrompt,
   measureModes,
@@ -29,6 +30,8 @@ import {
   swarmUiEnvLines,
   swarmUiRoutes,
 } from "@/lib/swarm";
+
+import { stackIconPaths } from "@/lib/stack-icons";
 
 const title = "Rallypoint Swarm";
 const description =
@@ -122,8 +125,7 @@ const requirements = [
     need: "A coding agent with a shell and gh",
     detail: (
       <>
-        Claude Code, Codex, Cursor or any other. For the unattended conductor: Claude Code with remote
-        session tools, or Codex with Codex Cloud, so each role runs in its own session.
+        Claude Code, Codex, Cursor or any other. The conductor can start a separate Claude Code or Codex session locally or in the cloud.
       </>
     ),
   },
@@ -427,12 +429,30 @@ export default function SwarmPage() {
             <div className="section-head">
               <h2 id="conductor-title">One conductor keeps it running.</h2>
               <p>
-                The conductor runs in Claude Code, as a <code>/loop</code> with remote sessions, or in
-                Codex, with each role a Codex Cloud task started by <code>swarm dispatch</code>. Each pass
-                it reads <code>swarm status</code> and starts one separate session per role and target.
-                Subagents stay inside a role; nothing approves its own work.
+                Each pass reads <code>swarm status</code>, starts a separate session for each
+                dispatched role and target, and checks the session&apos;s retro.
               </p>
             </div>
+            <h3 id="swarm-runtimes-title">Runs on</h3>
+            <ul aria-labelledby="swarm-runtimes-title" className="stack-list swarm-runtime-grid">
+              {(["claude-local", "claude-cloud", "codex-local", "codex-cloud"] as const).map((id) => {
+                const runtime = conductorRuntimes[id];
+                return (
+                  <li className="stack-item" key={id}>
+                    <span aria-hidden="true" className="stack-icon">
+                      <svg viewBox="0 0 24 24"><path d={stackIconPaths[runtime.icon]} fill="currentColor" /></svg>
+                    </span>
+                    <span className="stack-text">
+                      <span className="stack-name">{runtime.name}</span>
+                      <span className="stack-role">{id.endsWith("local") ? <code>{runtime.starts}</code> : runtime.starts}</span>
+                      {id === "codex-cloud" ? (
+                        <span className="stack-role">Start tasks from the Cloud UI until <code>codex cloud exec</code> supports Cloud environments (<a href="https://github.com/openai/codex/issues/50182">openai/codex#50182</a>).</span>
+                      ) : null}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
             <div className="conductor-layout">
               <dl className="conductor-spec">
                 <div>

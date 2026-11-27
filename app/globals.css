@@ -4654,3 +4654,8 @@ a.role-cell:hover span {
     transition: none;
   }
 }
+
+.swarm-runtime-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 2rem;
+}

@@ -8,11 +8,11 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { chmod, mkdtemp, readdir, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { register } from "node:module";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { delimiter, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -24,6 +24,7 @@ const { parseScore, compareScores, referee, validateMeasure } = await lib("refer
 const { parseSwarmConfig, allTargets } = await lib("config.mjs");
 const { renderUiConfig, uiConfigFrom } = await lib("ui-config.mjs");
 const { dispatchCodexCloud } = await lib("codex-cloud.mjs");
+const { dispatchLocal, doctorRuntime } = await lib("local-runtime.mjs");
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -917,7 +918,7 @@ const env = {
 
 // spawnSync would block this process's event loop, and with it the fake
 // server; run the CLI asynchronously instead.
-const rp = (args, { expect = 0, extraEnv = {}, input = "" } = {}) =>
+const rp = (args, { expect = 0, extraEnv = {}, input = "", stdoutOnly = false } = {}) =>
   new Promise((done, fail) => {
     const childEnv = Object.fromEntries(Object.entries({ ...env, ...extraEnv }).filter(([, v]) => v !== undefined));
     const child = spawn(process.execPath, [cli, ...args], { cwd: fixture, env: childEnv });
@@ -928,7 +929,7 @@ const rp = (args, { expect = 0, extraEnv = {}, input = "" } = {}) =>
     child.stderr.on("data", (d) => (stderr += d));
     child.on("close", (status) => {
       if (expect !== null && status !== expect) fail(new Error(`rallypoint ${args.join(" ")} exited ${status}, expected ${expect}\n${stdout}\n${stderr}`));
-      else done(`${stdout}${stderr}`);
+      else done(stdoutOnly ? stdout : `${stdout}${stderr}`);
     });
   });
 const sh = (...args) => execFileSync(args[0], args.slice(1), { cwd: fixture, env, encoding: "utf8" });
@@ -948,6 +949,98 @@ try {
     for (const path of ["SWARM.md", ".rallypoint/swarm.json", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/schema.sql", ".rallypoint/swarm/realtime.sql", ".claude/skills/swarm-genesis/SKILL.md"]) {
       await readFile(resolve(fixture, path));
     }
+  });
+
+  await test("foreground local runtimes stream output, receive prompts on stdin, and report child codes without colliding with Swarm exit codes", async () => {
+    const bin = await mkdtemp(resolve(fixture, "runtime-bin-"));
+    const source = String.raw`#!/usr/bin/env node
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+if (args[0] === "--version") process.exit(0);
+if (args.join(" ") === "login status" || args.join(" ") === "auth status") {
+  process.exit(Number(process.env.FAKE_RUNTIME_AUTH ?? 0));
+}
+let prompt = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (data) => { prompt += data; });
+process.stdin.on("end", () => {
+  if (prompt === "hang") {
+    fs.writeFileSync(process.env.FAKE_RUNTIME_PID, String(process.pid));
+    setInterval(() => {}, 1000);
+    return;
+  }
+  console.log(JSON.stringify({ prompt, args, cwd: process.cwd() }));
+  console.error("role stderr");
+  process.exitCode = Number(process.env.FAKE_RUNTIME_EXIT ?? 4);
+});
+`;
+    for (const [name, packageName] of [["claude", "@anthropic-ai/claude-code"], ["codex", "@openai/codex"]]) {
+      const packageDir = resolve(bin, "node_modules", packageName);
+      await mkdir(packageDir, { recursive: true });
+      await writeFile(resolve(packageDir, "package.json"), JSON.stringify({ bin: { [name]: "fake.cjs" } }));
+      await writeFile(resolve(packageDir, "fake.cjs"), source);
+      // A command-shell launch would run this stub and fail. Windows must
+      // invoke the package entrypoint using Node instead.
+      await writeFile(resolve(bin, `${name}.cmd`), "@exit /b 99");
+      if (process.platform !== "win32") {
+        const executable = resolve(bin, name);
+        await writeFile(executable, source);
+        await chmod(executable, 0o755);
+      }
+    }
+    const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === "PATH") ?? "PATH";
+    const runtimeEnv = { ...process.env, [pathKey]: [bin, process.env[pathKey]].join(delimiter) };
+    const prompt = "Read this literally: & | %PATH% $HOME `command`\nThen finish.";
+    for (const [runtime, args] of [["claude-local", ["-p", "--permission-mode", "bypassPermissions"]], ["codex-local", ["exec", "--full-auto", "-"]]]) {
+      const output = await rp(["swarm", "dispatch", "--runtime", runtime, "--prompt", prompt], {
+        expect: 1, extraEnv: { [pathKey]: runtimeEnv[pathKey] },
+      });
+      const result = JSON.parse(output.split("\n").find((line) => line.startsWith("{")));
+      assert.equal(result.prompt, prompt);
+      assert.deepEqual(result.args, args);
+      assert.equal(resolve(result.cwd), resolve(sh("git", "rev-parse", "--show-toplevel").trim()));
+      assert.match(output, /role stderr/);
+      assert.ok(output.includes(`${runtime} exited with code 4.`));
+      for (const childStatus of [0, 4]) {
+        const json = await rp(["swarm", "dispatch", "--runtime", runtime, "--prompt", prompt, "--json"], {
+          expect: childStatus === 0 ? 0 : 1,
+          extraEnv: { [pathKey]: runtimeEnv[pathKey], FAKE_RUNTIME_EXIT: String(childStatus) },
+          stdoutOnly: true,
+        });
+        assert.deepEqual(JSON.parse(json), { runtime, childStatus });
+      }
+      assert.equal(doctorRuntime(runtime, { env: runtimeEnv }).ok, true);
+    }
+
+    assert.equal(doctorRuntime("codex-local", {
+      env: { ...runtimeEnv, FAKE_RUNTIME_AUTH: "1" },
+    }).ok, false);
+
+    const pidFile = resolve(bin, "child.pid");
+    const timeout = await rp(["swarm", "dispatch", "--runtime", "codex-local", "--prompt", "hang",
+      "--max-wait-seconds", "2"], {
+      expect: 1, extraEnv: { [pathKey]: runtimeEnv[pathKey], FAKE_RUNTIME_PID: pidFile },
+    });
+    assert.match(timeout, /timed out.*Inspect/);
+    const pid = Number(await readFile(pidFile, "utf8"));
+    assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
+
+    const missingEnv = { ...process.env, [pathKey]: resolve(bin, "missing") };
+    const missing = doctorRuntime("claude-local", { cwd: bin, env: missingEnv });
+    assert.equal(missing.ok, false);
+    assert.match(missing.detail, /claude CLI was not found on PATH/);
+    await assert.rejects(dispatchLocal({
+      runtime: "claude-local", cwd: bin, prompt: "unused", maxWaitMs: 1000, env: missingEnv,
+    }), /claude CLI was not found on PATH/);
+
+    const windowsStatus = await dispatchLocal({
+      runtime: "codex-local", cwd: bin, prompt: "Windows shim probe", maxWaitMs: 3000,
+      env: { ...runtimeEnv, [pathKey]: bin }, platform: "win32",
+    });
+    assert.equal(windowsStatus, 4);
+    assert.match(await rp(["swarm", "dispatch", "--prompt", prompt], {
+      expect: 2, extraEnv: { RALLYPOINT_CODEX_CLOUD_ENV: undefined },
+    }), /requires --runtime/);
   });
 
   await test("the npm CLI forwards to the runtime, --version included", async () => {
@@ -1034,6 +1127,9 @@ try {
     await rp(["swarm", "retro", "--well", "clear issue", "--friction", "slow build", "--suggest", "cache deps"]);
     assert.equal(db.swarm_sessions[0].status, "ended");
     assert.equal(db.swarm_retros.at(-1).role, "worker");
+    const sessionId = db.swarm_retros.at(-1).session_id;
+    const matching = JSON.parse(await rp(["swarm", "retros", "--session", sessionId, "--limit", "1", "--json"]));
+    assert.equal(matching.retros[0].session_id, sessionId);
     await rp(["swarm", "log", "after end"], { expect: 2 });
   });
 

@@ -54,7 +54,7 @@ export const swarmStack: StackItem[] = [
   { icon: "supabase", name: "Supabase", role: "Owns the memory, your project" },
   { icon: "postgresql", name: "PostgreSQL", role: "RLS and secret-checked writes" },
   { icon: "nodedotjs", name: "Node.js 20+", role: "The swarm runtime" },
-  { icon: "claude", name: "Claude Code", role: "Conductor: a /loop with remote sessions" },
-  { icon: "openai", name: "Codex", role: "Conductor: Codex Cloud tasks via swarm dispatch" },
+  { icon: "claude", name: "Claude Code", role: "Local claude -p or cloud remote sessions" },
+  { icon: "openai", name: "Codex", role: "Local codex exec or Codex Cloud tasks" },
   { icon: "nextdotjs", name: "Next.js", role: "The swarm UI scaffold", optional: true },
 ];

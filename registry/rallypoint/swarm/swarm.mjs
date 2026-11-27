@@ -21,7 +21,8 @@ import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 
 import { allTargets, parseSwarmConfig } from "./lib/config.mjs";
-import { dispatchCodexCloud } from "./lib/codex-cloud.mjs";
+import { DEFAULT_MAX_WAIT_MS, dispatchCodexCloud } from "./lib/codex-cloud.mjs";
+import { dispatchLocal, doctorRuntime } from "./lib/local-runtime.mjs";
 import { MemoryError, memoryFromEnv } from "./lib/memory.mjs";
 import { ROLE_WHEN, computeQueues, pickRole } from "./lib/roles.mjs";
 import { referee } from "./lib/referee.mjs";
@@ -46,6 +47,14 @@ const option = (name) => {
   if (index < 0) return undefined;
   const value = rest[index + 1];
   return value === undefined || value.startsWith("--") ? undefined : value;
+};
+const selectedRuntime = () => {
+  const runtime = flag("runtime") ? option("runtime")
+    : process.env.RALLYPOINT_CODEX_CLOUD_ENV ? "codex-cloud" : undefined;
+  if ((runtime !== undefined || flag("runtime")) && !["claude-local", "codex-local", "codex-cloud"].includes(runtime)) {
+    throw new UsageError("--runtime must be claude-local, codex-local or codex-cloud");
+  }
+  return runtime;
 };
 const positionals = () => {
   const out = [];
@@ -191,7 +200,7 @@ commands.help = () => {
 ${strong("Rallypoint Swarm")}
 
 ${strong("Setup")}
-  doctor                         check env, gh, transport, git, config, memory, realtime, secret
+  doctor [--runtime <runtime>]   check env, gh, transport, git, config, memory, realtime, secret
   init [--dry-run]               target labels + goal/visibility into memory
   ui-config [--out <path>] [--force]
                                  generate the project's app/swarm/swarm.config.ts
@@ -217,12 +226,13 @@ ${strong("Planning and learning")}
   concept trial <id> --target t --outcome gained|lost|neutral [--delta d] [--ref #n]
   protocol change --summary "…" [--version p2] [--issue n] [--pr n]
   protocol verdict <id> --kept|--reverted
-  retros [--since-change] [--role r] [--limit n]
+  retros [--since-change] [--role r] [--session id] [--limit n]
   metrics                        ship rate, claim → close, retros waiting
   status                         JSON snapshot for the conductor
-  dispatch --branch <branch> --prompt "<prompt>" [--env <environment>]
+  dispatch --runtime claude-local|codex-local|codex-cloud --prompt "<prompt>"
+           [--branch <branch>] [--env <environment>]
            [--max-wait-seconds <seconds>]
-                                 submit one Codex Cloud task and wait for its status
+                                 start one role, stream local output, and wait
 
 Every command accepts --json. Exit codes: 0 ok · 1 error · 2 misuse ·
 3 referee failed · 4 nothing to do.
@@ -232,6 +242,18 @@ Every command accepts --json. Exit codes: 0 ok · 1 error · 2 misuse ·
 commands.doctor = async () => {
   const checks = [];
   const add = (name, ok, detail, level = ok ? "ok" : "fail") => checks.push({ name, ok, level, detail });
+
+  const runtime = selectedRuntime();
+  if (runtime) {
+    const { ok, detail } = doctorRuntime(runtime, { cwd });
+    add(runtime, ok, detail);
+    if (runtime === "codex-cloud") {
+      const configured = Boolean(option("env") ?? process.env.RALLYPOINT_CODEX_CLOUD_ENV);
+      add("codex-cloud environment", configured, configured
+        ? "environment selected (CLI discovery remains subject to openai/codex#50182)"
+        : "pass --env or set RALLYPOINT_CODEX_CLOUD_ENV");
+    }
+  }
 
   add("node", Number(process.versions.node.split(".")[0]) >= 20, `v${process.versions.node}`);
   try {
@@ -961,6 +983,7 @@ commands.retros = async () => {
     if (last) filters.created_at = `gt.${last.created_at}`;
   }
   if (option("role")) filters.role = `eq.${option("role")}`;
+  if (option("session")) filters.session_id = `eq.${option("session")}`;
   const rows = await memory.select("swarm_retros", { order: "created_at.desc", limit: Number(option("limit") ?? 50), filters });
   out({ retros: rows }, rows.length
     ? rows.map((r) => `${muted(`#${r.id} ${ago(r.created_at)} ${r.role ?? "—"} ${r.protocol_version ?? ""}`)}${r.went_well ? `\n  + ${r.went_well}` : ""}${r.friction ? `\n  − ${r.friction}` : ""}${r.suggestion ? `\n  → ${r.suggestion}` : ""}`).join("\n")
@@ -1039,15 +1062,27 @@ commands.status = async () => {
 };
 
 commands.dispatch = async () => {
+  const runtime = selectedRuntime();
+  if (!runtime) throw new UsageError("dispatch requires --runtime (defaults to codex-cloud when RALLYPOINT_CODEX_CLOUD_ENV is set)");
+  const prompt = option("prompt");
+  if (!prompt?.trim()) throw new UsageError("dispatch requires --prompt");
+  const maxWaitMs = flag("max-wait-seconds") ? Number(option("max-wait-seconds")) * 1000 : DEFAULT_MAX_WAIT_MS;
+  if (!Number.isSafeInteger(maxWaitMs) || maxWaitMs <= 0 || maxWaitMs > 2_147_483_647) {
+    throw new UsageError("--max-wait-seconds must specify a positive duration within the timer limit");
+  }
+  if (runtime !== "codex-cloud") {
+    const childStatus = await dispatchLocal({
+      runtime, cwd: git("rev-parse", "--show-toplevel"), prompt, maxWaitMs,
+      stdout: asJson ? process.stderr : "inherit",
+    });
+    out({ runtime, childStatus }, `${runtime} exited with code ${childStatus}.`);
+    return childStatus === 0 ? EXIT.OK : EXIT.ERROR;
+  }
+
   const environment = option("env") ?? process.env.RALLYPOINT_CODEX_CLOUD_ENV;
   const branch = option("branch");
-  const prompt = option("prompt");
-  if (![environment, branch, prompt].every((value) => value?.trim())) {
-    throw new UsageError('dispatch requires --branch, --prompt and --env (or RALLYPOINT_CODEX_CLOUD_ENV)');
-  }
-  const maxWaitMs = rest.includes("--max-wait-seconds") ? Number(option("max-wait-seconds")) * 1000 : undefined;
-  if (maxWaitMs !== undefined && (!Number.isSafeInteger(maxWaitMs) || maxWaitMs <= 0)) {
-    throw new UsageError("--max-wait-seconds must specify a positive duration");
+  if (!environment?.trim() || !branch?.trim()) {
+    throw new UsageError("codex-cloud dispatch requires --branch and --env (or RALLYPOINT_CODEX_CLOUD_ENV)");
   }
   const result = await dispatchCodexCloud({
     cwd, environment, branch, prompt, maxWaitMs,

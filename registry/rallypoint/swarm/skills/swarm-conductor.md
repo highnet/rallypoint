@@ -43,8 +43,19 @@ There are three layers, and only the middle one writes:
 
    A lease refused because someone holds it means skip that job. Any other
    refusal (a usage error, an unreadable source) means stop and escalate.
-5. Start **one separate session per dispatch** (in Claude Code, the
-   remote-session tools; elsewhere, a new agent process). Use this prompt,
+5. Start **one separate session per dispatch** from the repository root.
+   When `RALLYPOINT_CODEX_CLOUD_ENV` is configured or the operator supplies a
+   Codex Cloud environment, use `swarm dispatch --branch <branch> --prompt '<prompt>'`.
+   Pass `--env <environment>` for an explicit environment. The selected
+   environment must check out this repository. The command waits for one
+   hosted task and prints its URL as soon as it is accepted. Count it toward
+   the budget and reserve its slot even before it appears in `fleet`.
+   If submission or status is uncertain, stop and inspect the Cloud task
+   before retrying. A terminal Cloud state still requires checking the
+   Rallypoint retro. If the worker could not open a session, inspect the
+   task's final output for its doctor failure.
+   Otherwise use the host’s remote-session tools or a local agent process.
+   Wait for the session to finish before reusing its slot. Use this prompt,
    filled in:
 
    > Repository: <owner/repo> (default branch <branch>).

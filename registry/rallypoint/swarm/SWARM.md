@@ -92,6 +92,54 @@ requests, labels, reviews, merges. Swarm adds:
 
    or leave it running in Claude Code with `/loop /swarm-conductor`.
 
+For a hosted Codex session, allow HTTPS to `api.github.com`, `github.com`,
+`registry.npmjs.org`, and the hostname of `RALLYPOINT_SUPABASE_URL`. Set
+`RALLYPOINT_TRANSPORT=rest` when using a REST-only proxy. Bind the GitHub
+credential required by the configured transport, `RALLYPOINT_SUPABASE_KEY`,
+and `RALLYPOINT_SWARM_SECRET` in the environment secret settings. Verify the
+running session with `npx rallypoint swarm doctor` before starting a conductor.
+
+If the hosted shell uses an HTTPS proxy, enable Node's environment proxy
+support in that shell. Configure it in the Cloud environment as well if
+its hosted workers use an HTTPS proxy.
+
+```bash
+export NODE_USE_ENV_PROXY=1
+node .rallypoint/swarm/swarm.mjs doctor
+```
+
+When both the `schema` and `secret` checks report `fetch failed`, retry with the
+proxy enabled before applying schema changes. Continue when doctor reports
+`Ready.`.
+
+### Dispatch to Codex Cloud
+
+Choose a Codex Cloud environment for this repository that the submitting
+Codex CLI account can access. Configure GitHub access and the Rallypoint
+Supabase settings in that environment. Hosted workers use the environment's
+own checkout, network policy, and credentials. Keep credentials out of the
+dispatch prompt. Run `swarm doctor` from a task in that environment before
+using it for dispatches.
+
+```bash
+export RALLYPOINT_CODEX_CLOUD_ENV='<environment ID or name>'
+node .rallypoint/swarm/swarm.mjs dispatch --branch main --prompt \
+  'Read .rallypoint/swarm/skills/swarm-agent.md and follow it. Take one CMS worker role with swarm next cms --only worker. Log progress and leave a retro.'
+```
+
+The command uses the experimental `codex cloud exec` and `codex cloud status`
+commands, with one attempt per task. The submitting CLI needs a Codex login
+that can see the environment. Polling waits up to two hours by default
+(`--max-wait-seconds` overrides this) and retries failed status checks twice.
+If polling stops before confirming a terminal state, keep the slot reserved
+and check the printed task URL before dispatching another worker.
+
+A Cloud task marked `READY` has finished. A worker must still push its branch
+and open its PR from inside the hosted task. Configure a GitHub credential in
+the Cloud environment with permission to push branches and open PRs for the
+repository. The conductor still selects and guards the job and verifies its
+retro.
+
 Optional: a UI. `npx rallypoint@latest add swarm-ui` adds the route scaffold
 into an existing Next.js app, where the UI is the product.
 `npx rallypoint@latest add swarm-dashboard` creates a standalone `swarm-ui/`

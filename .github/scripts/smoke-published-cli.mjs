@@ -56,6 +56,9 @@ const key = args.slice(0, 2).join(" ");
 if (args[0] === "--version") console.log("gh version 2.0.0");
 else if (key === "api user") console.log("smoke-bot");
 else if (key === "repo view") console.log(args.includes("--json") ? JSON.stringify({ nameWithOwner: "acme/app", defaultBranchRef: { name: "main" } }) : "acme/app");
+// \`swarm doctor\` proves the transport can list pull requests.
+else if (key === "pr list") console.log("[]");
+else if (key === "issue list") console.log("[]");
 else if (key === "label list") console.log("[]");
 else if (key === "label create") console.log("");
 else if (args[0] === "api" && String(args[1]).endsWith("/protection")) { console.error("HTTP 404: Branch not protected"); process.exit(1); }

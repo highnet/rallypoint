@@ -1166,6 +1166,23 @@ export const createTransport = ({ request, repository, readFile, autoMergeRoute 
     const method = parsed.method ?? (hasFields ? "POST" : "GET");
 
     let path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+    // A `matching-refs` prefix ending in `/` (`heads/rallypoint-sessions/`)
+    // is one a Claude Code session's proxy refuses ("Request path could not be
+    // canonicalized", HTTP 400). Ask for the prefix without it, which matches a
+    // superset, and keep only the refs the slashed prefix would have matched.
+    /** @type {string | undefined} */
+    let refPrefix;
+    const slashed = /^(\/repos\/[^/]+\/[^/]+\/git\/matching-refs\/(.+?))\/((?:\?.*)?)$/.exec(path);
+    if (slashed) {
+      path = `${slashed[1]}${slashed[3]}`;
+      refPrefix = `refs/${slashed[2]}/`;
+    }
+    /** @param {unknown} page */
+    const onlyPrefixed = (page) =>
+      refPrefix !== undefined && Array.isArray(page)
+        ? page.filter((/** @type {any} */ ref) => String(ref?.ref ?? "").startsWith(/** @type {string} */ (refPrefix)))
+        : page;
     /** @type {ApiRequest} */
     let call = { method, path };
 
@@ -1184,7 +1201,7 @@ export const createTransport = ({ request, repository, readFile, autoMergeRoute 
     }
 
     if (parsed.paginate) {
-      const pages = sendPaginated(call);
+      const pages = sendPaginated(call).map(onlyPrefixed);
       /** @type {unknown} */
       let data;
       // `--slurp` keeps the pages as an array of arrays; without it `gh`
@@ -1198,7 +1215,7 @@ export const createTransport = ({ request, repository, readFile, autoMergeRoute 
 
     if (parsed.slurp) throw new UnsupportedCommand(args, "--slurp needs --paginate");
 
-    const response = send(call);
+    const response = onlyPrefixed(send(call));
 
     // A 204 has no body. `gh` prints nothing, and the DELETE callers ignore
     // stdout entirely.

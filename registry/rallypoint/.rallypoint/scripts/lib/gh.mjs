@@ -8,6 +8,13 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { createTransport } from "./api.mjs";
+import {
+  coordinationRefs,
+  createGitDataEmulation,
+  createReleasedFilter,
+  gitDataRequest,
+  isGitDataRefused,
+} from "./git-data.mjs";
 import { validateConfig } from "./config.mjs";
 import { EXIT_MISSING_PREREQUISITE, checkGh } from "./prerequisites.mjs";
 import { repositoryFrom, syncRequest } from "./request.mjs";
@@ -285,9 +292,12 @@ const NO_REPOSITORY =
  *   request?: Parameters<typeof createTransport>[0]["request"],
  *   binary?: (...args: string[]) => string,
  *   probe?: () => boolean,
+ *   runGit?: (...args: string[]) => string,
  *   quiet?: boolean,
- * }} [input] `request`, `binary` and `probe` are test seams.
- * @returns {((...args: string[]) => string) & { describe: () => { kind: "gh" | "rest", reason: string } }}
+ *   showReleased?: boolean,
+ * }} [input] `showReleased` keeps released markers visible, for
+ *   `sweep-released.mjs`, which deletes them. `request`, `binary`, `probe` and `runGit` are test seams.
+ * @returns {((...args: string[]) => string) & { describe: () => { kind: "gh" | "rest", reason: string, gitData: "api" | "push" } }}
  */
 export const resolveTransport = ({
   remote,
@@ -297,10 +307,13 @@ export const resolveTransport = ({
   request,
   binary,
   probe,
+  runGit,
   quiet = false,
+  showReleased = false,
 } = {}) => {
   const choice = chooseTransport({ env, hasGh: probe ?? (() => hasGh(env)) });
   let current = choice;
+  let emulating = chooseGitData({ env });
 
   const rest = () => {
     const repository = repositoryHere({ remote, env, cwd });
@@ -348,7 +361,76 @@ export const resolveTransport = ({
     });
   }
 
-  return Object.assign(transport, { describe: () => current });
+  const base = transport;
+  const isCoordinationRef = coordinationRefs(quietConfig());
+  /** @type {ReturnType<typeof createGitDataEmulation> | undefined} */
+  let emulation;
+  const emulate = (/** @type {NonNullable<ReturnType<typeof gitDataRequest>>} */ call) =>
+    (emulation ??= createGitDataEmulation({
+      git:
+        runGit ??
+        ((...args) =>
+          execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()),
+      isCoordinationRef,
+    }))(call);
+  const hideReleased = createReleasedFilter({ read: (...args) => base(...args), isCoordinationRef });
+
+  /** @param {string[]} args */
+  const withGitData = (...args) => {
+    const call = gitDataRequest(args);
+
+    if (call) {
+      if (emulating) return emulate(call);
+      try {
+        return base(...args);
+      } catch (error) {
+        // Refused before it changed anything, so the emulated write is the
+        // same write, not a second one.
+        if (!isGitDataRefused(error)) throw error;
+        emulating = true;
+        if (!quiet) {
+          console.error(
+            "rallypoint: this session may not write GitHub's git-data API (HTTP 403); " +
+              "writing refs with `git push` for the rest of this command.",
+          );
+        }
+        return emulate(call);
+      }
+    }
+
+    const out = base(...args);
+    return showReleased ? out : hideReleased(args, out);
+  };
+
+  return Object.assign(withGitData, {
+    describe: () => ({ ...current, gitData: emulating ? "push" : "api" }),
+  });
+};
+
+/**
+ * Whether git-data writes (refs, commits) go through `git push` from the
+ * start rather than the API: in a Claude Code cloud session, whose proxy
+ * refuses them — unless the `RALLYPOINT_GH_SCRIPT` test seam is set, for the
+ * same reason it wins in `chooseTransport`. `RALLYPOINT_GIT_DATA=push|api`
+ * pins it. Elsewhere the API is used, and the first refusal switches.
+ *
+ * @param {{ env?: Record<string, string | undefined> }} input
+ */
+export const chooseGitData = ({ env = process.env }) => {
+  const forced = String(env.RALLYPOINT_GIT_DATA ?? "").trim().toLowerCase();
+  if (forced === "push") return true;
+  if (forced === "api") return false;
+  if (forced !== "") throw new Error(`RALLYPOINT_GIT_DATA must be "push" or "api", not "${env.RALLYPOINT_GIT_DATA}"`);
+  return isCloudSession(env) && !env[GH_SCRIPT_ENV];
+};
+
+/** The ref prefixes from `.rallypoint/config.json`, or the defaults when it cannot be read. */
+const quietConfig = () => {
+  try {
+    return JSON.parse(readFileSync(new URL("../../config.json", import.meta.url), "utf8"));
+  } catch {
+    return {};
+  }
 };
 
 /** @type {ReturnType<typeof resolveTransport> | undefined} */

@@ -248,8 +248,8 @@ commands.doctor = async () => {
   // prepare time.
   try {
     gh("pr", "list", "--state", "open", "--limit", "1", "--json", "number");
-    const { kind, reason } = githubTransport().describe();
-    add("transport", true, `${kind}: can list pull requests (${reason})`);
+    const { kind, reason, gitData } = githubTransport().describe();
+    add("transport", true, `${kind}: can list pull requests (${reason}); claims and leases written ${gitData === "push" ? "with git push" : "through the API"}`);
   } catch (error) {
     let detail = "";
     try {

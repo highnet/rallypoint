@@ -77,6 +77,8 @@ node .rallypoint/scripts/delete-merged-branch.mjs --pr <N>
 
 Do not reach for `git push origin --delete` when the coupled form fails: any push fires `pre-push`, and in a repository that gates pushes on a full suite that runs the whole gate before the command reaches the network. The command above uses the GitHub API ref delete instead — no hook, no worktree dependency.
 
+**In a Claude Code cloud session the remote delete is refused** — those sessions may not delete refs — so exit `4` there is expected: the branch is left for `.rallypoint/scripts/sweep-released.mjs`, which the daily `rallypoint-sweep` workflow runs. Say so in the merge report rather than retrying.
+
 **A local branch surviving the merge is normal, not a failure.** The command deletes the remote first, then reports what it could not clean up locally and exits `0` anyway. Read that line as information. Exit `2` (refused: not merged, or not an issue branch), `3` (inconclusive), and `4` (the ref was there and the delete failed) are the ones worth reporting.
 
 Confirm with `git ls-remote --heads origin 'refs/heads/agent/<N>-*'`, which should return nothing.

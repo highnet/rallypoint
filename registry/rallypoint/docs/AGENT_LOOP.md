@@ -27,6 +27,16 @@ table below, so no caller can mistake an absent prerequisite for a real verdict.
 gh auth login
 ```
 
+Claims and leases are git refs. A Claude Code cloud session's proxy also refuses
+GitHub's git-data writes (`git/refs`, `git/commits`), so there — or from the first
+such refusal anywhere — `lib/git-data.mjs` writes them with `git push` instead,
+keeping a create atomic (`--force-with-lease`). Those sessions cannot delete refs
+either: releasing a claim or lease moves it onto a `rallypoint: released` marker
+commit, which every read treats as absent, and an agent branch's delete after a
+merge is refused. `.rallypoint/scripts/sweep-released.mjs`, run daily by
+`.github/workflows/rallypoint-sweep.yml`, deletes both for good.
+`RALLYPOINT_GIT_DATA=push|api` pins the choice.
+
 Run `gh` commands of your own — the merger's `pr view` and `pr merge` — through
 the same transport, so they work where the binary cannot:
 

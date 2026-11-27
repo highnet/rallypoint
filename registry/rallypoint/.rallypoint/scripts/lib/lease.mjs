@@ -267,6 +267,22 @@ export const resolveLease = (gh, repository, ref, prefix) => {
     );
   }
 
+  // A lease written by an older git-push emulation sits behind a
+  // `rallypoint: reserve` wrapper whose only parent is the real lease commit.
+  // Read through it; the wrapper carries nothing of its own.
+  if (String(commit?.message ?? "").startsWith("rallypoint: reserve ")) {
+    const inner = commit?.parents?.at(0)?.sha;
+    try {
+      commit = inner
+        ? JSON.parse(gh("api", `repos/${repository}/git/commits/${inner}`))
+        : commit;
+    } catch (error) {
+      return unreadable(
+        `the lease commit behind \`${refName}\`'s reservation wrapper could not be read (${describeError(error)})`,
+      );
+    }
+  }
+
   const record = parseLeaseMessage(commit?.message);
 
   if (!record) {

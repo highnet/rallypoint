@@ -30,8 +30,16 @@ process.env.no_proxy = process.env.NO_PROXY;
 const { createTransport, UnsupportedCommand, ApiError, applyJq } = await import(
   pathToFileURL(resolve(libDir, "api.mjs")).href
 );
-const { chooseTransport, isCloudSession, isGraphqlBlocked, withGraphqlFallback, resolveTransport } =
+const { chooseTransport, chooseGitData, isCloudSession, isGraphqlBlocked, withGraphqlFallback, resolveTransport } =
   await import(pathToFileURL(resolve(libDir, "gh.mjs")).href);
+const {
+  coordinationRefs,
+  createGitDataEmulation,
+  createReleasedFilter,
+  gitDataRequest,
+  isGitDataRefused,
+  isReleasedMessage,
+} = await import(pathToFileURL(resolve(libDir, "git-data.mjs")).href);
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -721,6 +729,22 @@ await test("api: --paginate concatenates array pages; --slurp keeps them apart",
   throwsUnsupported(() => stub(routes).gh("api", "--slurp", "repos/acme/app/issues/4/events"), /--slurp needs --paginate/);
 });
 
+await test("api: a matching-refs prefix ending in / is asked without it and filtered back (the proxy refuses the slash)", () => {
+  const refs = [
+    { ref: "refs/heads/rallypoint-sessions/reviewer/pr-3", object: { sha: "a" } },
+    { ref: "refs/heads/rallypoint-sessionsX", object: { sha: "b" } },
+  ];
+  const { gh, calls } = stub({
+    "GET /repos/acme/app/git/matching-refs/heads/rallypoint-sessions?per_page=100": ok(refs),
+    "GET /repos/acme/app/git/matching-refs/heads/rallypoint-sessions": ok(refs),
+  });
+  assert.deepEqual(JSON.parse(gh("api", "repos/acme/app/git/matching-refs/heads/rallypoint-sessions/?per_page=100")).map((r) => r.object.sha), ["a"]);
+  assert.deepEqual(JSON.parse(gh("api", "--paginate", "repos/acme/app/git/matching-refs/heads/rallypoint-sessions/")).map((r) => r.object.sha), ["a"]);
+  assert.ok(calls.every((call) => !call.path.includes("sessions/")), calls.map((call) => call.path).join("\n"));
+  // A prefix without the slash is left exactly as asked.
+  assert.equal(JSON.parse(gh("api", "repos/acme/app/git/matching-refs/heads/rallypoint-sessions")).length, 2);
+});
+
 await test("applyJq: the path subset gh --jq output, strings raw, null empty", () => {
   const data = { login: "octo", nested: { list: [{ name: "a" }, { name: "b" }] }, nothing: null, count: 3 };
   assert.equal(applyJq(data, ".login", []), "octo");
@@ -904,4 +928,380 @@ try {
   await rm(fakeGh, { force: true });
 }
 
-console.log(`Transport tests passed: ${passed} cases (transport choice, GraphQL fallback, every api.mjs command, swarm doctor and scripts/gh.mjs end to end).`);
+const runNodeIn = (cwd, args, env) =>
+  new Promise((done) => {
+    const child = spawn(process.execPath, args, { cwd, env });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("close", (status) => done({ status, stdout, stderr }));
+  });
+
+// ---------------------------------------------------------------------------
+// git-data: writes the proxy refuses, emulated with git; released markers
+// ---------------------------------------------------------------------------
+
+const PROXY_403 = "gh: Write access to this GitHub API path is not permitted through this proxy. (HTTP 403)";
+const CLAIM = "refs/heads/rallypoint-claims/issue-7";
+
+await test("git-data: which gh api calls are git-data writes", () => {
+  assert.deepEqual(gitDataRequest(["api", "--method", "POST", "repos/acme/app/git/refs", "-f", "ref=refs/heads/x", "-f", "sha=abc"]), {
+    method: "POST", kind: "refs", rest: undefined, fields: { ref: ["refs/heads/x"], sha: ["abc"] },
+  });
+  assert.equal(gitDataRequest(["api", "-X", "DELETE", "/repos/acme/app/git/refs/heads/rallypoint-claims/issue-7"]).rest, "heads/rallypoint-claims/issue-7");
+  assert.deepEqual(gitDataRequest(["api", "--method", "POST", "repos/acme/app/git/commits", "-f", "tree=t", "-f", "parents[]=p1", "-f", "parents[]=p2"]).fields.parents, ["p1", "p2"]);
+  assert.equal(gitDataRequest(["api", "repos/acme/app/git/refs", "-f", "ref=x", "-f", "sha=y"]).method, "POST", "fields imply POST");
+  assert.equal(gitDataRequest(["api", "--method", "PATCH", "repos/acme/app/git/refs/heads/l", "-f", "sha=s", "-F", "force=true"]).fields.force[0], "true");
+  assert.equal(gitDataRequest(["api", "repos/acme/app/git/ref/heads/main"]), null, "reads are not writes");
+  assert.equal(gitDataRequest(["api", "repos/acme/app/git/matching-refs/heads/rallypoint-claims/"]), null);
+  assert.equal(gitDataRequest(["api", "--method", "DELETE", "repos/acme/app/issues/1/labels/x"]), null);
+  assert.equal(gitDataRequest(["issue", "edit", "1"]), null);
+  assert.equal(isGitDataRefused(ghFailure(PROXY_403)), true);
+  assert.equal(isGitDataRefused(ghFailure("HTTP 422: Reference already exists")), false);
+});
+
+await test("git-data: coordination refs come from the config's claim and session prefixes", () => {
+  const isCoordination = coordinationRefs({ claimRefPrefix: "rallypoint-claims/issue-", sessionRefPrefix: "rallypoint-sessions/" });
+  assert.equal(isCoordination(CLAIM), true);
+  assert.equal(isCoordination("refs/heads/rallypoint-sessions/reviewer/pr-3"), true);
+  assert.equal(isCoordination("refs/heads/agent/7-x"), false);
+  assert.equal(isCoordination("refs/heads/main"), false);
+  assert.equal(coordinationRefs({ claimRefPrefix: "claims/", sessionRefPrefix: "leases/" })("refs/heads/claims/9"), true);
+});
+
+await test("git-data: chooseGitData — push in a cloud session, API elsewhere, the test seam and the pin respected", () => {
+  assert.equal(chooseGitData({ env: { CLAUDE_CODE_REMOTE: "true" } }), true);
+  assert.equal(chooseGitData({ env: {} }), false);
+  assert.equal(chooseGitData({ env: { CLAUDE_CODE_REMOTE: "true", RALLYPOINT_GH_SCRIPT: "/fake.mjs" } }), false);
+  assert.equal(chooseGitData({ env: { RALLYPOINT_GIT_DATA: "push" } }), true);
+  assert.equal(chooseGitData({ env: { CLAUDE_CODE_REMOTE: "true", RALLYPOINT_GIT_DATA: "api" } }), false);
+  assert.throws(() => chooseGitData({ env: { RALLYPOINT_GIT_DATA: "rest" } }), /must be "push" or "api"/);
+});
+
+/**
+ * A stub `git` over an in-memory remote: `refs` is origin's refs, `commits`
+ * every commit's subject and body. Records every command.
+ */
+const stubGit = ({ refs = {}, commits = {} } = {}) => {
+  const calls = [];
+  let next = 0;
+  const git = (...args) => {
+    calls.push(args);
+    const [command] = args;
+    if (command === "cat-file" || command === "fetch") return "";
+    if (command === "ls-remote") return refs[args[2]] ? `${refs[args[2]]}\t${args[2]}` : "";
+    if (command === "log") return commits[args.at(-1)] ?? "";
+    if (command === "rev-parse") return `tree-of-${args[1].replace("^{tree}", "")}`;
+    if (command === "commit-tree") {
+      const sha = `new${(next += 1)}`;
+      commits[sha] = args[args.indexOf("-m") + 1];
+      return sha;
+    }
+    if (command === "push") {
+      const lease = args.find((entry) => entry.startsWith("--force-with-lease="));
+      const [source, target] = args.at(-1).split(":");
+      if (lease) {
+        const expected = lease.slice(lease.lastIndexOf(":") + 1);
+        if ((refs[target] ?? "") !== expected) throw new Error("! [rejected] (stale info)");
+      }
+      refs[target] = source;
+      return "";
+    }
+    throw new Error(`stub git: ${args.join(" ")}`);
+  };
+  return { git, calls, refs, commits };
+};
+
+const emulationOver = (remote) =>
+  createGitDataEmulation({
+    git: remote.git,
+    isCoordinationRef: coordinationRefs(),
+    now: () => "2026-11-27T00:00:00Z",
+    nonce: () => "n",
+  });
+
+const write = (emulate, ...args) => emulate(gitDataRequest(["api", ...args]));
+
+await test("git-data: a ref create is an atomic push, as its own commit, and a live ref is taken", () => {
+  const remote = stubGit({ commits: { base: "base commit" } });
+  const emulate = emulationOver(remote);
+
+  const created = JSON.parse(write(emulate, "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${CLAIM}`, "-f", "sha=base"));
+  assert.equal(created.ref, CLAIM);
+  assert.equal(remote.refs[CLAIM], created.object.sha);
+  assert.notEqual(created.object.sha, "base", "wrapped, so a second identical push is not a silent no-op");
+  assert.match(remote.commits[created.object.sha], /^rallypoint: reserve refs\/heads\/rallypoint-claims\/issue-7/);
+  const push = remote.calls.find((args) => args[0] === "push");
+  assert.ok(push.includes(`--force-with-lease=${CLAIM}:`), "the lease expects the ref absent");
+  assert.ok(push.includes("--no-verify"), "no pre-push hook runs the project's suite");
+
+  // A second claimant: the ref is live, so the create is refused as GitHub would.
+  assert.throws(
+    () => write(emulate, "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${CLAIM}`, "-f", "sha=base"),
+    (error) => error.status === 422 && /Reference already exists/.test(error.message),
+  );
+});
+
+await test("git-data: a create that loses the race between read and push is refused, not overwritten", () => {
+  const remote = stubGit({ commits: { base: "base commit" } });
+  const racing = (...args) => {
+    // Another session's create lands after this one read the ref as absent.
+    if (args[0] === "push") remote.refs[CLAIM] = "theirs";
+    return remote.git(...args);
+  };
+  const emulate = createGitDataEmulation({ git: racing, isCoordinationRef: coordinationRefs() });
+  assert.throws(
+    () => write(emulate, "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${CLAIM}`, "-f", "sha=base"),
+    (error) => error.status === 422,
+  );
+  assert.equal(remote.refs[CLAIM], "theirs");
+});
+
+await test("git-data: a delete releases a coordination ref onto a marker; the next create takes it over", () => {
+  const remote = stubGit({ refs: { [CLAIM]: "held" }, commits: { held: "rallypoint: reserve x", base: "base" } });
+  const emulate = emulationOver(remote);
+
+  assert.equal(write(emulate, "--method", "DELETE", "repos/acme/app/git/refs/heads/rallypoint-claims/issue-7"), "");
+  const marker = remote.refs[CLAIM];
+  assert.ok(isReleasedMessage(remote.commits[marker]), remote.commits[marker]);
+  assert.ok(remote.calls.find((args) => args[0] === "push").includes(`--force-with-lease=${CLAIM}:held`));
+
+  // Released reads as absent to a delete…
+  assert.throws(() => write(emulate, "--method", "DELETE", "repos/acme/app/git/refs/heads/rallypoint-claims/issue-7"), (error) => error.status === 422);
+  // …and a create takes it over, under a lease on the marker.
+  write(emulate, "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${CLAIM}`, "-f", "sha=base");
+  assert.ok(remote.calls.filter((args) => args[0] === "push").at(-1).includes(`--force-with-lease=${CLAIM}:${marker}`));
+  assert.ok(!isReleasedMessage(remote.commits[remote.refs[CLAIM]]));
+});
+
+await test("git-data: deleting a non-coordination ref throws by name instead of pretending", () => {
+  const remote = stubGit({ refs: { "refs/heads/agent/7-x": "tip" }, commits: { tip: "feat: x" } });
+  assert.throws(
+    () => write(emulationOver(remote), "--method", "DELETE", "repos/acme/app/git/refs/heads/agent/7-x"),
+    (error) => error.status === 403 && /cannot delete `refs\/heads\/agent\/7-x`/.test(error.message) && /sweep-released/.test(error.message),
+  );
+  assert.equal(remote.refs["refs/heads/agent/7-x"], "tip", "untouched");
+  assert.ok(!remote.calls.some((args) => args[0] === "push"));
+});
+
+await test("git-data: lease commits are pushed as themselves; commits and forced moves are emulated", () => {
+  const remote = stubGit({ commits: { head: "feat: x", lease: "Lease\n\nRallypoint-Lease-Role: reviewer\nRallypoint-Lease-PR: 3" } });
+  const emulate = emulationOver(remote);
+  const made = JSON.parse(write(emulate, "--method", "POST", "repos/acme/app/git/commits", "-f", "message=Lease", "-f", "tree=t1", "-f", "parents[]=head"));
+  assert.deepEqual(made.parents, [{ sha: "head" }]);
+  assert.deepEqual(remote.calls.find((args) => args[0] === "commit-tree"), ["commit-tree", "t1", "-p", "head", "-m", "Lease"]);
+
+  const ref = "refs/heads/rallypoint-sessions/reviewer/pr-3";
+  assert.equal(JSON.parse(write(emulate, "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${ref}`, "-f", "sha=lease")).object.sha, "lease");
+  write(emulate, "--method", "PATCH", "repos/acme/app/git/refs/heads/rallypoint-sessions/reviewer/pr-3", "-f", "sha=head", "-F", "force=true");
+  assert.equal(remote.refs[ref], "head");
+  assert.ok(remote.calls.filter((args) => args[0] === "push").at(-1).includes("--force"));
+});
+
+await test("released filter: listings drop markers, single reads 404, unreadable and other refs stay", () => {
+  const messages = { live: "rallypoint: reserve x", gone: "rallypoint: released x at t", feat: "feat: y" };
+  const reads = [];
+  const hide = createReleasedFilter({
+    isCoordinationRef: coordinationRefs(),
+    read: (...args) => {
+      reads.push(args.at(-1));
+      const sha = args.at(-1).split("/").at(-1);
+      if (!(sha in messages)) throw new Error("HTTP 404");
+      return JSON.stringify({ message: messages[sha] });
+    },
+  });
+  const ref = (name, sha) => ({ ref: `refs/heads/${name}`, object: { sha } });
+  const listing = [ref("rallypoint-claims/issue-1", "live"), ref("rallypoint-claims/issue-2", "gone"), ref("rallypoint-claims/issue-3", "unreadable")];
+  const args = ["api", "repos/acme/app/git/matching-refs/heads/rallypoint-claims/issue-"];
+
+  assert.deepEqual(JSON.parse(hide(args, JSON.stringify(listing))).map((entry) => entry.ref.split("-").at(-1)), ["1", "3"]);
+  assert.deepEqual(
+    JSON.parse(hide(["api", "--paginate", "--slurp", args[1]], JSON.stringify([listing.slice(0, 2), listing.slice(2)]))).map((page) => page.length),
+    [1, 1],
+  );
+  assert.throws(() => hide(["api", "repos/acme/app/git/ref/heads/rallypoint-claims/issue-2"], JSON.stringify(ref("rallypoint-claims/issue-2", "gone"))), (error) => error.status === 404);
+  const liveOne = JSON.stringify(ref("rallypoint-claims/issue-1", "live"));
+  assert.equal(hide(["api", "repos/acme/app/git/ref/heads/rallypoint-claims/issue-1"], liveOne), liveOne);
+  // Agent branches are never markers, so they are not even read.
+  const before = reads.length;
+  const agent = JSON.stringify([ref("agent/7-x", "gone")]);
+  assert.equal(hide(["api", "repos/acme/app/git/matching-refs/heads/agent/"], agent), JSON.stringify(JSON.parse(agent)));
+  assert.equal(reads.length, before);
+  // Each commit is read once.
+  hide(args, JSON.stringify(listing));
+  assert.equal(reads.filter((path) => path.endsWith("/gone")).length, 1);
+});
+
+await test("resolveTransport: in a cloud session git-data writes never reach the API, and reads hide released refs", () => {
+  const remote = stubGit({ commits: { base: "base" } });
+  const { request, calls } = stub({
+    "GET /repos/acme/app/git/matching-refs/heads/rallypoint-claims/issue-7": ok([{ ref: CLAIM, object: { sha: "gone" } }]),
+    "GET /repos/acme/app/git/commits/gone": ok({ message: "rallypoint: released x" }),
+  });
+  const transport = resolveTransport({ env: { CLAUDE_CODE_REMOTE: "true" }, remote: "https://github.com/acme/app", probe: () => true, request, runGit: remote.git });
+
+  assert.equal(transport.describe().gitData, "push");
+  assert.deepEqual(JSON.parse(transport("api", "repos/acme/app/git/matching-refs/heads/rallypoint-claims/issue-7")), []);
+  transport("api", "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${CLAIM}`, "-f", "sha=base");
+  assert.ok(remote.refs[CLAIM]);
+  assert.ok(!calls.some((call) => call.method !== "GET"), "no write went to the API");
+});
+
+await test("resolveTransport: elsewhere the API is used until it refuses a git-data write, then git", () => {
+  const remote = stubGit({ commits: { base: "base" } });
+  const binary = (...args) => {
+    if (args[0] === "api" && args.includes("POST")) throw ghFailure(PROXY_403);
+    if (args[0] === "api" && args.at(-1).includes("matching-refs")) return JSON.stringify([{ ref: CLAIM, object: { sha: "gone" } }]);
+    if (args[0] === "api" && args.at(-1).includes("git/commits/gone")) return JSON.stringify({ message: "rallypoint: released x" });
+    return "";
+  };
+  const transport = resolveTransport({ env: {}, remote: "https://github.com/acme/app", probe: () => true, binary, runGit: remote.git, quiet: true });
+
+  assert.equal(transport.describe().gitData, "api");
+  // Released markers are hidden on the `gh` transport too.
+  assert.deepEqual(JSON.parse(transport("api", "repos/acme/app/git/matching-refs/heads/rallypoint-claims/issue-7")), []);
+  transport("api", "--method", "POST", "repos/acme/app/git/refs", "-f", `ref=${CLAIM}`, "-f", "sha=base");
+  assert.equal(transport.describe().gitData, "push");
+  assert.ok(remote.refs[CLAIM]);
+
+  // Any other refusal is thrown as it is.
+  const strict = resolveTransport({ env: {}, remote: "x/y", probe: () => true, quiet: true, runGit: () => assert.fail("no git"), binary: () => { throw ghFailure("HTTP 422: Reference already exists"); } });
+  assert.throws(() => strict("api", "--method", "POST", "repos/x/y/git/refs", "-f", "ref=r", "-f", "sha=s"), /Reference already exists/);
+
+  // showReleased keeps markers visible, for the sweep.
+  const sweeping = resolveTransport({ env: {}, remote: "x/y", probe: () => true, binary, showReleased: true });
+  assert.equal(JSON.parse(sweeping("api", "repos/acme/app/git/matching-refs/heads/rallypoint-claims/issue-7")).length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// End to end with real git: the installed claim.mjs, in a "cloud session",
+// against a stub GitHub API whose git-data writes are refused, and a bare repo
+// as origin. Two sessions race for one issue; exactly one wins.
+// ---------------------------------------------------------------------------
+
+{
+  const work = await mkdtemp(resolve(tmpdir(), "rallypoint-gitdata-"));
+  const origin = resolve(work, "origin.git");
+  const sessionA = resolve(work, "a");
+  const sessionB = resolve(work, "b");
+  const sh = (cwd, ...args) => {
+    const result = spawnSync(args[0], args.slice(1), { cwd, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@e", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@e" } });
+    if (result.status !== 0) throw new Error(`${args.join(" ")}: ${result.stderr}`);
+    return result.stdout.trim();
+  };
+
+  const state = { labels: [], assignees: [], comments: 0, writes: [] };
+  const api = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      const url = new URL(request.url, "http://stub");
+      const reply = (status, data) => {
+        response.writeHead(status, { "content-type": "application/json" });
+        response.end(JSON.stringify(data));
+      };
+      if (request.method !== "GET") state.writes.push(`${request.method} ${url.pathname}`);
+      // The cloud proxy's refusal of every git-data write.
+      if (request.method !== "GET" && /\/git\/(refs|commits)/.test(url.pathname)) {
+        return reply(403, { message: "Write access to this GitHub API path is not permitted through this proxy." });
+      }
+      const sha = sh(sessionA, "git", "ls-remote", "origin", "refs/heads/main").split(/\s+/)[0];
+      const commitMessage = (ref) => sh(sessionA, "git", "log", "-1", "--format=%B", ref);
+      const issue7 = () => issue(7, { labels: state.labels.map((name) => ({ name })), assignees: state.assignees.map((login) => ({ login })) });
+      if (url.pathname === "/user") return reply(200, { login: "session-bot" });
+      if (url.pathname === "/repos/acme/app") return reply(200, { full_name: "acme/app", default_branch: "main" });
+      if (url.pathname === "/repos/acme/app/git/ref/heads/main") return reply(200, { ref: "refs/heads/main", object: { sha } });
+      if (url.pathname.startsWith("/repos/acme/app/git/matching-refs/heads/")) {
+        const prefix = `refs/heads/${url.pathname.split("/matching-refs/heads/")[1]}`;
+        const refs = sh(sessionA, "git", "ls-remote", "origin").split("\n").filter(Boolean).map((line) => line.split(/\s+/));
+        return reply(200, refs.filter(([, name]) => name.startsWith(prefix)).map(([object, name]) => ({ ref: name, object: { sha: object } })));
+      }
+      if (url.pathname.startsWith("/repos/acme/app/git/commits/")) {
+        sh(sessionA, "git", "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*");
+        return reply(200, { sha: url.pathname.split("/").at(-1), message: commitMessage(url.pathname.split("/").at(-1)) });
+      }
+      if (url.pathname === "/repos/acme/app/issues" && request.method === "GET") return reply(200, [issue7()]);
+      if (url.pathname === "/repos/acme/app/issues/7" && request.method === "GET") return reply(200, issue7());
+      if (url.pathname === "/repos/acme/app/issues/7/comments") {
+        if (request.method === "POST") state.comments += 1;
+        return reply(request.method === "POST" ? 201 : 200, request.method === "POST" ? { html_url: "c" } : []);
+      }
+      if (url.pathname === "/repos/acme/app/issues/7/labels" && request.method === "POST") {
+        state.labels.push(...JSON.parse(body).labels);
+        return reply(200, []);
+      }
+      if (url.pathname === "/repos/acme/app/issues/7/assignees" && request.method === "POST") {
+        state.assignees.push(...JSON.parse(body).assignees);
+        return reply(201, {});
+      }
+      if (url.pathname.startsWith("/repos/acme/app/pulls")) return reply(200, []);
+      return reply(404, { message: `stub: ${request.method} ${request.url}` });
+    });
+  });
+  await new Promise((done) => api.listen(0, "127.0.0.1", done));
+
+  try {
+    sh(work, "git", "init", "-q", "--bare", "-b", "main", origin);
+    sh(work, "git", "init", "-q", "-b", "main", sessionA);
+    const installed = spawnSync(process.execPath, [cli, "add", "loop"], { cwd: sessionA, encoding: "utf8" });
+    assert.equal(installed.status, 0, installed.stderr);
+    sh(sessionA, "git", "add", "-A");
+    sh(sessionA, "git", "commit", "-qm", "init");
+    sh(sessionA, "git", "remote", "add", "origin", origin);
+    sh(sessionA, "git", "push", "-q", "origin", "main");
+    sh(work, "git", "clone", "-q", origin, sessionB);
+
+    const cloud = {
+      ...process.env,
+      CLAUDE_CODE_REMOTE: "true",
+      GITHUB_REPOSITORY: "acme/app",
+      RALLYPOINT_GITHUB_API_URL: `http://127.0.0.1:${api.address().port}`,
+      GH_TOKEN: "",
+      GITHUB_TOKEN: "",
+      GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@e", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@e",
+    };
+    delete cloud.RALLYPOINT_GH_SCRIPT;
+    delete cloud.RALLYPOINT_TRANSPORT;
+    delete cloud.RALLYPOINT_GIT_DATA;
+    const claimIn = (cwd, agent) => runNodeIn(cwd, [resolve(cwd, ".rallypoint/scripts/claim.mjs"), "--issue", "7", "--agent-id", agent], cloud);
+
+    await test("e2e (real git): claim.mjs claims in a cloud session; the reservation is a pushed ref", async () => {
+      const first = await claimIn(sessionA, "worker-a");
+      assert.equal(first.status, 0, `${first.stdout}\n${first.stderr}`);
+      const ref = sh(sessionA, "git", "ls-remote", "origin", "refs/heads/rallypoint-claims/issue-7");
+      assert.match(ref, /rallypoint-claims\/issue-7$/);
+      assert.ok(!state.writes.some((line) => /\/git\//.test(line) && !line.startsWith("GET")), state.writes.join("\n"));
+      assert.deepEqual(state.labels, ["status:claimed"]);
+    });
+
+    await test("e2e (real git): a second session's claim of the same issue is refused", async () => {
+      // As if session B never saw A's labels: only the reservation stands between them.
+      state.labels = [];
+      state.assignees = [];
+      const second = await claimIn(sessionB, "worker-b");
+      assert.notEqual(second.status, 0, second.stdout);
+      // It reads A's pushed reservation (through the API, as every session
+      // does) and backs off; the lease on the push covers the narrower race,
+      // tested above.
+      assert.match(`${second.stdout}${second.stderr}`, /No unreserved claimable issue/);
+      assert.deepEqual(state.labels, [], "the loser touched nothing");
+    });
+
+    await test("e2e (real git): cleanup releases the reservation onto a marker, which then reads as absent", async () => {
+      const ref = "refs/heads/rallypoint-claims/issue-7";
+      const before = sh(sessionA, "git", "ls-remote", "origin", ref).split(/\s+/)[0];
+      const gh = resolveTransport({ env: cloud, cwd: sessionA, remote: origin, quiet: true, request: undefined });
+      gh("api", "--method", "DELETE", `repos/acme/app/git/${ref}`);
+      const after = sh(sessionA, "git", "ls-remote", "origin", ref).split(/\s+/)[0];
+      assert.notEqual(after, before);
+      sh(sessionA, "git", "fetch", "-q", "origin", after);
+      assert.ok(isReleasedMessage(sh(sessionA, "git", "log", "-1", "--format=%s", after)));
+    });
+  } finally {
+    api.close();
+    await rm(work, { recursive: true, force: true });
+  }
+}
+
+console.log(`Transport tests passed: ${passed} cases (transport choice, GraphQL fallback, every api.mjs command, git-data emulation and released refs, swarm doctor, scripts/gh.mjs and claim.mjs end to end).`);

@@ -1,0 +1,36 @@
+# Rallypoint: delete the refs that agent sessions could not.
+#
+# A Claude Code cloud session may not delete refs, so it releases a claim or a
+# lease by moving it onto a "rallypoint: released" marker commit (which every
+# Rallypoint read treats as absent) and leaves merged agent branches in place.
+# This deletes both, once a day, as one short job. Waiting a day costs nothing:
+# released refs already read as absent. Run it by hand from the Actions tab when
+# you want it sooner.
+name: rallypoint-sweep
+
+on:
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: rallypoint-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Delete released coordination refs and merged agent branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .rallypoint/scripts/sweep-released.mjs

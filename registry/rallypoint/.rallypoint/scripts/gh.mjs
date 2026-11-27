@@ -32,8 +32,8 @@ if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
 }
 
 if (args[0] === "--which") {
-  const { kind, reason } = transport.describe();
-  console.log(`${kind} (${reason})`);
+  const { kind, reason, gitData } = transport.describe();
+  console.log(`${kind} (${reason}); git-data writes: ${gitData === "push" ? "git push" : "API"}`);
   process.exit(0);
 }
 

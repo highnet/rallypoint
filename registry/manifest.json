@@ -171,6 +171,10 @@
           "target": ".rallypoint/scripts/lib/gh.mjs"
         },
         {
+          "source": ".rallypoint/scripts/lib/git-data.mjs",
+          "target": ".rallypoint/scripts/lib/git-data.mjs"
+        },
+        {
           "source": ".rallypoint/scripts/lib/improvement.mjs",
           "target": ".rallypoint/scripts/lib/improvement.mjs"
         },
@@ -245,6 +249,11 @@
           "executable": true
         },
         {
+          "source": ".rallypoint/scripts/sweep-released.mjs",
+          "target": ".rallypoint/scripts/sweep-released.mjs",
+          "executable": true
+        },
+        {
           "source": ".rallypoint/scripts/unblock-cleared.mjs",
           "target": ".rallypoint/scripts/unblock-cleared.mjs",
           "executable": true
@@ -253,6 +262,10 @@
           "source": ".rallypoint/scripts/verdicts.mjs",
           "target": ".rallypoint/scripts/verdicts.mjs",
           "executable": true
+        },
+        {
+          "source": ".github/workflows/rallypoint-sweep.yml",
+          "target": ".github/workflows/rallypoint-sweep.yml"
         }
       ]
     },

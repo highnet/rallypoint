@@ -182,7 +182,7 @@ await test("swarm-ui builds under Cache Components: no segment config, a boundar
     assert.ok(files.includes(loading), `${page} has no ${loading}`);
   }
   const queries = await readFile(resolve(app, "_lib/queries.ts"), "utf8");
-  assert.match(queries, /getSwarmContext = cache\(async \(\): Promise<SwarmContext> => \{\n  await connection\(\);/, "getSwarmContext waits for a request first");
+  assert.match(queries, /getSwarmContext = cache\(async \(\): Promise<SwarmContext> => \{\r?\n  await connection\(\);/, "getSwarmContext waits for a request first");
   const layout = await readFile(resolve(app, "layout.tsx"), "utf8");
   assert.match(layout, /export default function SwarmLayout/, "the layout itself does not await");
   assert.match(layout, /<Suspense fallback=\{null\}>\s*<TopBarStatus \/>/, "the top bar's request-time part streams in its own boundary");

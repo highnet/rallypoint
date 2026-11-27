@@ -21,6 +21,7 @@ import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 
 import { allTargets, parseSwarmConfig } from "./lib/config.mjs";
+import { dispatchCodexCloud } from "./lib/codex-cloud.mjs";
 import { MemoryError, memoryFromEnv } from "./lib/memory.mjs";
 import { ROLE_WHEN, computeQueues, pickRole } from "./lib/roles.mjs";
 import { referee } from "./lib/referee.mjs";
@@ -219,6 +220,8 @@ ${strong("Planning and learning")}
   retros [--since-change] [--role r] [--limit n]
   metrics                        ship rate, claim → close, retros waiting
   status                         JSON snapshot for the conductor
+  dispatch --branch <branch> --prompt "<prompt>" [--env <environment>]
+                                 submit one Codex Cloud task and wait for its status
 
 Every command accepts --json. Exit codes: 0 ok · 1 error · 2 misuse ·
 3 referee failed · 4 nothing to do.
@@ -1032,6 +1035,21 @@ commands.status = async () => {
   const data = { session: readSession(), fleet, queues: perTarget, metrics: board.metrics, conductor: config.conductor };
   console.log(JSON.stringify(data, null, 2));
   return EXIT.OK;
+};
+
+commands.dispatch = async () => {
+  const environment = option("env") ?? process.env.RALLYPOINT_CODEX_CLOUD_ENV;
+  const branch = option("branch");
+  const prompt = option("prompt");
+  if (![environment, branch, prompt].every((value) => value?.trim())) {
+    throw new UsageError('dispatch requires --branch, --prompt and --env (or RALLYPOINT_CODEX_CLOUD_ENV)');
+  }
+  const result = await dispatchCodexCloud({
+    cwd, environment, branch, prompt,
+    onSubmitted: (url) => console.error(`Codex Cloud task submitted: ${url}`),
+  });
+  out(result, `Codex Cloud task ${result.status}: ${result.taskUrl}`);
+  return result.status === "error" ? EXIT.ERROR : EXIT.OK;
 };
 
 commands["ui-config"] = async () => {

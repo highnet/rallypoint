@@ -129,9 +129,16 @@ node .rallypoint/swarm/swarm.mjs dispatch --branch main --prompt \
 
 The command uses the experimental `codex cloud exec` and `codex cloud status`
 commands, with one attempt per task. The submitting CLI needs a Codex login
-that can see the environment. The conductor still selects and guards the job
-and verifies its retro. If polling is interrupted, use the printed task URL
-to check whether the worker is still running before dispatching another one.
+that can see the environment. Polling waits up to two hours by default
+(`--max-wait-seconds` overrides this) and retries failed status checks twice.
+If polling stops before confirming a terminal state, keep the slot reserved
+and check the printed task URL before dispatching another worker.
+
+A Cloud task marked `READY` has finished. A worker must still push its branch
+and open its PR from inside the hosted task. Configure a GitHub credential in
+the Cloud environment with permission to push branches and open PRs for the
+repository. The conductor still selects and guards the job and verifies its
+retro.
 
 Optional: a UI. `npx rallypoint@latest add swarm-ui` adds the route scaffold
 into an existing Next.js app, where the UI is the product.

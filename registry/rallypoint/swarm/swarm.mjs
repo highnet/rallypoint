@@ -221,6 +221,7 @@ ${strong("Planning and learning")}
   metrics                        ship rate, claim → close, retros waiting
   status                         JSON snapshot for the conductor
   dispatch --branch <branch> --prompt "<prompt>" [--env <environment>]
+           [--max-wait-seconds <seconds>]
                                  submit one Codex Cloud task and wait for its status
 
 Every command accepts --json. Exit codes: 0 ok · 1 error · 2 misuse ·
@@ -1044,8 +1045,12 @@ commands.dispatch = async () => {
   if (![environment, branch, prompt].every((value) => value?.trim())) {
     throw new UsageError('dispatch requires --branch, --prompt and --env (or RALLYPOINT_CODEX_CLOUD_ENV)');
   }
+  const maxWaitMs = rest.includes("--max-wait-seconds") ? Number(option("max-wait-seconds")) * 1000 : undefined;
+  if (maxWaitMs !== undefined && (!Number.isSafeInteger(maxWaitMs) || maxWaitMs <= 0)) {
+    throw new UsageError("--max-wait-seconds must specify a positive duration");
+  }
   const result = await dispatchCodexCloud({
-    cwd, environment, branch, prompt,
+    cwd, environment, branch, prompt, maxWaitMs,
     onSubmitted: (url) => console.error(`Codex Cloud task submitted: ${url}`),
   });
   out(result, `Codex Cloud task ${result.status}: ${result.taskUrl}`);

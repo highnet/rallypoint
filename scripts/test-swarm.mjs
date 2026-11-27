@@ -45,7 +45,7 @@ const cloudUrl = "https://chatgpt.com/codex/tasks/task_i_test";
 await test("Codex Cloud dispatch submits once and waits through a nonzero pending status", async () => {
   const calls = [];
   const responses = [
-    { status: 0, stdout: cloudUrl + "\n" },
+    { status: 0, stdout: `Using Codex Cloud\nTask created: ${cloudUrl}\n` },
     { status: 1, stdout: "[PENDING] CMS worker\n" },
     { status: 0, stdout: "[READY] CMS worker\n" },
   ];
@@ -64,18 +64,51 @@ await test("Codex Cloud dispatch submits once and waits through a nonzero pendin
     [["cloud", "exec", "--env", "Vienna", "--branch", "main", "--attempts", "1", "-"],
       { cwd: "/test", input: "$swarm-agent" }],
     cloudUrl,
-    [["cloud", "status", cloudUrl], { cwd: "/test" }],
+    [["cloud", "status", cloudUrl], { cwd: "/test", timeout: 60_000 }],
     15_000,
-    [["cloud", "status", cloudUrl], { cwd: "/test" }],
+    [["cloud", "status", cloudUrl], { cwd: "/test", timeout: 60_000 }],
   ]);
 });
 
-await test("Codex Cloud dispatch stops on unknown status and retains the task URL", async () => {
-  const responses = [{ status: 0, stdout: cloudUrl }, { status: 1, stdout: "" }];
+await test("Codex Cloud dispatch stops after three unknown statuses and retains the task URL", async () => {
+  const responses = [{ status: 0, stdout: cloudUrl }, ...Array(3).fill({ status: 1, stdout: "" })];
   await assert.rejects(dispatchCodexCloud({
     environment: "Vienna", branch: "main", prompt: "$swarm-agent", onSubmitted: () => {},
-  }, { run: () => responses.shift() }), (error) => error.message.includes(cloudUrl));
+  }, { run: () => responses.shift(), wait: async () => {} }), (error) => error.message.includes(cloudUrl));
   assert.equal(responses.length, 0);
+});
+
+await test("Codex Cloud dispatch retries status failures without resubmitting", async () => {
+  const responses = [
+    { status: 0, stdout: cloudUrl },
+    { status: 1 },
+    { status: 1 },
+    { status: 0, stdout: "[READY] CMS worker" },
+  ];
+  const result = await dispatchCodexCloud({
+    environment: "Vienna", branch: "main", prompt: "$swarm-agent", onSubmitted: () => {},
+  }, { run: () => responses.shift(), wait: async () => {} });
+  assert.equal(result.status, "ready");
+  assert.equal(responses.length, 0);
+});
+
+await test("Codex Cloud dispatch stops polling when the wait limit expires", async () => {
+  let now = 0;
+  const timeouts = [];
+  await assert.rejects(dispatchCodexCloud({
+    environment: "Vienna", branch: "main", prompt: "$swarm-agent", onSubmitted: () => {},
+    maxWaitMs: 20_000,
+  }, {
+    run: (args, { timeout }) => {
+      if (args[1] === "exec") return { status: 0, stdout: cloudUrl };
+      timeouts.push(timeout);
+      return { status: 1, stdout: "[PENDING] CMS worker" };
+    },
+    now: () => now,
+    wait: async (delay) => { now += delay; },
+  }), /Keep the slot reserved/);
+  assert.equal(now, 20_000);
+  assert.deepEqual(timeouts, [20_000, 5_000]);
 });
 
 const L = (...names) => names.map((name) => ({ name }));

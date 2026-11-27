@@ -4,7 +4,7 @@
   "items": [
     {
       "name": "loop",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "description": "A GitHub-native operating protocol for planners, workers, reviewers, testers, fixers, mergers, janitors, an improver that tunes the loop on measured results, and an orchestrator that dispatches them.",
       "files": [
         {
@@ -99,6 +99,11 @@
           "executable": true
         },
         {
+          "source": ".rallypoint/scripts/gh.mjs",
+          "target": ".rallypoint/scripts/gh.mjs",
+          "executable": true
+        },
+        {
           "source": ".rallypoint/scripts/improvement.mjs",
           "target": ".rallypoint/scripts/improvement.mjs",
           "executable": true
@@ -164,6 +169,10 @@
         {
           "source": ".rallypoint/scripts/lib/gh.mjs",
           "target": ".rallypoint/scripts/lib/gh.mjs"
+        },
+        {
+          "source": ".rallypoint/scripts/lib/git-data.mjs",
+          "target": ".rallypoint/scripts/lib/git-data.mjs"
         },
         {
           "source": ".rallypoint/scripts/lib/improvement.mjs",
@@ -240,6 +249,11 @@
           "executable": true
         },
         {
+          "source": ".rallypoint/scripts/sweep-released.mjs",
+          "target": ".rallypoint/scripts/sweep-released.mjs",
+          "executable": true
+        },
+        {
           "source": ".rallypoint/scripts/unblock-cleared.mjs",
           "target": ".rallypoint/scripts/unblock-cleared.mjs",
           "executable": true
@@ -248,12 +262,16 @@
           "source": ".rallypoint/scripts/verdicts.mjs",
           "target": ".rallypoint/scripts/verdicts.mjs",
           "executable": true
+        },
+        {
+          "source": ".github/workflows/rallypoint-sweep.yml",
+          "target": ".github/workflows/rallypoint-sweep.yml"
         }
       ]
     },
     {
       "name": "swarm",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "requires": [
         "loop"
       ],

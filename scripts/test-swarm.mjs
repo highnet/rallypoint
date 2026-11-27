@@ -182,7 +182,7 @@ await test("swarm-ui builds under Cache Components: no segment config, a boundar
     assert.ok(files.includes(loading), `${page} has no ${loading}`);
   }
   const queries = await readFile(resolve(app, "_lib/queries.ts"), "utf8");
-  assert.match(queries, /getSwarmContext = cache\(async \(\): Promise<SwarmContext> => \{\n  await connection\(\);/, "getSwarmContext waits for a request first");
+  assert.match(queries, /getSwarmContext = cache\(async \(\): Promise<SwarmContext> => \{\r?\n  await connection\(\);/, "getSwarmContext waits for a request first");
   const layout = await readFile(resolve(app, "layout.tsx"), "utf8");
   assert.match(layout, /export default function SwarmLayout/, "the layout itself does not await");
   assert.match(layout, /<Suspense fallback=\{null\}>\s*<TopBarStatus \/>/, "the top bar's request-time part streams in its own boundary");
@@ -222,7 +222,9 @@ await test("swarm.css keeps the main column's padding when a hidden overview sta
 
 await test("swarm-ui: every prompt, command and file block has a copy button", async () => {
   const swarmDir = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
-  const files = (await readdir(swarmDir, { recursive: true })).filter((f) => f.endsWith(".tsx"));
+  const files = (await readdir(swarmDir, { recursive: true }))
+    .map((file) => file.split("\\").join("/"))
+    .filter((f) => f.endsWith(".tsx"));
   const copy = await readFile(resolve(swarmDir, "_components/copy.tsx"), "utf8");
   assert.match(copy, /^"use client";/, "only the button is a client component");
   assert.match(copy, /navigator\.clipboard\?\.writeText/);
@@ -809,7 +811,9 @@ import { appendFileSync } from "node:fs";
 const args = process.argv.slice(2);
 appendFileSync(${JSON.stringify(ghLog)}, JSON.stringify(args) + "\\n");
 const key = args.slice(0, 2).join(" ");
-if (key === "api user") console.log("swarm-bot");
+// The loop's transport probes \`gh --version\` before its first call.
+if (key === "--version") console.log("gh version 0.0.0-fake");
+else if (key === "api user") console.log("swarm-bot");
 else if (key === "pr list") console.log(JSON.stringify([{ number: 21, title: "Faster parse", labels: [{ name: "review:approved" }], isDraft: false, body: "Closes #4", headRefName: "agent/4-x" }]));
 else if (key === "issue list") console.log(JSON.stringify([{ number: 4, title: "Faster parse", labels: [{ name: "target:api" }, { name: "status:claimed" }], assignees: [] }, { number: 5, title: "Hero", labels: [{ name: "target:web" }, { name: "prio:p1" }], assignees: [] }]));
 else if (key === "label list") console.log(JSON.stringify([{ name: "target:api" }]));

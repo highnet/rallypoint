@@ -74,7 +74,9 @@ export const syncRequest = ({ token, baseUrl, timeoutMs = 30_000 } = {}) => {
       const output = execFileSync(process.execPath, [runner], {
         input: JSON.stringify({
           ...call,
-          baseUrl,
+          // GitHub Enterprise, or a test's stub server. Unset means
+          // api.github.com (see fetch-once.mjs).
+          baseUrl: baseUrl ?? (process.env.RALLYPOINT_GITHUB_API_URL || undefined),
           token: token ?? credential(),
         }),
         encoding: "utf8",

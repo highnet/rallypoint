@@ -89,19 +89,31 @@ const memory = memoryFromEnv(process.env);
 const git = (...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
-const ghCommand = () => {
-  const script = process.env.RALLYPOINT_GH_SCRIPT;
-  return script ? { cmd: process.execPath, pre: [script] } : { cmd: "gh", pre: [] };
+// GitHub is reached through the loop's own transport (`.rallypoint/scripts/
+// lib/gh.mjs`), not a `gh` of this file's own: the `gh` binary by default, the
+// REST transport where `gh` is missing or GitHub GraphQL is blocked (a Claude
+// Code cloud session), and the same `RALLYPOINT_GH_SCRIPT` test seam. Loaded on
+// first use, so `help` and the memory commands still run before the loop is
+// installed, and `doctor` can report it missing instead of crashing.
+const LOOP_TRANSPORT = new URL("../scripts/lib/gh.mjs", import.meta.url);
+let transportModule;
+try {
+  transportModule = await import(LOOP_TRANSPORT.href);
+} catch (error) {
+  transportModule = { error };
+}
+let transport;
+const githubTransport = () => {
+  if (transport) return transport;
+  if (transportModule.error) {
+    throw new Error(
+      `the Rallypoint loop's GitHub transport is missing (${transportModule.error.message.split("\n")[0]}): run “npx rallypoint@latest add loop”`,
+    );
+  }
+  transport = transportModule.resolveTransport({ cwd, exitOnMissingRepository: false });
+  return transport;
 };
-const gh = (...args) => {
-  const { cmd, pre } = ghCommand();
-  return execFileSync(cmd, [...pre, ...args], {
-    cwd,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    maxBuffer: 64 * 1024 * 1024,
-  }).trim();
-};
+const gh = (...args) => githubTransport()(...args);
 const ghJson = (...args) => JSON.parse(gh(...args) || "null");
 
 const readJsonFile = (path) => JSON.parse(readFileSync(path, "utf8"));
@@ -178,7 +190,7 @@ commands.help = () => {
 ${strong("Rallypoint Swarm")}
 
 ${strong("Setup")}
-  doctor                         check env, gh, git, config, memory, realtime, secret
+  doctor                         check env, gh, transport, git, config, memory, realtime, secret
   init [--dry-run]               target labels + goal/visibility into memory
   ui-config [--out <path>] [--force]
                                  generate the project's app/swarm/swarm.config.ts
@@ -227,8 +239,26 @@ commands.doctor = async () => {
   try {
     const login = gh("api", "user", "--jq", ".login");
     add("gh", true, `authenticated as ${login}`);
-  } catch {
-    add("gh", false, "GitHub CLI missing or not authenticated (gh auth login)");
+  } catch (error) {
+    add("gh", false, `GitHub not reachable or not authenticated (gh auth login): ${String(error.message ?? error).split("\n")[0]}`);
+  }
+  // Every role starts with `swarm next`, which lists pull requests. Proving
+  // the chosen transport can do that here turns a mid-role failure (a cloud
+  // session's `HTTP 403: GitHub GraphQL is not available`) into one at
+  // prepare time.
+  try {
+    gh("pr", "list", "--state", "open", "--limit", "1", "--json", "number");
+    const { kind, reason, gitData } = githubTransport().describe();
+    add("transport", true, `${kind}: can list pull requests (${reason}); claims and leases written ${gitData === "push" ? "with git push" : "through the API"}`);
+  } catch (error) {
+    let detail = "";
+    try {
+      const { kind, reason } = githubTransport().describe();
+      detail = ` via ${kind} (${reason})`;
+    } catch {
+      // the transport itself could not be built; the error says why
+    }
+    add("transport", false, `cannot list pull requests${detail}: ${String(error.stderr || error.message || error).trim().split("\n")[0]}`);
   }
   add("loop", existsSync(join(cwd, ".rallypoint/config.json")), "vanilla Rallypoint installed (.rallypoint/config.json)");
 

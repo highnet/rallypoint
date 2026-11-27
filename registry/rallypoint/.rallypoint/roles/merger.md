@@ -9,8 +9,10 @@ Read `AGENTS.md`, `docs/AGENT_LOOP.md`, and `.rallypoint/config.json`. For each 
 Checking CI is therefore this role's job, every time. Before any merge, run:
 
 ```bash
-gh pr view <N> --json mergeable,mergeStateStatus,statusCheckRollup
+node .rallypoint/scripts/gh.mjs pr view <N> --json mergeable,mergeStateStatus,statusCheckRollup
 ```
+
+`.rallypoint/scripts/gh.mjs` takes `gh`'s own arguments and runs them through the protocol's transport: the `gh` binary where it works, the REST API where it cannot (a Claude Code cloud session blocks the GraphQL that `gh pr …` is built on). Use it for every `gh pr` command in this role.
 
 **Judge `statusCheckRollup`, not `mergeStateStatus`.** `mergeStateStatus` answers a question about branch protection, not about whether the work is sound. `UNSTABLE` in particular is the steady state in any repository with a non-required check that always reports failure — a preview deployment that is deliberately not configured for this branch, say — and treating it as a blocker would refuse every merge you will ever see. `BLOCKED` is different: that is branch protection refusing, and `gh pr merge` will fail outright.
 
@@ -67,13 +69,15 @@ After the promotion merges, delete the snapshot branch. A stale snapshot ref is 
 **Merge without `--delete-branch`, then run the command separately:**
 
 ```bash
-gh pr merge <N> --merge
+node .rallypoint/scripts/gh.mjs pr merge <N> --merge
 node .rallypoint/scripts/delete-merged-branch.mjs --pr <N>
 ```
 
 `--delete-branch` couples the local and remote deletes and attempts the local one first. The authoring worker's worktree is, minutes after a merge, still checked out on that branch, so `git branch -d` refuses, `gh pr merge` exits 1, and it **never attempts the remote delete** — which would have succeeded. Left unaddressed, merged branches accumulate on origin by one per merge with nothing announcing it.
 
 Do not reach for `git push origin --delete` when the coupled form fails: any push fires `pre-push`, and in a repository that gates pushes on a full suite that runs the whole gate before the command reaches the network. The command above uses the GitHub API ref delete instead — no hook, no worktree dependency.
+
+**In a Claude Code cloud session the remote delete is refused** — those sessions may not delete refs — so exit `4` there is expected: the branch is left for `.rallypoint/scripts/sweep-released.mjs`, which the daily `rallypoint-sweep` workflow runs. Say so in the merge report rather than retrying.
 
 **A local branch surviving the merge is normal, not a failure.** The command deletes the remote first, then reports what it could not clean up locally and exits `0` anyway. Read that line as information. Exit `2` (refused: not merged, or not an issue branch), `3` (inconclusive), and `4` (the ref was there and the delete failed) are the ones worth reporting.
 
@@ -90,7 +94,7 @@ node .rallypoint/scripts/close-referenced-issues.mjs <merge-sha>
 Where a repository wires this into a workflow on pushes to the integration branch, **judge the run, not the ref.** A workflow queued behind other jobs can take anywhere from seconds to minutes, and a merger that samples ref state seconds after merging is reading the inside of the workflow's own runtime window. Reporting that as a cleanup failure sends an orchestrator investigating a non-defect, and running the script by hand mutates coordination state that did not need mutating.
 
 ```bash
-MERGE_SHA=$(gh pr view <N> --json mergeCommit --jq .mergeCommit.oid)
+MERGE_SHA=$(node .rallypoint/scripts/gh.mjs pr view <N> --json mergeCommit --jq .mergeCommit.oid)
 gh run list --workflow <your-cleanup-workflow>.yml --commit "$MERGE_SHA" \
   --json databaseId,status,conclusion,url
 ```

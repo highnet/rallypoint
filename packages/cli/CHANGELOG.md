@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.1](https://github.com/highnet/rallypoint/compare/rallypoint-v0.10.0...rallypoint-v0.10.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **swarm-ui:** show one header badge, Live while a session works and Idle otherwise ([fb0eb83](https://github.com/highnet/rallypoint/commit/fb0eb83a6bf2d4c0ed953332a4a8613a56d5ad9d))
+* **swarm-ui:** show one header badge, Live while a session works and Idle otherwise ([81cf59e](https://github.com/highnet/rallypoint/commit/81cf59e6172760e3391c26722edc7067b4e3bda4))
+
 ## [0.10.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.9.0...rallypoint-v0.10.0) (2026-11-27)
 
 

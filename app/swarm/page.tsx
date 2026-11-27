@@ -123,7 +123,7 @@ const requirements = [
     detail: (
       <>
         Claude Code, Codex, Cursor or any other. For the unattended conductor: Claude Code with remote
-        session tools, so each role runs in its own session.
+        session tools, or Codex with Codex Cloud, so each role runs in its own session.
       </>
     ),
   },
@@ -427,9 +427,10 @@ export default function SwarmPage() {
             <div className="section-head">
               <h2 id="conductor-title">One conductor keeps it running.</h2>
               <p>
-                The conductor is a <code>/loop</code> in Claude Code. Each pass it reads{" "}
-                <code>swarm status</code> and starts one separate session per role and target. Subagents
-                stay inside a role; nothing approves its own work.
+                The conductor runs in Claude Code, as a <code>/loop</code> with remote sessions, or in
+                Codex, with each role a Codex Cloud task started by <code>swarm dispatch</code>. Each pass
+                it reads <code>swarm status</code> and starts one separate session per role and target.
+                Subagents stay inside a role; nothing approves its own work.
               </p>
             </div>
             <div className="conductor-layout">
@@ -716,7 +717,8 @@ export default function SwarmPage() {
                 <p className="step-title">Start the swarm</p>
                 <CommandCopy command={swarmCommands.agentPrompt} id="setup-agent" label="agent prompt" shell={false} />
                 <p className="install-detail">
-                  One session at a time, in any coding agent. Or, in Claude Code, start the conductor:
+                  One session at a time, in any coding agent. Or start the conductor in Claude Code
+                  or Codex:
                 </p>
                 <CommandCopy command={swarmCommands.conductor} id="setup-conductor" label="conductor command" shell={false} />
               </li>

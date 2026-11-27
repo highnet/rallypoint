@@ -1008,8 +1008,13 @@ export function SwarmWizard() {
           <h3>Prompts to keep it running</h3>
           <div className="wiz-prompt">
             <p className="step-title">Leave it running: the conductor</p>
-            <p className="install-detail">For Claude Code with remote session tools. Stop the loop to stop the swarm.</p>
-            <CommandCopy className="command-block" command={conductor} id="wiz-conductor" label="conductor prompt" shell={false} />
+            <p className="install-detail">
+              The prompt below is for Claude Code with remote session tools. A copyable Codex conductor
+              command requires the native Codex skills from{" "}
+              <a href="https://github.com/highnet/rallypoint/issues/93">Rallypoint #93</a>.
+              Stop the conductor to stop the swarm.
+            </p>
+            <CommandCopy className="command-block" command={conductor} id="wiz-conductor" label="Claude Code conductor prompt" shell={false} />
           </div>
           {prompts.map((item) => (
             <div className="wiz-prompt" key={item.id}>

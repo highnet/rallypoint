@@ -15,9 +15,11 @@
     "registry:build": "node scripts/build-registry.mjs",
     "cli:test": "npm run registry:build && node scripts/test-cli.mjs && node scripts/test-loop-transport.mjs && node scripts/test-transport.mjs",
     "prepare": "husky",
-    "swarm:test": "npm run registry:build && node scripts/test-swarm.mjs"
+    "swarm:test": "npm run registry:build && node scripts/test-swarm.mjs",
+    "upload-swarm-video": "node scripts/upload-swarm-video.mjs"
   },
   "dependencies": {
+    "@mux/mux-player-react": "^3.14.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.26.0",

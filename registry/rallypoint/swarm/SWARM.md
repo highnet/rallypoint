@@ -117,7 +117,10 @@ proxy enabled before applying schema changes. Continue when doctor reports
 Install Claude Code, run `claude auth login`, then run
 `npx rallypoint swarm doctor --runtime claude-local` in the checkout. Use
 `swarm dispatch --runtime claude-local --prompt "<role prompt>"` to run one
-foreground `claude -p` process with the role prompt on stdin.
+foreground `claude -p --permission-mode bypassPermissions` process with the
+role prompt on stdin. This allows an unattended worker to edit files and
+run tools such as Git and npm without permission prompts. Use it in a
+trusted, isolated checkout with only the credentials the role needs.
 
 ### Claude Code cloud
 
@@ -134,7 +137,9 @@ Use `swarm dispatch --runtime codex-local --prompt "<role prompt>"` to run
 one foreground `codex exec --full-auto -` process from the repository root.
 
 Both local runtimes inherit your environment and stream output. The command
-returns the role process's exit status. The default wait is two hours.
+reports the role process's exit code and returns `0` on success or `1` for
+any nonzero child exit. With `--json`, stdout contains `{ runtime, childStatus }`
+and role output streams to stderr. The default wait is two hours.
 Override it with `--max-wait-seconds`. After a timeout, inspect the role's
 checkout, pull request and retro before retrying. After a normal exit, check
 the role's retro before reusing its slot.

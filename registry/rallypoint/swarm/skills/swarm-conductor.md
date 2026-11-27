@@ -69,7 +69,8 @@ session and uses the same lease, slot, budget and retro checks below.
 5. Start **one separate session per dispatch** using the selected runtime.
    When `RALLYPOINT_CODEX_CLOUD_ENV` is set and no runtime was selected,
    `swarm dispatch` defaults to Codex Cloud. Local commands stream in the
-   foreground and return the role process's exit status. Reserve the slot
+   foreground and report the role process's exit code. Dispatch exits with
+   `1` for any nonzero child exit. Reserve the slot
    from dispatch through completion. On local timeout or uncertain Cloud
    submission or status, inspect the role before retrying. Use this prompt,
    filled in:

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const runtimes = {
-  "claude-local": { executable: "claude", packageName: "@anthropic-ai/claude-code", args: ["-p"] },
+  "claude-local": { executable: "claude", packageName: "@anthropic-ai/claude-code", args: ["-p", "--permission-mode", "bypassPermissions"] },
   "codex-local": { executable: "codex", packageName: "@openai/codex", args: ["exec", "--full-auto", "-"] },
 };
 
@@ -47,13 +47,13 @@ export const doctorRuntime = (runtime, { cwd, env = process.env, platform = proc
   return { ok: true, detail: `${spec.executable} CLI is on PATH and reports an active login.` };
 };
 
-export const dispatchLocal = ({ runtime, cwd, prompt, maxWaitMs, env = process.env, platform = process.platform }) =>
+export const dispatchLocal = ({ runtime, cwd, prompt, maxWaitMs, stdout = "inherit", env = process.env, platform = process.platform }) =>
   new Promise((resolve, reject) => {
     const spec = runtimes[runtime];
     const [command, ...prefix] = commandFor(spec, { env, platform });
     const child = spawn(command, [...prefix, ...spec.args], {
       cwd, env, shell: false, detached: process.platform !== "win32",
-      stdio: ["pipe", "inherit", "inherit"],
+      stdio: ["pipe", stdout, "inherit"],
     });
     let timedOut = false;
     const timer = setTimeout(() => {

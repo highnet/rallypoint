@@ -1071,9 +1071,12 @@ commands.dispatch = async () => {
     throw new UsageError("--max-wait-seconds must specify a positive duration within the timer limit");
   }
   if (runtime !== "codex-cloud") {
-    const status = await dispatchLocal({ runtime, cwd: git("rev-parse", "--show-toplevel"), prompt, maxWaitMs });
-    if (asJson) out({ runtime, status });
-    return status;
+    const childStatus = await dispatchLocal({
+      runtime, cwd: git("rev-parse", "--show-toplevel"), prompt, maxWaitMs,
+      stdout: asJson ? process.stderr : "inherit",
+    });
+    out({ runtime, childStatus }, `${runtime} exited with code ${childStatus}.`);
+    return childStatus === 0 ? EXIT.OK : EXIT.ERROR;
   }
 
   const environment = option("env") ?? process.env.RALLYPOINT_CODEX_CLOUD_ENV;

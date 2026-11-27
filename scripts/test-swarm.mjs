@@ -918,7 +918,7 @@ const env = {
 
 // spawnSync would block this process's event loop, and with it the fake
 // server; run the CLI asynchronously instead.
-const rp = (args, { expect = 0, extraEnv = {}, input = "" } = {}) =>
+const rp = (args, { expect = 0, extraEnv = {}, input = "", stdoutOnly = false } = {}) =>
   new Promise((done, fail) => {
     const childEnv = Object.fromEntries(Object.entries({ ...env, ...extraEnv }).filter(([, v]) => v !== undefined));
     const child = spawn(process.execPath, [cli, ...args], { cwd: fixture, env: childEnv });
@@ -929,7 +929,7 @@ const rp = (args, { expect = 0, extraEnv = {}, input = "" } = {}) =>
     child.stderr.on("data", (d) => (stderr += d));
     child.on("close", (status) => {
       if (expect !== null && status !== expect) fail(new Error(`rallypoint ${args.join(" ")} exited ${status}, expected ${expect}\n${stdout}\n${stderr}`));
-      else done(`${stdout}${stderr}`);
+      else done(stdoutOnly ? stdout : `${stdout}${stderr}`);
     });
   });
 const sh = (...args) => execFileSync(args[0], args.slice(1), { cwd: fixture, env, encoding: "utf8" });
@@ -951,7 +951,7 @@ try {
     }
   });
 
-  await test("foreground local runtimes stream output, receive prompts on stdin, and propagate exit codes", async () => {
+  await test("foreground local runtimes stream output, receive prompts on stdin, and report child codes without colliding with Swarm exit codes", async () => {
     const bin = await mkdtemp(resolve(fixture, "runtime-bin-"));
     const source = String.raw`#!/usr/bin/env node
 const fs = require("node:fs");
@@ -971,7 +971,7 @@ process.stdin.on("end", () => {
   }
   console.log(JSON.stringify({ prompt, args, cwd: process.cwd() }));
   console.error("role stderr");
-  process.exitCode = 17;
+  process.exitCode = Number(process.env.FAKE_RUNTIME_EXIT ?? 4);
 });
 `;
     for (const [name, packageName] of [["claude", "@anthropic-ai/claude-code"], ["codex", "@openai/codex"]]) {
@@ -991,15 +991,24 @@ process.stdin.on("end", () => {
     const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === "PATH") ?? "PATH";
     const runtimeEnv = { ...process.env, [pathKey]: [bin, process.env[pathKey]].join(delimiter) };
     const prompt = "Read this literally: & | %PATH% $HOME `command`\nThen finish.";
-    for (const [runtime, args] of [["claude-local", ["-p"]], ["codex-local", ["exec", "--full-auto", "-"]]]) {
+    for (const [runtime, args] of [["claude-local", ["-p", "--permission-mode", "bypassPermissions"]], ["codex-local", ["exec", "--full-auto", "-"]]]) {
       const output = await rp(["swarm", "dispatch", "--runtime", runtime, "--prompt", prompt], {
-        expect: 17, extraEnv: { [pathKey]: runtimeEnv[pathKey] },
+        expect: 1, extraEnv: { [pathKey]: runtimeEnv[pathKey] },
       });
       const result = JSON.parse(output.split("\n").find((line) => line.startsWith("{")));
       assert.equal(result.prompt, prompt);
       assert.deepEqual(result.args, args);
       assert.equal(resolve(result.cwd), resolve(sh("git", "rev-parse", "--show-toplevel").trim()));
       assert.match(output, /role stderr/);
+      assert.ok(output.includes(`${runtime} exited with code 4.`));
+      for (const childStatus of [0, 4]) {
+        const json = await rp(["swarm", "dispatch", "--runtime", runtime, "--prompt", prompt, "--json"], {
+          expect: childStatus === 0 ? 0 : 1,
+          extraEnv: { [pathKey]: runtimeEnv[pathKey], FAKE_RUNTIME_EXIT: String(childStatus) },
+          stdoutOnly: true,
+        });
+        assert.deepEqual(JSON.parse(json), { runtime, childStatus });
+      }
       assert.equal(doctorRuntime(runtime, { env: runtimeEnv }).ok, true);
     }
 
@@ -1028,7 +1037,7 @@ process.stdin.on("end", () => {
       runtime: "codex-local", cwd: bin, prompt: "Windows shim probe", maxWaitMs: 3000,
       env: { ...runtimeEnv, [pathKey]: bin }, platform: "win32",
     });
-    assert.equal(windowsStatus, 17);
+    assert.equal(windowsStatus, 4);
     assert.match(await rp(["swarm", "dispatch", "--prompt", prompt], {
       expect: 2, extraEnv: { RALLYPOINT_CODEX_CLOUD_ENV: undefined },
     }), /requires --runtime/);

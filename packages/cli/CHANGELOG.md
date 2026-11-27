@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.11.0](https://github.com/highnet/rallypoint/compare/rallypoint-v0.10.1...rallypoint-v0.11.0) (2026-11-27)
+
+
+### Features
+
+* **swarm:** dispatch roles as Codex Cloud tasks ([c1f92a6](https://github.com/highnet/rallypoint/commit/c1f92a6f9036859709bcf8de849d87e861844900))
+* **swarm:** dispatch roles as Codex Cloud tasks ([07b3031](https://github.com/highnet/rallypoint/commit/07b30313590ae151e4f2177b10b1590a54f1629b))
+
+
+### Bug Fixes
+
+* **swarm:** bound and retry Codex Cloud status polling ([b21b9ec](https://github.com/highnet/rallypoint/commit/b21b9ec023380b9464663bf58c4a54041c46819e))
+
 ## [0.10.1](https://github.com/highnet/rallypoint/compare/rallypoint-v0.10.0...rallypoint-v0.10.1) (2026-11-27)
 
 

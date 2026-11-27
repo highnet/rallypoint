@@ -223,6 +223,17 @@ export function LiveRefresh({
   }, [publishableKey, router, tableKey, url, withSession]);
 
   const shown: Shown = held && status === "live" ? "held" : status;
+  // A healthy connection is the normal case, so it shows nothing: the header's
+  // Live / Idle badge already says whether the swarm is working. Only a
+  // connection that is not live (connecting, reconnecting, polling, paused)
+  // gets a visible badge. Screen readers still hear the state.
+  if (shown === "live") {
+    return (
+      <span className="rp-visually-hidden" role="status">
+        {DETAIL.live}
+      </span>
+    );
+  }
   return (
     <span className="rp-sync" data-state={shown} role="status">
       <span aria-hidden="true" className="rp-sync-dot" />

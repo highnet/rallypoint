@@ -370,7 +370,7 @@
     },
     {
       "name": "swarm-ui",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "requires": [
         "swarm"
       ],
@@ -710,7 +710,7 @@
     },
     {
       "name": "swarm-dashboard",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "requires": [
         "swarm"
       ],

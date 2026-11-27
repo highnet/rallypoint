@@ -50,9 +50,16 @@ async function TopBarStatus() {
         />
       ) : null}
       {working === null ? null : working > 0 ? (
-        <Link className="rp-live rp-live-on" href="/swarm/fleet">
+        <Link
+          className="rp-live rp-live-on"
+          href="/swarm/fleet"
+          title={`${working} ${word(working === 1 ? "session" : "sessions")} working right now`}
+        >
           <span aria-hidden="true" className="rp-live-dot" />
-          {working} working
+          Live
+          <span className="rp-visually-hidden">
+            : {working} {word(working === 1 ? "session" : "sessions")} working
+          </span>
         </Link>
       ) : (
         <Link className="rp-live" href="/swarm/fleet" title={`No ${word("sessions")} working right now`}>

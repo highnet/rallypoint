@@ -220,6 +220,16 @@ await test("swarm.css keeps the main column's padding when a hidden overview sta
   assert.match(overview[1], /margin:\s*calc\(-1 \* var\(--rp-main-top\)\) calc\(-1 \* var\(--rp-gutter\)\) calc\(-1 \* var\(--rp-main-bottom\)\)/);
 });
 
+await test("swarm-ui: one header badge — Live while a session works, Idle otherwise", async () => {
+  const swarmDir = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
+  const layout = await readFile(resolve(swarmDir, "layout.tsx"), "utf8");
+  assert.doesNotMatch(layout, /\{working\} working\r?\n/, "the activity badge no longer reads \"N working\"");
+  assert.match(layout, /className="rp-live rp-live-on"[\s\S]*?\r?\n\s*Live\r?\n/, "a working swarm reads Live");
+  assert.match(layout, /className="rp-live"[\s\S]*?\r?\n\s*Idle\r?\n/, "an idle swarm reads Idle");
+  const live = await readFile(resolve(swarmDir, "_components/live.tsx"), "utf8");
+  assert.match(live, /if \(shown === "live"\) \{\s*return \(\s*<span className="rp-visually-hidden" role="status">/, "a healthy connection shows no second badge");
+});
+
 await test("swarm-ui: every prompt, command and file block has a copy button", async () => {
   const swarmDir = resolve(root, "registry/rallypoint/swarm-ui/app/swarm");
   const files = (await readdir(swarmDir, { recursive: true }))

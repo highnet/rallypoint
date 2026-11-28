@@ -215,3 +215,17 @@ lesson, so nobody retries it blindly.
    Rallypoint, and there is no Rallypoint server.
 8. `RALLYPOINT_SWARM_SECRET` lives only in agents' environments: never in a
    commit, an issue, a message, a log or a browser.
+
+## Session heartbeats
+
+Fleet and metrics count a working session for ten minutes after its last heartbeat.
+Logs and messages refresh it. Local dispatch refreshes a new session while its
+client runs, and the referee refreshes an open session while checks or a score
+command run. For another long step, run `swarm heartbeat --watch-pid <pid>` alongside
+it with the active session selected. The heartbeat stops when that process exits.
+`swarm heartbeat` sends one update.
+
+Run `npx rallypoint swarm sweep` from maintenance to mark silent sessions abandoned.
+It records their last heartbeat as their end time and can be run again safely.
+After upgrading, reapply `.rallypoint/swarm/schema.sql` in Supabase for the new
+expiry window and the two new commands.

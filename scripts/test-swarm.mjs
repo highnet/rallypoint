@@ -441,7 +441,7 @@ if (process.features.typescript) {
     `)}`,
   );
   const ui = (name) => import(pathToFileURL(resolve(root, "registry/rallypoint/swarm-ui/app/swarm", name)).href);
-  const { toSwarmInput, OTHER_SECTOR } = await ui("_lib/fleet-graph.ts");
+  const { toSwarmInput, OTHER_SECTOR, LIVE_WINDOW_MS, isLiveSession } = await ui("_lib/fleet-graph.ts");
   const { buildSwarmGraph } = await ui("_graph/model.ts");
   const { planReplay } = await ui("_graph/replay.ts");
 
@@ -458,6 +458,19 @@ if (process.features.typescript) {
   });
   const labels = (...names) => names.map((name) => ({ name, color: "ededed" }));
   const empty = { sessions: [], progress: [], results: [], versions: [], buried: [], protocolChanges: [] };
+
+  await test("fleet, metrics and sweep share the strict heartbeat boundary", async () => {
+    const sql = await readFile(resolve(root, "registry/rallypoint/swarm/schema.sql"), "utf8");
+    const cliSource = await readFile(resolve(root, "registry/rallypoint/swarm/swarm.mjs"), "utf8");
+    assert.equal(Number(/SESSION_LIVE_MS = (\d+) \* 60_000/.exec(cliSource)?.[1]) * 60_000, LIVE_WINDOW_MS);
+    const windows = [...sql.matchAll(/last_seen_at [><=]+ now\(\) - interval '(\d+) minutes'/g)];
+    assert.equal(windows.length, 3);
+    for (const [, minutes] of windows) assert.equal(Number(minutes) * 60_000, LIVE_WINDOW_MS);
+    const working = (offset) => ({ status: "working", last_seen_at: new Date(NOW - offset).toISOString() });
+    assert.equal(isLiveSession(working(LIVE_WINDOW_MS - 1), NOW), true);
+    assert.equal(isLiveSession(working(LIVE_WINDOW_MS), NOW), false);
+    assert.equal(isLiveSession({ ...working(0), status: "ended" }, NOW), false);
+  });
 
   await test("fleet graph: GitHub labels stage the work, sessions place the agents", () => {
     const input = toSwarmInput({
@@ -528,7 +541,7 @@ if (process.features.typescript) {
       integrationBranch: "main",
       targets: [target("main")],
       github: null,
-      sessions: [session("s1", { agent: "ada", role: "worker", issue: 9, status: "working", last_seen_at: ago(0.5), ended_at: null })],
+      sessions: [session("s1", { agent: "ada", role: "worker", issue: 9, status: "working", last_seen_at: ago(0.05), ended_at: null })],
       versions: [{ id: 1, target: "main", version: "v2", pr: 3, created_at: ago(1) }],
     });
     assert.deepEqual(memoryOnly.workItems.map((w) => [w.id, w.stage, w.sector]), [["issue-9", "claimed", "main"]], "the one target takes untargeted work");
@@ -808,6 +821,21 @@ if (process.env.RALLYPOINT_SWARM_TEST_DATABASE_URL) {
     }
     psql("-f", realtimePath, "-f", schemaPath, "-f", realtimePath);
     assert.deepEqual(status(), { publication: true, missing: [] });
+    const lifecycle = psql("-c", `begin;
+      select public.swarm_set_secret('test-secret-for-heartbeat');
+      insert into public.swarm_sessions (agent, last_seen_at)
+        values ('heartbeat-fresh', now() - interval '9 minutes'),
+               ('heartbeat-boundary', now() - interval '10 minutes'),
+               ('heartbeat-expired', now() - interval '30 minutes');
+      select string_agg(agent, ',' order by agent) from public.swarm_fleet;
+      select sessions_working from public.swarm_metrics;
+      select public.swarm_sweep('test-secret-for-heartbeat');
+      select public.swarm_sweep('test-secret-for-heartbeat');
+      select count(*) from public.swarm_sessions where status = 'abandoned' and ended_at = last_seen_at;
+      select public.swarm_heartbeat('test-secret-for-heartbeat', id) from public.swarm_sessions where agent = 'heartbeat-boundary';
+      select public.swarm_heartbeat('test-secret-for-heartbeat', id) from public.swarm_sessions where agent = 'heartbeat-fresh';
+      rollback;`);
+    assert.deepEqual(lifecycle.trim().split(/\r?\n/), ["heartbeat-fresh", "1", "2", "0", "2", "f", "t"]);
   });
 }
 
@@ -844,8 +872,19 @@ const server = createServer(async (req, res) => {
     if (fn === "swarm_write") {
       const row = { id: body.p_table === "swarm_sessions" ? `00000000-0000-4000-8000-${String(nextId).padStart(12, "0")}` : nextId, created_at: new Date().toISOString(), started_at: new Date().toISOString(), ...body.p_row };
       nextId += 1;
+      if (body.p_table === "swarm_sessions") Object.assign(row, { status: "working", last_seen_at: row.started_at });
       db[body.p_table].push(row);
       return send(200, row);
+    }
+    if (fn === "swarm_heartbeat") {
+      const row = db.swarm_sessions.find((row) => row.id === body.p_session && row.status === "working");
+      if (row) row.last_seen_at = new Date().toISOString();
+      return send(200, Boolean(row));
+    }
+    if (fn === "swarm_sweep") {
+      const stale = db.swarm_sessions.filter((row) => row.status === "working" && Date.parse(row.last_seen_at) <= Date.now() - 600_000);
+      for (const row of stale) Object.assign(row, { status: "abandoned", ended_at: row.last_seen_at });
+      return send(200, stale.length);
     }
     if (fn === "swarm_update") {
       const row = db[body.p_table].find((r) => String(r.id) === body.p_id);
@@ -1106,6 +1145,7 @@ process.stdin.on("end", () => {
 
   await test("a session: prepare → next → log → say → referee → bury → ship → retro", async () => {
     assert.match(await rp(["swarm", "prepare"]), /session/);
+    assert.equal(JSON.parse(await rp(["swarm", "prepare", "--json"])).reused, true);
     const next = JSON.parse(await rp(["swarm", "next", "--json"]));
     assert.equal(next.role, "merger");
     assert.equal(next.ref, 21);
@@ -1131,6 +1171,41 @@ process.stdin.on("end", () => {
     const matching = JSON.parse(await rp(["swarm", "retros", "--session", sessionId, "--limit", "1", "--json"]));
     assert.equal(matching.retros[0].session_id, sessionId);
     await rp(["swarm", "log", "after end"], { expect: 2 });
+  });
+
+  await test("heartbeat watch ends with a killed owner and sweep closes the expired session", async () => {
+    const row = { id: "00000000-0000-4000-8000-000000000087", status: "working", last_seen_at: new Date(0).toISOString() };
+    db.swarm_sessions.push(row);
+    const owner = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"]);
+    let watcher;
+    try {
+      const ownerExited = new Promise((resolve) => owner.once("exit", resolve));
+      watcher = spawn(process.execPath, [resolve(fixture, ".rallypoint/swarm/swarm.mjs"), "heartbeat", "--watch-pid", String(owner.pid)], {
+        cwd: fixture, env: { ...env, RALLYPOINT_SWARM_SESSION: row.id },
+      });
+      const watcherExited = new Promise((resolve) => watcher.once("exit", resolve));
+      const deadline = Date.now() + 5000;
+      while (Date.parse(row.last_seen_at) === 0 && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      assert.ok(Date.parse(row.last_seen_at) > 0);
+      owner.kill("SIGKILL");
+      await ownerExited;
+      const timeout = setTimeout(() => watcher.kill("SIGKILL"), 4000);
+      try {
+        assert.equal(await watcherExited, 0);
+      } finally {
+        clearTimeout(timeout);
+      }
+      row.last_seen_at = new Date(Date.now() - 600_001).toISOString();
+      assert.deepEqual(JSON.parse(await rp(["swarm", "sweep", "--json"])), { swept: 1 });
+      assert.equal(row.status, "abandoned");
+      assert.equal(row.ended_at, row.last_seen_at);
+      await rp(["swarm", "heartbeat"], { expect: 4, extraEnv: { RALLYPOINT_SWARM_SESSION: row.id } });
+    } finally {
+      watcher?.kill();
+      owner.kill();
+    }
   });
 
   await test("referee fails with exit 3 when a check fails", async () => {

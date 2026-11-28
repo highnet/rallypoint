@@ -8,7 +8,7 @@
  *   agents      <- one per agent name in `swarm_sessions`: its latest
  *                  session's role, target, issue, PR and progress note.
  *                  `working` only while that session says so and was seen
- *                  in the last two hours (the `swarm_fleet` rule)
+ *                  in the last ten minutes (the `swarm_fleet` rule)
  *   workItems   <- GitHub issues and pull requests, staged by their
  *                  `status:*` / `review:*` labels (`laneOf`), joined by
  *                  "Closes #N", on the `agent/<issue>-<slug>` branch
@@ -48,7 +48,11 @@ import type {
 } from "./types";
 
 /** A session counts as working only if it was seen this recently (the `swarm_fleet` view's window). */
-export const LIVE_WINDOW_MS = 2 * 3_600_000;
+export const LIVE_WINDOW_MS = 10 * 60_000;
+
+export function isLiveSession(session: Pick<SessionRow, "status" | "last_seen_at">, now: number) {
+  return session.status === "working" && (ms(session.last_seen_at) ?? -Infinity) > now - LIVE_WINDOW_MS;
+}
 /** The recent part of a sector's count. */
 const RECENT_MS = 24 * 3_600_000;
 /** Where work with no target goes when more than one target is configured. */
@@ -195,8 +199,7 @@ export function toSwarmInput(source: FleetGraphSource): SwarmInput {
   // Without GitHub (or for issues it did not return): the issues sessions hold right now, and
   // those a shipped version names by pull request.
   const shippedPrs = new Set(source.versions.map((row) => row.pr).filter((pr): pr is number => pr !== null));
-  const liveSession = (session: SessionRow) =>
-    session.status === "working" && now - (ms(lastSeenOf(session)) ?? -Infinity) <= LIVE_WINDOW_MS;
+  const liveSession = (session: SessionRow) => isLiveSession(session, now);
   for (const session of source.sessions) {
     if (session.issue === null || workByIssue.has(session.issue)) continue;
     const shipped = session.pr !== null && shippedPrs.has(session.pr);

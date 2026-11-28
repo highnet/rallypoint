@@ -4,7 +4,7 @@ import { cache } from "react";
 import { swarmConfig } from "../swarm.config";
 import type { SwarmInput } from "../_graph/model";
 import type { MeasureMode, SwarmTarget } from "./config-types";
-import { toSwarmInput } from "./fleet-graph";
+import { LIVE_WINDOW_MS, toSwarmInput } from "./fleet-graph";
 import { word } from "./format";
 import {
   deliveryOf,
@@ -188,7 +188,7 @@ export type ProgressData = {
   github: GithubState | null;
   delivery: Delivery | null;
   deliveryByTarget: TargetDelivery[];
-  /** Working sessions seen in the last two hours, newest first. */
+  /** Working sessions seen in the last ten minutes, newest first. */
   fleet: FleetRow[];
   /** The newest buried idea, for the "latest" line. */
   lastBuried: BuriedRow | null;
@@ -486,13 +486,15 @@ export async function getFleetGraph(): Promise<FleetGraphData> {
 
 export type SessionWithMemory = SessionRow & { retros: RetroRow[]; progress: ProgressRow[] };
 
-export async function getSessions(status?: SessionRow["status"]) {
+export async function getSessions(status?: SessionRow["status"] | "silent", now = Date.now()) {
   const errors: Errors = [];
   const sessions = take(
     await selectRows("swarm_sessions", {
       order: "started_at.desc",
       limit: 50,
-      filters: status ? { status: `eq.${status}` } : {},
+      filters: !status ? {} : status === "working" || status === "silent"
+        ? { status: "eq.working", last_seen_at: `${status === "working" ? "gt" : "lte"}.${new Date(now - LIVE_WINDOW_MS).toISOString()}` }
+        : { status: `eq.${status}` },
     }),
     [],
     errors,

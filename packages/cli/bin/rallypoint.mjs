@@ -202,6 +202,9 @@ async function addItem(name) {
       const current = await readFile(destination, "utf8");
       if (current === file.content) {
         changes.push({ ...file, destination, action: "unchanged" });
+      } else if (item.name === "swarm" && file.path === ".rallypoint/swarm.json") {
+        // The registry supplies a starting point; the installed campaign is project-owned.
+        changes.push({ ...file, destination, action: "skip" });
       } else if (force) {
         changes.push({ ...file, destination, action: "overwrite" });
       } else if (file.path === "AGENTS.md") {
@@ -222,7 +225,7 @@ async function addItem(name) {
     console.error(amber("Rallypoint stopped before writing."));
     console.error("These targets already exist with different contents:");
     for (const path of conflicts) console.error(`  • ${path}`);
-    console.error(`\nInspect with ${strong("rallypoint view loop")}. Use --force only after review.`);
+    console.error(`\nInspect with ${strong(`rallypoint view ${item.name}`)}. Use --force only after review.`);
     process.exitCode = 2;
     return;
   }
@@ -244,10 +247,11 @@ async function addItem(name) {
 
   const written = changes.filter((file) => file.action !== "unchanged" && file.action !== "skip").length;
   const unchanged = changes.filter((file) => file.action === "unchanged").length;
+  const skipped = changes.filter((file) => file.action === "skip").length;
   console.log(
     dryRun
       ? `\n${muted(`${written} writes planned · no changes written`)}`
-      : `\n${green("Campaign ready.")} ${written} files written, ${unchanged} already current${agentsMdSkipped ? ", 1 left untouched" : ""}.`,
+      : `\n${green("Campaign ready.")} ${written} files written, ${unchanged} already current${skipped ? `, ${skipped} left untouched` : ""}.`,
   );
 
   await dependencyHint(item, cwd, dryRun);

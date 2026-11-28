@@ -4,7 +4,11 @@ import { join } from "node:path";
 
 const runtimes = {
   "claude-local": { executable: "claude", packageName: "@anthropic-ai/claude-code", args: ["-p", "--permission-mode", "bypassPermissions"] },
-  "codex-local": { executable: "codex", packageName: "@openai/codex", args: ["exec", "--full-auto", "-"] },
+  "codex-local": {
+    executable: "codex",
+    packageName: "@openai/codex",
+    args: ["exec", "--sandbox", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "-"],
+  },
 };
 
 const commandFor = ({ executable, packageName }, { env, platform }) => {

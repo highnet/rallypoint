@@ -896,7 +896,23 @@ appendFileSync(${JSON.stringify(ghLog)}, JSON.stringify(args) + "\\n");
 const key = args.slice(0, 2).join(" ");
 // The loop's transport probes \`gh --version\` before its first call.
 if (key === "--version") console.log("gh version 0.0.0-fake");
-else if (key === "api user") console.log("swarm-bot");
+else if (key === "api user") {
+  if (process.env.FAKE_GH_IDENTITY_ERROR) {
+    console.error(process.env.FAKE_GH_IDENTITY_ERROR);
+    process.exit(1);
+  }
+  console.log("swarm-bot");
+}
+else if (args[0] === "api" && args[1].includes("/issues/")) {
+  const number = Number(args[1].split("/").at(-1));
+  console.log(JSON.stringify({ number, title: "Fixture issue", state: "open", labels: [{ name: "target:web" }], assignees: [],
+    html_url: "https://github.com/acme/app/issues/" + number, ...(number === 21 ? { pull_request: {} } : {}) }));
+}
+else if (args[0] === "api" && args[1].includes("/pulls/")) {
+  const number = Number(args[1].split("/").at(-1));
+  console.log(JSON.stringify({ number, title: "Fixture PR", state: "open", draft: false, body: "Closes #5", labels: [],
+    html_url: "https://github.com/acme/app/pull/" + number }));
+}
 else if (key === "pr list") console.log(JSON.stringify([{ number: 21, title: "Faster parse", labels: [{ name: "review:approved" }], isDraft: false, body: "Closes #4", headRefName: "agent/4-x" }]));
 else if (key === "issue list") console.log(JSON.stringify([{ number: 4, title: "Faster parse", labels: [{ name: "target:api" }, { name: "status:claimed" }], assignees: [] }, { number: 5, title: "Hero", labels: [{ name: "target:web" }, { name: "prio:p1" }], assignees: [] }]));
 else if (key === "label list") console.log(JSON.stringify([{ name: "target:api" }]));
@@ -946,8 +962,50 @@ try {
     await rp(["add", "loop"]);
     const out = await rp(["add", "swarm"]);
     assert.match(out, /Campaign ready\./);
+    for (const skill of ["agent", "conductor", "strategist", "steward", "genesis"]) {
+      const path = `skills/swarm-${skill}/SKILL.md`;
+      const codex = await readFile(resolve(fixture, ".agents", path), "utf8");
+      const claude = await readFile(resolve(fixture, ".claude", path), "utf8");
+      assert.equal(codex, claude);
+      assert.ok(codex.includes(`.rallypoint/swarm/skills/swarm-${skill}.md`));
+    }
     for (const path of ["SWARM.md", ".rallypoint/swarm.json", ".rallypoint/swarm/swarm.mjs", ".rallypoint/swarm/schema.sql", ".rallypoint/swarm/realtime.sql", ".claude/skills/swarm-genesis/SKILL.md"]) {
       await readFile(resolve(fixture, path));
+    }
+  });
+
+  await test("native skills have valid frontmatter and upgrade preserves project configuration", async () => {
+    const configPath = resolve(fixture, ".rallypoint/swarm.json");
+    const original = await readFile(configPath, "utf8");
+    const config = JSON.parse(original);
+    config.protocolVersion = "project-preserved";
+    const edited = JSON.stringify(config, null, 2);
+    try {
+      await writeFile(configPath, edited);
+      const installedSkill = resolve(fixture, ".agents/skills/swarm-agent/SKILL.md");
+      await rm(installedSkill);
+      await rp(["add", "swarm"]);
+      assert.equal(await readFile(configPath, "utf8"), edited);
+      await writeFile(installedSkill, "old entry point");
+      await rp(["add", "swarm", "--force"]);
+      assert.equal(await readFile(configPath, "utf8"), edited);
+      for (const skill of ["agent", "conductor", "genesis", "steward", "strategist"]) {
+        const manifest = (await readFile(resolve(fixture, ".agents/skills", `swarm-${skill}`, "SKILL.md"), "utf8")).replace(/\r\n/g, "\n");
+        assert.ok(manifest.startsWith(`---\nname: swarm-${skill}\ndescription: "`));
+        assert.match(manifest, /\n---\n/);
+      }
+    } finally {
+      await writeFile(configPath, original);
+    }
+  });
+
+  await test("doctor distinguishes a forbidden API host from authentication failure", async () => {
+    for (const [message, pattern] of [
+      ['Get "https://api.github.com/user": Forbidden', /API host access denied/],
+      ["HTTP 401: Bad credentials", /authentication failed/],
+    ]) {
+      const output = await rp(["swarm", "doctor", "--json"], { expect: 1, extraEnv: { FAKE_GH_IDENTITY_ERROR: message } });
+      assert.match(JSON.parse(output).checks.find(({ name }) => name === "gh").detail, pattern);
     }
   });
 
@@ -991,7 +1049,7 @@ process.stdin.on("end", () => {
     const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === "PATH") ?? "PATH";
     const runtimeEnv = { ...process.env, [pathKey]: [bin, process.env[pathKey]].join(delimiter) };
     const prompt = "Read this literally: & | %PATH% $HOME `command`\nThen finish.";
-    for (const [runtime, args] of [["claude-local", ["-p", "--permission-mode", "bypassPermissions"]], ["codex-local", ["exec", "--full-auto", "-"]]]) {
+    for (const [runtime, args] of [["claude-local", ["-p", "--permission-mode", "bypassPermissions"]], ["codex-local", ["exec", "--sandbox", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "-"]]]) {
       const output = await rp(["swarm", "dispatch", "--runtime", runtime, "--prompt", prompt], {
         expect: 1, extraEnv: { [pathKey]: runtimeEnv[pathKey] },
       });
@@ -1131,6 +1189,72 @@ process.stdin.on("end", () => {
     const matching = JSON.parse(await rp(["swarm", "retros", "--session", sessionId, "--limit", "1", "--json"]));
     assert.equal(matching.retros[0].session_id, sessionId);
     await rp(["swarm", "log", "after end"], { expect: 2 });
+  });
+
+  await test("exact dispatch preflight reads only, and both local clients leave a retro in order", async () => {
+    const dir = await mkdtemp(resolve(fixture, "serial-runtime-"));
+    const source = String.raw`#!/usr/bin/env node
+const { execFileSync } = require("node:child_process");
+let prompt = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (data) => { prompt += data; });
+process.stdin.on("end", () => {
+  const expected = process.argv.includes("exec") ? "$swarm-agent" : "/swarm-agent";
+  if (!prompt.startsWith(expected + "\n")) process.exit(7);
+  const agent = prompt.match(/prepare --agent ([a-z-]+)/)[1];
+  const run = (...args) => JSON.parse(execFileSync(process.execPath, [".rallypoint/swarm/swarm.mjs", ...args, "--json"], { encoding: "utf8" }));
+  const { session } = run("prepare", "--agent", agent);
+  const job = run("next", "web", "--only", "worker", "--issue", "5");
+  if (job.ref !== 5) process.exit(8);
+  run("log", "Verified the dispatched issue");
+  run("retro", "--well", "Recorded through the local runtime");
+  console.log(session.id);
+});
+`;
+    for (const [name, packageName] of [["claude", "@anthropic-ai/claude-code"], ["codex", "@openai/codex"]]) {
+      const packageDir = resolve(dir, "node_modules", packageName);
+      await mkdir(packageDir, { recursive: true });
+      await writeFile(resolve(packageDir, "package.json"), JSON.stringify({ bin: { [name]: "fake.cjs" } }));
+      await writeFile(resolve(packageDir, "fake.cjs"), source);
+      await writeFile(resolve(dir, `${name}.cmd`), "@exit /b 99");
+      if (process.platform !== "win32") {
+        const executable = resolve(dir, name);
+        await writeFile(executable, source);
+        await chmod(executable, 0o755);
+      }
+    }
+    const pathKey = Object.keys(process.env).find((key) => key.toUpperCase() === "PATH") ?? "PATH";
+    const extraEnv = { [pathKey]: [dir, process.env[pathKey]].join(delimiter) };
+    const refsBefore = sh("git", "for-each-ref");
+    const writeCount = () => db.swarm_sessions.length + db.swarm_progress.length + db.swarm_retros.length;
+    for (const runtime of ["codex-local", "claude-local"]) {
+      const args = ["swarm", "dispatch", "--runtime", runtime, "--role", "worker", "--issue", "5", "--target", "web", "--agent", runtime];
+      const before = writeCount();
+      const plan = JSON.parse(await rp([...args, "--dry-run", "--json"], { extraEnv }));
+      assert.equal(plan.item.number, 5);
+      assert.match(plan.prompt, /--only worker --issue 5/);
+      assert.equal(writeCount(), before);
+      assert.equal(sh("git", "for-each-ref"), refsBefore);
+      const output = await rp(args, { extraEnv });
+      const id = output.split(/\r?\n/)[0];
+      const ret = JSON.parse(await rp(["swarm", "retros", "--session", id, "--limit", "1", "--json"]));
+      assert.equal(ret.retros[0].role, "worker");
+      assert.equal(db.swarm_sessions.find((session) => session.id === id).status, "ended");
+    }
+    const args = ["swarm", "dispatch", "--runtime", "codex-local", "--dry-run", "--json"];
+    const pr = JSON.parse(await rp([...args, "--role", "reviewer", "--pr", "21", "--target", "web"], { extraEnv }));
+    assert.equal(pr.item.kind, "pr");
+    assert.equal(pr.item.number, 21);
+    assert.match(await rp([...args, "--role", "worker", "--issue", "21"], { expect: 2 }), /not an open issue/);
+    assert.match(await rp([...args, "--role", "reviewer", "--issue", "5"], { expect: 2 }), /requires exactly --pr/);
+    const role = resolve(fixture, ".rallypoint/roles/reviewer.md");
+    const contents = await readFile(role, "utf8");
+    try {
+      await writeFile(role, "");
+      assert.match(await rp([...args, "--role", "reviewer", "--pr", "21"], { expect: 2 }), /reviewer.md/);
+    } finally {
+      await writeFile(role, contents);
+    }
   });
 
   await test("referee fails with exit 3 when a check fails", async () => {

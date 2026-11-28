@@ -15,7 +15,7 @@
 
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, statSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
@@ -24,7 +24,7 @@ import { allTargets, parseSwarmConfig } from "./lib/config.mjs";
 import { DEFAULT_MAX_WAIT_MS, dispatchCodexCloud } from "./lib/codex-cloud.mjs";
 import { dispatchLocal, doctorRuntime } from "./lib/local-runtime.mjs";
 import { MemoryError, memoryFromEnv } from "./lib/memory.mjs";
-import { ROLE_WHEN, computeQueues, pickRole } from "./lib/roles.mjs";
+import { ROLE_WHEN, computeQueues, pickRole, referencedIssues } from "./lib/roles.mjs";
 import { referee } from "./lib/referee.mjs";
 import { renderUiConfig } from "./lib/ui-config.mjs";
 
@@ -125,6 +125,16 @@ const githubTransport = () => {
 };
 const gh = (...args) => githubTransport()(...args);
 const ghJson = (...args) => JSON.parse(gh(...args) || "null");
+const githubDiagnostic = (error) => {
+  const detail = String(error.stderr || error.message || error).trim();
+  if (transportModule.isGitHubApiHostDenied?.(error)) {
+    return `GitHub API host access denied; check api.github.com in the environment network settings: ${detail.split("\n")[0]}`;
+  }
+  if (error.status === 401 || /\b(?:HTTP 401|Bad credentials|not logged|gh auth login)\b/i.test(detail)) {
+    return `GitHub authentication failed; check the configured GitHub credential: ${detail.split("\n")[0]}`;
+  }
+  return detail.split("\n")[0];
+};
 
 const readJsonFile = (path) => JSON.parse(readFileSync(path, "utf8"));
 
@@ -207,7 +217,7 @@ ${strong("Setup")}
 
 ${strong("A session")}
   prepare [--agent <name>]       open a session
-  next [target] [--only a,b]     take your role (merger → fixer → reviewer →
+  next [target] [--only a,b] [--issue N | --pr N]     take your role (merger → fixer → reviewer →
                                  improver → worker → planner → janitor)
   log "<note>"                   progress as you go
   say --kind question|proposal|handoff|answer|note [--ref #n] [--thread id] "<body>"
@@ -233,6 +243,9 @@ ${strong("Planning and learning")}
            [--branch <branch>] [--env <environment>]
            [--max-wait-seconds <seconds>]
                                  start one role, stream local output, and wait
+  dispatch --runtime <runtime> --role <role> [--issue N | --pr N]
+           [--target <target>] [--agent <id>] [--dry-run]
+                                 check or dispatch an exact role and GitHub item
 
 Every command accepts --json. Exit codes: 0 ok · 1 error · 2 misuse ·
 3 referee failed · 4 nothing to do.
@@ -266,7 +279,7 @@ commands.doctor = async () => {
     const login = gh("api", "user", "--jq", ".login");
     add("gh", true, `authenticated as ${login}`);
   } catch (error) {
-    add("gh", false, `GitHub not reachable or not authenticated (gh auth login): ${String(error.message ?? error).split("\n")[0]}`);
+    add("gh", false, `GitHub identity check failed: ${githubDiagnostic(error)}`);
   }
   // Every role starts with `swarm next`, which lists pull requests. Proving
   // the chosen transport can do that here turns a mid-role failure (a cloud
@@ -284,7 +297,7 @@ commands.doctor = async () => {
     } catch {
       // the transport itself could not be built; the error says why
     }
-    add("transport", false, `cannot list pull requests${detail}: ${String(error.stderr || error.message || error).trim().split("\n")[0]}`);
+    add("transport", false, `cannot list pull requests${detail}: ${githubDiagnostic(error)}`);
   }
   add("loop", existsSync(join(cwd, ".rallypoint/config.json")), "vanilla Rallypoint installed (.rallypoint/config.json)");
 
@@ -304,7 +317,7 @@ commands.doctor = async () => {
       loaded.problems.length === 0 ? "ok" : preGenesis ? "warn" : "fail",
     );
     if (preGenesis) {
-      add("goal", false, "no goal yet: run swarm genesis (.claude/skills/swarm-genesis/SKILL.md)", "warn");
+      add("goal", false, "no goal yet: run the swarm-genesis skill in Codex or Claude Code", "warn");
     }
   } catch (error) {
     add("swarm.json", false, error.message);
@@ -460,6 +473,50 @@ const roleFiles = (role) => {
   return files;
 };
 
+const requiredKind = (role) => {
+  if (role === "worker") return "issue";
+  if (["reviewer", "fixer", "merger"].includes(role)) return "pr";
+  return null;
+};
+
+const dispatchRef = (role) => {
+  if (!role || !Object.hasOwn(ROLE_WHEN, role)) {
+    throw new UsageError(`--role must be one of: ${Object.keys(ROLE_WHEN).join(", ")}`);
+  }
+  const kind = requiredKind(role);
+  const selected = flag("issue") ? "issue" : flag("pr") ? "pr" : null;
+  if (selected !== kind || (flag("issue") && flag("pr"))) {
+    throw new UsageError(kind ? `role ${role} requires exactly --${kind} <number>` : `role ${role} does not take an issue or PR number`);
+  }
+  if (!kind) return null;
+  const value = option(kind) ?? "";
+  const number = /^#?[1-9][0-9]*$/.test(value) ? intOrNull(value) : null;
+  if (!Number.isSafeInteger(number) || number < 1) throw new UsageError(`--${kind} requires a positive GitHub number`);
+  return { kind, number };
+};
+
+const exactQueue = ({ role, ref, target, labels }) => {
+  const endpoint = "repos/{owner}/{repo}";
+  const item = ghJson("api", `${endpoint}/${ref.kind === "pr" ? "pulls" : "issues"}/${ref.number}`);
+  if (item?.number !== ref.number || item.state !== "open" ||
+      (ref.kind === "issue" && item.pull_request) || item.draft) {
+    throw new UsageError(`${ref.kind} #${ref.number} is not an open ${ref.kind === "pr" ? "non-draft pull request" : "issue"}`);
+  }
+  const pulls = ref.kind === "pr" ? [{ ...item, isDraft: Boolean(item.draft) }] : [];
+  const issues = ref.kind === "issue" ? [item] : [];
+  if (target && ref.kind === "pr" && !item.labels?.some((label) => label.name === `target:${target}`)) {
+    for (const issue of new Set(referencedIssues(item.body))) {
+      const linked = ghJson("api", `${endpoint}/issues/${issue}`);
+      if (linked && !linked.pull_request) issues.push(linked);
+    }
+  }
+  const queues = computeQueues({ pulls, issues, target, labels });
+  if (queues[role].next?.number !== ref.number) {
+    throw new UsageError(`${ref.kind} #${ref.number} is not eligible for ${role}${target ? ` on ${target}` : ""}`);
+  }
+  return { item, queues };
+};
+
 const gatherBoard = async (config, loop) => {
   const pulls = ghJson("pr", "list", "--state", "open", "--json", "number,title,labels,isDraft,body,headRefName", "--limit", "200");
   const issues = ghJson("issue", "list", "--state", "open", "--json", "number,title,labels,assignees", "--limit", "500");
@@ -499,13 +556,21 @@ commands.next = async () => {
     throw new UsageError(`unknown target "${target}"; targets: ${allTargets(config).map((t) => t.id).join(", ") || "(none)"}`);
   }
   const only = option("only")?.split(",").map((role) => role.trim()).filter(Boolean) ?? null;
-  const board = await gatherBoard(config, loop);
-  const queues = computeQueues({
-    ...board,
-    labels: loop?.labels ?? {},
-    target,
-    improverRetroThreshold: config.improverRetroThreshold,
-  });
+  const refRequested = flag("issue") || flag("pr");
+  let queues;
+  if (refRequested) {
+    if (only?.length !== 1) throw new UsageError("an exact issue or PR requires --only <role>");
+    const ref = dispatchRef(only[0]);
+    ({ queues } = exactQueue({ role: only[0], ref, target, labels: loop?.labels ?? {} }));
+  } else {
+    const board = await gatherBoard(config, loop);
+    queues = computeQueues({
+      ...board,
+      labels: loop?.labels ?? {},
+      target,
+      improverRetroThreshold: config.improverRetroThreshold,
+    });
+  }
   const picked = pickRole({ queues, order: config.roleOrder, only });
   const session = readSession();
 
@@ -531,7 +596,7 @@ commands.next = async () => {
       `TARGET ${ref}${picked.next?.title ? ` ${muted(picked.next.title)}` : ""}`,
       ...files.map((file) => `READ ${file}`),
       muted(`why: ${ROLE_WHEN[picked.role]} (${picked.count} waiting)${target ? ` · target ${target}` : ""}`),
-      picked.role === "worker" ? muted("claim with: node .rallypoint/scripts/claim.mjs --agent-id <your agent id>") : "",
+      picked.role === "worker" ? muted(`claim with: node .rallypoint/scripts/claim.mjs${refRequested ? ` --issue ${picked.next.number}` : ""} --agent-id <your agent id>`) : "",
     ].filter(Boolean).join("\n"),
   );
   return EXIT.OK;
@@ -1061,29 +1126,82 @@ commands.status = async () => {
   return EXIT.OK;
 };
 
+const validateDispatch = (runtime, repository) => {
+  const role = option("role");
+  const ref = dispatchRef(role);
+  const { config, problems } = loadSwarmConfig();
+  if (problems.length) throw new UsageError(`fix .rallypoint/swarm.json first: ${problems.join("; ")}`);
+  if (!config.roleOrder.includes(role)) throw new UsageError(`role ${role} is disabled in .rallypoint/swarm.json`);
+  const target = option("target") ?? null;
+  if ((flag("target") && !target) || (target && !allTargets(config).some((entry) => entry.id === target))) {
+    throw new UsageError(`unknown target "${target ?? ""}"`);
+  }
+  const agent = option("agent") ?? `agent-${randomBytes(5).toString("hex")}`;
+  if ((flag("agent") && !option("agent")) || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(agent)) {
+    throw new UsageError("--agent must be a short ID containing letters, numbers, dots, underscores or hyphens");
+  }
+  const claude = runtime === "claude-local";
+  const files = [
+    `${claude ? ".claude" : ".agents"}/skills/swarm-agent/SKILL.md`,
+    ".rallypoint/swarm/skills/swarm-agent.md",
+    "AGENTS.md", "SWARM.md", "AGENTIC_LOOP.md", "docs/AGENT_LOOP.md",
+    ".rallypoint/config.json", ".rallypoint/swarm.json",
+    ...roleFiles(role),
+  ];
+  for (const file of files) {
+    try {
+      const path = resolve(repository, file);
+      if (statSync(path).isFile() && readFileSync(path, "utf8").trim()) continue;
+    } catch {
+      // Missing or unreadable.
+    }
+    throw new UsageError(`required dispatch instruction is missing, empty or unreadable: ${file}`);
+  }
+  const item = ref ? exactQueue({ role, ref, target, labels: loadLoopConfig()?.labels ?? {} }).item : null;
+  const cli = "node .rallypoint/swarm/swarm.mjs";
+  const next = `${cli} next${target ? ` ${JSON.stringify(target)}` : ""} --only ${role}${ref ? ` --${ref.kind} ${ref.number}` : ""}`;
+  const prompt = [
+    `${claude ? "/" : "$"}swarm-agent`,
+    "Run one role. Read the native swarm-agent skill and its shared Rallypoint instructions.",
+    `Use \`${cli} prepare --agent ${agent}\` and then \`${next}\`.`,
+    ref ? `Work only on ${ref.kind === "pr" ? "pull request" : "issue"} #${ref.number}. Stop if it is unavailable; never substitute another item.` : "",
+    role === "worker" ? `Claim it with \`node .rallypoint/scripts/claim.mjs --issue ${ref.number} --agent-id ${agent}\`.` : "",
+    "Log progress, leave one retro, and report the session ID.",
+  ].filter(Boolean).join("\n");
+  return { runtime, role, target, agent, item: ref ? { ...ref, title: item.title, url: item.html_url } : null, files, prompt };
+};
+
 commands.dispatch = async () => {
   const runtime = selectedRuntime();
   if (!runtime) throw new UsageError("dispatch requires --runtime (defaults to codex-cloud when RALLYPOINT_CODEX_CLOUD_ENV is set)");
-  const prompt = option("prompt");
-  if (!prompt?.trim()) throw new UsageError("dispatch requires --prompt");
+  const structured = ["role", "issue", "pr", "target", "agent", "dry-run"].some(flag);
+  if (structured && flag("prompt")) throw new UsageError("choose structured dispatch flags or --prompt");
+  const root = git("rev-parse", "--show-toplevel");
+  const plan = structured ? validateDispatch(runtime, root) : null;
+  const prompt = plan?.prompt ?? option("prompt");
+  if (!prompt?.trim()) throw new UsageError("dispatch requires --prompt or --role");
   const maxWaitMs = flag("max-wait-seconds") ? Number(option("max-wait-seconds")) * 1000 : DEFAULT_MAX_WAIT_MS;
   if (!Number.isSafeInteger(maxWaitMs) || maxWaitMs <= 0 || maxWaitMs > 2_147_483_647) {
     throw new UsageError("--max-wait-seconds must specify a positive duration within the timer limit");
   }
+  const environment = option("env") ?? process.env.RALLYPOINT_CODEX_CLOUD_ENV;
+  const branch = option("branch");
+  if (runtime === "codex-cloud" && (!environment?.trim() || !branch?.trim())) {
+    throw new UsageError("codex-cloud dispatch requires --branch and --env (or RALLYPOINT_CODEX_CLOUD_ENV)");
+  }
+  if (flag("dry-run")) {
+    out(plan, JSON.stringify(plan, null, 2));
+    return EXIT.OK;
+  }
   if (runtime !== "codex-cloud") {
     const childStatus = await dispatchLocal({
-      runtime, cwd: git("rev-parse", "--show-toplevel"), prompt, maxWaitMs,
+      runtime, cwd: root, prompt, maxWaitMs,
       stdout: asJson ? process.stderr : "inherit",
     });
     out({ runtime, childStatus }, `${runtime} exited with code ${childStatus}.`);
     return childStatus === 0 ? EXIT.OK : EXIT.ERROR;
   }
 
-  const environment = option("env") ?? process.env.RALLYPOINT_CODEX_CLOUD_ENV;
-  const branch = option("branch");
-  if (!environment?.trim() || !branch?.trim()) {
-    throw new UsageError("codex-cloud dispatch requires --branch and --env (or RALLYPOINT_CODEX_CLOUD_ENV)");
-  }
   const result = await dispatchCodexCloud({
     cwd, environment, branch, prompt, maxWaitMs,
     onSubmitted: (url) => console.error(`Codex Cloud task submitted: ${url}`),

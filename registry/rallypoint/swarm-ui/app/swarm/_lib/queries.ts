@@ -4,7 +4,7 @@ import { cache } from "react";
 import { swarmConfig } from "../swarm.config";
 import type { SwarmInput } from "../_graph/model";
 import type { MeasureMode, SwarmTarget } from "./config-types";
-import { toSwarmInput } from "./fleet-graph";
+import { fleetLabelSector, toSwarmInput } from "./fleet-graph";
 import { word } from "./format";
 import {
   deliveryOf,
@@ -14,6 +14,7 @@ import {
   listDirectory,
   listItems,
   readFile,
+  readPullPaths,
   readDefaultBranch,
   readGithubRepo,
   targetsOf,
@@ -434,6 +435,7 @@ export type FleetGraphData = {
   input: SwarmInput;
   /** Why the graph shows memory only, when GitHub could not be read. */
   githubNote: string | null;
+  delivery: Delivery | null;
   errors: Errors;
 };
 
@@ -460,16 +462,41 @@ export async function getFleetGraph(): Promise<FleetGraphData> {
   const resultRows = take(results, [], errors);
   const versionRows = take(versions, [], errors);
   const buriedRows = take(buried, [], errors);
+  const targets = resolveTargets([
+    ...sessionRows.map((row) => row.target),
+    ...resultRows.map((row) => row.target),
+    ...versionRows.map((row) => row.target),
+    ...buriedRows.map((row) => row.target),
+  ]);
+  const fleetSectors = swarmConfig.fleetSectors ?? [];
+  const changedPaths = new Map<number, string[]>();
+  let missingPaths = false;
+  const repo = readGithubRepo();
+  if (github.ok && repo && fleetSectors.some((sector) => sector.match.paths?.length)) {
+    const targetIds = new Set([...targets, ...fleetSectors].map((sector) => sector.id));
+    const labeled = new Set(github.items.filter((item) => fleetLabelSector(item, targetIds, fleetSectors)).map((item) => item.number));
+    const prs = github.items.filter((item) =>
+      item.isPullRequest && (item.state === "open" || item.mergedAt) &&
+      !labeled.has(item.number) && !item.closes.some((number) => labeled.has(number)),
+    );
+    // Fetch in small batches and stop on a denied batch instead of spending the remaining API quota.
+    for (let offset = 0; offset < prs.length; offset += 6) {
+      const batch = prs.slice(offset, offset + 6);
+      const files = await Promise.all(batch.map((pr) => readPullPaths(repo, pr.number)));
+      files.forEach((paths, index) => {
+        if (paths) changedPaths.set(batch[index]!.number, paths);
+      });
+      if (files.every((paths) => paths === null)) break;
+    }
+    missingPaths = changedPaths.size !== prs.length;
+  }
   const input = toSwarmInput({
     now: Date.now(),
     integrationBranch: swarmConfig.integrationBranch || defaultBranch || "main",
     branchPrefix: swarmConfig.branchPrefix,
-    targets: resolveTargets([
-      ...sessionRows.map((row) => row.target),
-      ...resultRows.map((row) => row.target),
-      ...versionRows.map((row) => row.target),
-      ...buriedRows.map((row) => row.target),
-    ]),
+    targets,
+    fleetSectors,
+    changedPaths,
     sessions: sessionRows,
     progress: take(progress, [], errors),
     results: resultRows,
@@ -479,7 +506,13 @@ export async function getFleetGraph(): Promise<FleetGraphData> {
     github: github.ok ? github.items : null,
     shippedUnit: word("shipped"),
   });
-  return { input, githubNote: github.ok ? null : github.message, errors };
+  const githubNote = github.ok
+    ? [
+        github.truncated ? "Progress covers the GitHub items returned by the recent-item limit." : null,
+        missingPaths ? "Changed paths were unavailable for some pull requests." : null,
+      ].filter(Boolean).join(" ") || null
+    : `GitHub is unavailable. ${github.message}`;
+  return { input, githubNote, delivery: github.ok ? deliveryOf(github.items) : null, errors };
 }
 
 /* ───────────────────────── Sessions ───────────────────────── */

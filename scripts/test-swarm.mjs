@@ -536,6 +536,59 @@ if (process.features.typescript) {
     assert.ok(memoryOnly.events.some((e) => e.id === "version:1"));
   });
 
+  await test("fleet progress, sector classification, and quiet past effort", async () => {
+    const { deliveryOf } = await ui("_lib/github.ts");
+    const selected = [
+      gh(1, { labels: labels("target:api", "status:claimed") }),
+      gh(2, { state: "closed", stateReason: "completed" }),
+      gh(3, { state: "closed", stateReason: "not_planned" }),
+      gh(4, {}),
+      gh(5, {}),
+      gh(6, {}),
+      gh(7, { isPullRequest: true, closes: [4], labels: labels("review:approved") }),
+      gh(8, { isPullRequest: true, closes: [5] }),
+      gh(9, { isPullRequest: true, closes: [2], state: "closed", mergedAt: ago(1) }),
+      gh(10, { isPullRequest: true, labels: labels("documentation") }),
+      gh(11, { isPullRequest: true, closes: [1] }),
+      gh(12, { isPullRequest: true }),
+      gh(13, { isPullRequest: true }),
+      gh(14, { labels: labels("status:claimed") }),
+    ];
+
+    assert.deepEqual(deliveryOf(selected), {
+      total: 6, merged: 1, approved: 1, inReview: 2, inBranch: 1, open: 1,
+    });
+    const input = toSwarmInput({
+      ...empty, now: NOW, integrationBranch: "main",
+      targets: [target("api")],
+      fleetSectors: [
+        { id: "site", match: { paths: ["app/swarm/**"] } },
+        { id: "protocol", match: { labels: ["documentation"] } },
+      ],
+      changedPaths: new Map([[8, ["app/swarm/fleet/page.tsx"]], [10, ["app/swarm/page.tsx"]], [11, ["app/swarm/page.tsx"]]]),
+      sessions: [
+        session("past", { agent: "past", target: "api", issue: 1 }),
+        session("live", { agent: "live", target: "api", status: "working", last_seen_at: ago(0.01), ended_at: null }),
+      ],
+      github: selected,
+      versions: [{ id: 1, target: "api", version: "v2", score: 1680, created_at: ago(1) }],
+    });
+    const work = new Map(input.workItems.map((item) => [item.id, item]));
+    assert.equal(work.get("issue-5").sector, "site");
+    assert.equal(work.get("pr-10").sector, "protocol");
+    assert.equal(work.get("issue-1").sector, "api");
+    assert.equal(work.get("pr-12").sector, OTHER_SECTOR);
+    assert.equal(input.sectors[0].score, 1680);
+    assert.equal(input.sectors[0].version, "v2");
+
+    const graph = buildSwarmGraph(input, { hideIdleAgents: true, groupPullRequests: true });
+    assert.deepEqual(graph.nodes.filter((node) => node.kind === "agent").map((node) => node.agent.id), ["live"]);
+    assert.equal(graph.nodes.find((node) => node.id === "sector:api").pastAgents, 1);
+    const grouped = graph.nodes.find((node) => node.workItem?.groupedPullRequests);
+    assert.ok(grouped, "same-sector pull requests with the same stage share a marker");
+    assert.ok(graph.flows.some((flow) => flow.path.includes(grouped.id)), "replay routes events through the grouped marker");
+  });
+
   const { ANIMALS, animalOf, assignAnimals, preferredAnimalIndex } = await ui("_lib/animals.ts");
 
   await test("fleet graph animals: stable per id, distinct within a fleet, order-free", () => {

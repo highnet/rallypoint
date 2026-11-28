@@ -36,6 +36,8 @@ export type SwarmSector = {
   color?: string;
   /** Repository paths the sector covers, for display only. */
   paths?: string[];
+  score?: number | null;
+  version?: string | null;
   /**
    * The number drawn inside the sector: a stable count the host reads from its own records (merged
    * pull requests, landed versions), not the effort of whatever events reached the model. Absent,
@@ -108,6 +110,7 @@ export type SwarmWorkItem = {
   stage: SwarmStage;
   issue?: number | null;
   pr?: number | null;
+  groupedPullRequests?: number[];
   /** The branch it is worked on, e.g. `agent/29-mcts-uct-with-random-eye-respecting`. */
   branch?: string | null;
   /** When it reached its current stage; orders the merged history. */
@@ -172,6 +175,11 @@ export type SwarmInput = {
 export type SwarmGraphOptions = {
   /** Idle agents seen within this window stay on the graph (dimmed). Default 6 h. */
   recentAgentMs?: number;
+  /** Keep past effort available for replay without drawing idle agent nodes. */
+  hideIdleAgents?: boolean;
+  groupPullRequests?: boolean;
+  showBacklog?: boolean;
+  keepUnplacedEvents?: boolean;
   /** Merged work items kept per sector, newest first. Default 3. */
   mergedPerSector?: number;
   /** Keep idle agents that hold no work and logged no events (default false: they are noise). */
@@ -257,6 +265,7 @@ export type SwarmNode = {
   sectorId?: string | null;
   /** For sectors: every work item aimed at it, by phase (closed ones left out). */
   tally?: SwarmTally;
+  pastAgents?: number;
 };
 
 /** Work items counted by phase: waiting issues, open branches and pull requests, merged. */
@@ -442,10 +451,10 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
   for (const a of inputAgents) {
     const seen = Math.max(Date.parse(a.lastSeen), Date.parse(lastEventAt.get(a.id) ?? '') || 0);
     const idleNoise = !a.workItem && !agentEffort.has(a.id) && !options.showIdleWithoutEffort;
-    if (a.status === 'working' || (!idleNoise && keepIdle(a.id, seen))) shown.set(a.id, a);
+    if (a.status === 'working' || (!options.hideIdleAgents && !idleNoise && keepIdle(a.id, seen))) shown.set(a.id, a);
   }
   for (const [id, at] of lastEventAt) {
-    if (agents.has(id) || !keepIdle(id, Date.parse(at))) continue;
+    if (options.hideIdleAgents || agents.has(id) || !keepIdle(id, Date.parse(at))) continue;
     shown.set(id, { id, role: id, status: 'idle', sector: null, lastSeen: at });
   }
 
@@ -502,6 +511,7 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
   for (const w of input.workItems) {
     const phase = phaseOf(w.stage);
     if (!phase || !sectors.has(w.sector) || !survives(w, phase)) continue;
+    if (phase === 'issue' && options.showBacklog === false && !heldLive.has(w.id)) continue;
     if (phase !== 'landed') kept.push(w);
     else mergedBySector.set(w.sector, [...(mergedBySector.get(w.sector) ?? []), w]);
   }
@@ -511,8 +521,33 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
         .sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '') || a.id.localeCompare(b.id))
         .slice(0, mergedPerSector),
     );
-  const keptById = new Map(kept.map((w) => [w.id, w]));
-  const byPr = new Map(kept.filter((w) => w.pr).map((w) => [w.pr!, w]));
+  const aliases = new Map<string, SwarmWorkItem>();
+  if (options.groupPullRequests) {
+    const groups = new Map<string, SwarmWorkItem[]>();
+    for (const item of kept) {
+      if (phaseOf(item.stage) !== 'pr' || !item.pr) continue;
+      const key = JSON.stringify([item.sector, item.stage]);
+      const group = groups.get(key) ?? [];
+      group.push(item);
+      groups.set(key, group);
+    }
+    for (const [key, group] of groups) {
+      if (group.length < 2) continue;
+      const representative = group[0]!;
+      const grouped = {
+        ...representative,
+        id: `pulls:${key}`,
+        groupedPullRequests: group.map((item) => item.pr!),
+      };
+      for (const item of group) aliases.set(item.id, grouped);
+    }
+  }
+  const visibleWork = [...new Map(kept.map((item) => {
+    const visible = aliases.get(item.id) ?? item;
+    return [visible.id, visible] as const;
+  })).values()];
+  const keptById = new Map(kept.map((w) => [w.id, aliases.get(w.id) ?? w]));
+  const byPr = new Map(kept.filter((w) => w.pr).map((w) => [w.pr!, aliases.get(w.id) ?? w]));
 
   const agentSector = (a: SwarmAgent) => {
     const s = a.sector ?? (a.workItem ? items.get(a.workItem)?.sector : null) ?? null;
@@ -564,6 +599,13 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
     },
   ];
   const links: SwarmLink[] = [];
+  const pastBySector = new Map<string, number>();
+  if (options.hideIdleAgents) {
+    for (const [agent, contributions] of pairEffort) {
+      if (shown.has(agent)) continue;
+      for (const sector of contributions.keys()) pastBySector.set(sector, (pastBySector.get(sector) ?? 0) + 1);
+    }
+  }
 
   for (const s of input.sectors) {
     const id = sectorNodeId(s.id);
@@ -577,6 +619,7 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
       sector: s,
       sectorId: s.id,
       tally: tallies.get(s.id),
+      pastAgents: pastBySector.get(s.id),
     });
     links.push({
       id: `trunk:${s.id}`,
@@ -590,13 +633,13 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
 
   let branches = 0;
   let pullRequests = 0;
-  for (const w of kept) {
+  for (const w of visibleWork) {
     const id = workNodeId(w.id);
     const phase = phaseOf(w.stage)!;
     const active = liveTargets.has(id);
     const sid = sectorNodeId(w.sector);
     if (phase === 'branch') branches++;
-    if (phase === 'pr') pullRequests++;
+    if (phase === 'pr') pullRequests += w.groupedPullRequests?.length ?? 1;
     nodes.push({
       id,
       kind: 'work',
@@ -604,6 +647,8 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
       label:
         phase === 'issue' || phase === 'landed'
           ? w.title
+          : w.groupedPullRequests
+            ? `${w.groupedPullRequests.length} PRs`
           : phase === 'pr' && w.pr
             ? `#${w.pr}`
             : (w.branch ?? w.title),
@@ -694,7 +739,8 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
   for (const e of events) {
     const s = sectorOfEvent(e);
     const sectorNode = s ? sectorNodeId(s) : null;
-    const itemNode = e.workItem && keptById.has(e.workItem) ? workNodeId(e.workItem) : null;
+    const item = e.workItem ? keptById.get(e.workItem) : null;
+    const itemNode = item ? workNodeId(item.id) : null;
     const agentNode = e.agent && nodeIds.has(agentNodeId(e.agent)) ? agentNodeId(e.agent) : null;
     const actor = agentNode ?? hubId;
     let path: (string | null)[];
@@ -724,7 +770,7 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
     }
     const clean = path.filter((p): p is string => Boolean(p));
     const deduped = clean.filter((p, i) => i === 0 || p !== clean[i - 1]!);
-    if (deduped.length < 2) continue;
+    if (deduped.length < 2 && !options.keepUnplacedEvents) continue;
     flows.push({
       id: e.id,
       at: e.at,

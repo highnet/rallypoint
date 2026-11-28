@@ -217,6 +217,26 @@ export async function listItems(): Promise<GithubReadResult<GithubItem[]>> {
   }
 }
 
+/** GitHub limits the file list to 3,000 entries per pull request. */
+export async function readPullPaths(repo: string, number: number): Promise<string[] | null> {
+  const paths: string[] = [];
+  try {
+    for (let page = 1; page <= 30; page += 1) {
+      const response = await githubFetch(`/repos/${repo}/pulls/${number}/files?per_page=100&page=${page}`);
+      if (!response.ok) return null;
+      const files = (await response.json()) as { filename: string; previous_filename?: string }[];
+      for (const file of files) {
+        paths.push(file.filename);
+        if (file.previous_filename) paths.push(file.previous_filename);
+      }
+      if (files.length < 100) break;
+    }
+    return paths;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The repository's default branch (`GET /repos/{repo}`), which is where most
  * Rallypoint projects integrate. Null when GitHub cannot be read.

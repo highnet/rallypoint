@@ -12,7 +12,7 @@ import {
   type PointerEvent,
 } from "react";
 
-import { buildSwarmGraph, type SwarmFlow, type SwarmInput, type SwarmNode } from "../_graph/model";
+import { buildSwarmGraph, LIFETIMES, type SwarmFlow, type SwarmInput, type SwarmNode } from "../_graph/model";
 import {
   createSwarmGraph,
   defaultEffectOf,
@@ -120,14 +120,31 @@ function describe(node: SwarmNode, animals: ReadonlyMap<string, number>): { titl
   if (node.kind === "work" && node.workItem) {
     const item = node.workItem;
     const refs = [item.issue ? `#${item.issue}` : null, item.pr ? `PR #${item.pr}` : null].filter(Boolean).join(" · ");
+    if (item.groupedPullRequests) {
+      return { title: node.label, meta: item.groupedPullRequests.map((number) => `#${number}`).join(" · ") };
+    }
     return { title: item.title, meta: [item.stage, refs, item.branch].filter(Boolean).join(" · ") };
   }
   if (node.kind === "sector") {
     const count = node.sector?.count;
-    return { title: node.label, meta: count ? `${count.value} ${count.unit}${count.recent ? ` · ${count.recent} ${count.recentUnit ?? ""}` : ""}` : null };
+    const score = node.sector?.score?.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    const recent = count?.recent == null ? null : `${count.recent} ${count.recentUnit ?? "recent"}`;
+    const past = node.pastAgents ? plural(node.pastAgents, "past contributor") : null;
+    const activity = node.active ? "active" : "idle";
+    const meta = [score, node.sector?.version, count ? `${count.value} ${count.unit}` : null, recent, activity, past];
+    return { title: node.label, meta: meta.filter(Boolean).join(" · ") };
   }
   return { title: node.label, meta: "integration branch" };
 }
+
+const MOTION_LEVELS = ["Off", "Calm", "Full"] as const;
+type MotionLevel = (typeof MOTION_LEVELS)[number];
+const VIEWS = [
+  { id: "live", label: "What’s happening" },
+  { id: "all", label: "Everything" },
+  { id: "moments", label: "Only the big moments" },
+];
+const BIG_MOMENTS = new Set(["merge", "milestone", "protocol", "rating"]);
 
 type HoverState = { node: SwarmNode; card: { title: string; meta: string | null }; x: number; y: number; width: number };
 
@@ -135,20 +152,49 @@ export type FleetGraphProps = {
   input: SwarmInput;
   /** Issue and pull request links open here (`https://github.com/owner/name`). */
   repoUrl: string | null;
+  extraSectorIds?: string[];
   /** Re-read the page this often while visible. 0 turns it off. Default 60. */
   refreshSeconds?: number;
   /** A line under the graph, e.g. why GitHub is not shown. */
   note?: string | null;
 };
 
-export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }: FleetGraphProps) {
+export function FleetGraph({ input, repoUrl, extraSectorIds, refreshSeconds = 60, note = null }: FleetGraphProps) {
   const router = useRouter();
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<SwarmGraphRenderer | null>(null);
-  const reducedMotion = useSyncExternalStore(subscribeMotion, reducedMotionNow, reducedMotionOnServer);
-
-  const graph = useMemo(() => buildSwarmGraph(input), [input]);
+  const prefersReducedMotion = useSyncExternalStore(subscribeMotion, reducedMotionNow, reducedMotionOnServer);
+  const [motionLevel, setMotionLevel] = useState<MotionLevel>("Calm");
+  const reducedMotion = prefersReducedMotion || motionLevel === "Off";
+  const calmMotion = motionLevel === "Calm";
+  const [view, setView] = useState("live");
+  const selectedSector = view.startsWith("sector:") ? view.slice(7) : null;
+  const graph = useMemo(() => {
+    const sectorExists = input.sectors.some(({ id }) => id === selectedSector);
+    const workItems = input.workItems.filter((item) => !sectorExists || item.sector === selectedSector);
+    const workIds = new Set(workItems.map(({ id }) => id));
+    return buildSwarmGraph({
+      ...input,
+      sectors: sectorExists ? input.sectors.filter(({ id }) => id === selectedSector) : input.sectors,
+      agents: input.agents.filter((agent) =>
+        !sectorExists || agent.sector === selectedSector || (agent.workItem && workIds.has(agent.workItem)),
+      ),
+      workItems,
+      events: input.events.filter((event) =>
+        (!sectorExists || event.sector === selectedSector || (event.workItem && workIds.has(event.workItem))) &&
+        (view !== "moments" || BIG_MOMENTS.has(event.kind)),
+      ),
+    }, {
+      hideIdleAgents: true,
+      groupPullRequests: true,
+      keepUnplacedEvents: true,
+      showBacklog: view === "all" || sectorExists,
+      lifetimes: view === "live" ? LIFETIMES.live : null,
+      mergedPerSector: view === "moments" ? 0 : undefined,
+    });
+  }, [input, selectedSector, view]);
   const latestGraph = useRef(graph);
+  const latestView = useRef(view);
   const [hover, setHover] = useState<HoverState | null>(null);
   const [replay, setReplay] = useState<SwarmReplayState | null>(null);
   const [plan, setPlan] = useState<SwarmReplayPlan | null>(null);
@@ -158,10 +204,10 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
   useLiveHold(replaying);
 
   // What the renderer's callbacks read, kept current without re-creating the renderer.
-  const links = useRef({ repoUrl, router });
+  const links = useRef({ repoUrl, router, extraSectorIds });
   useEffect(() => {
-    links.current = { repoUrl, router };
-  }, [repoUrl, router]);
+    links.current = { repoUrl, router, extraSectorIds };
+  }, [repoUrl, router, extraSectorIds]);
 
   // Each agent's animal (`../_lib/animals.ts`). Agents already drawn keep theirs, so a new agent
   // arriving on a refresh takes a free animal rather than displacing one on screen.
@@ -177,8 +223,9 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
   useEffect(() => {
     latestGraph.current = graph;
     syncAnimals(input);
-    renderer.current?.update(graph);
-  }, [graph, input, syncAnimals]);
+    renderer.current?.update(graph, { quiet: latestView.current !== view });
+    latestView.current = view;
+  }, [graph, input, syncAnimals, view]);
 
   useEffect(() => {
     const el = host.current;
@@ -186,7 +233,9 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
     const view = createSwarmGraph(el, {
       title: "Agents, the work they hold, and the targets their effort lands in",
       reducedMotion,
-      intro: "full",
+      calmMotion,
+      intro: calmMotion ? "none" : "short",
+      sectorRadius: { min: 28, max: 52 },
       theme: THEME,
       effectOf,
       // An animal per agent instead of its role's letter, as Swarm Arena draws its fleet.
@@ -199,12 +248,14 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
           node && point ? { node, card: describe(node, animals.current), ...point, width: el.clientWidth } : null,
         ),
       onSelect: (node) => {
-        const { repoUrl: repo, router: nav } = links.current;
+        const { repoUrl: repo, router: nav, extraSectorIds: extras } = links.current;
         if (node.kind === "work" && node.workItem && repo) {
           const item = node.workItem;
           const number = item.pr ?? item.issue;
-          if (number) window.open(`${repo}/${item.pr ? "pull" : "issues"}/${number}`, "_blank", "noopener");
-        } else if (node.kind === "sector" && node.sectorId && !node.sectorId.startsWith("_")) {
+          if (item.groupedPullRequests) {
+            window.open(`${repo}/pulls`, "_blank", "noopener");
+          } else if (number) window.open(`${repo}/${item.pr ? "pull" : "issues"}/${number}`, "_blank", "noopener");
+        } else if (node.kind === "sector" && node.sectorId && !node.sectorId.startsWith("_") && !extras?.includes(node.sectorId)) {
           nav.push(`/swarm/targets/${encodeURIComponent(node.sectorId)}`);
         }
       },
@@ -217,10 +268,11 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
     renderer.current = view;
     view.update(latestGraph.current);
     return () => {
+      view.stopReplay();
       view.destroy();
       renderer.current = null;
     };
-  }, [reducedMotion]);
+  }, [calmMotion, reducedMotion]);
 
   // Follow the swarm: re-read the page now and then, but never under a replay.
   const replayingRef = useRef(false);
@@ -262,6 +314,11 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
   );
   const hasHistory = graph.flows.length > 0;
   const card = hover?.card ?? null;
+  const views = [
+    VIEWS[0]!,
+    ...input.sectors.map(({ id, label }) => ({ id: `sector:${id}`, label })),
+    ...VIEWS.slice(1),
+  ];
 
   return (
     <section aria-labelledby="rp-fleet-graph-title" className="rp-fleet-graph">
@@ -274,6 +331,22 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
           {plural(graph.totals.pullRequests, "PR")} · {plural(graph.flows.length, "event")}
         </p>
         <div className="rp-fg-actions">
+          <div aria-label="Motion" className="rp-fg-segment" role="group">
+            {MOTION_LEVELS.map((level) => (
+              <button
+                aria-pressed={(prefersReducedMotion ? "Off" : motionLevel) === level}
+                disabled={replaying || (prefersReducedMotion && level !== "Off")}
+                key={level}
+                onClick={() => {
+                  setHover(null);
+                  setMotionLevel(level);
+                }}
+                type="button"
+              >
+                {level}
+              </button>
+            ))}
+          </div>
           {replaying ? (
             <button className="rp-fg-button" onClick={stopReplay} type="button">
               <span aria-hidden="true">■</span> Stop replay
@@ -299,6 +372,26 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
           >
             <span aria-hidden="true">⌖</span>
           </button>
+        </div>
+      </div>
+
+      <div aria-label="Show" className="rp-fg-views" role="group">
+        <span>Show</span>
+        <div className="rp-fg-segment">
+          {views.map(({ id, label }) => (
+            <button
+              aria-pressed={view === id}
+              disabled={replaying}
+              key={id}
+              onClick={() => {
+                setHover(null);
+                setView(id);
+              }}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -342,7 +435,10 @@ export function FleetGraph({ input, repoUrl, refreshSeconds = 60, note = null }:
           </li>
         ))}
         <li className="rp-fg-legend-gap">
-          <span aria-hidden="true" className="rp-fg-key rp-fg-key-agent" /> agent
+          <span aria-hidden="true" className="rp-fg-key rp-fg-key-agent" /> live agent
+        </li>
+        <li>
+          <span aria-hidden="true" className="rp-fg-key rp-fg-key-past" /> past effort
         </li>
         <li>
           <span aria-hidden="true" className="rp-fg-key rp-fg-key-issue" /> issue

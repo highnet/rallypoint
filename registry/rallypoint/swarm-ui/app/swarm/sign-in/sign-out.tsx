@@ -16,6 +16,7 @@ import { endSession, signOut } from "./actions";
 export function SignOut({ className, buttonClassName = "rp-linkish" }: { className?: string; buttonClassName?: string }) {
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    window.dispatchEvent(new Event("rp-swarm-sign-out"));
     // An absolute URL: this is a deliberate full load, not a router push.
     const signIn = new URL("/swarm/sign-in", window.location.origin).href;
     void endSession().finally(() => window.location.assign(signIn));

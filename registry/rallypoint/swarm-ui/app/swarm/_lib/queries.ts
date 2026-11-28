@@ -23,6 +23,7 @@ import {
   type LaneId,
   type RepoEntry,
 } from "./github";
+import { expiryOf, hasRefreshSession } from "./session";
 import {
   countRows,
   isAuthError,
@@ -61,6 +62,7 @@ import type {
 /* ───────────────────────── Connection state ───────────────────────── */
 
 export type SwarmContext =
+  | { state: "recover" }
   | { state: "unconfigured"; missing: string[] }
   | { state: "unreachable"; message: string }
   | { state: "no-schema"; message: string }
@@ -99,9 +101,12 @@ export const getSwarmContext = cache(async (): Promise<SwarmContext> => {
   if (!env) return { state: "unconfigured", missing };
 
   const token = await readSessionToken();
+  const refreshable = await hasRefreshSession();
+  if (refreshable && expiryOf(token) <= Date.now()) return { state: "recover" };
   let read = await selectRows("swarm_settings", { select: "key,value" });
   let expired = false;
   if (!read.ok && token && isAuthError(read.error)) {
+    if (refreshable) return { state: "recover" };
     // The session token was refused (expired). Fall back to the anon key.
     expired = true;
     read = await selectRows("swarm_settings", { select: "key,value", anon: true });
@@ -124,7 +129,7 @@ export const getSwarmContext = cache(async (): Promise<SwarmContext> => {
 });
 
 export async function isSignedIn(): Promise<boolean> {
-  return Boolean(await readSessionToken());
+  return expiryOf(await readSessionToken()) > Date.now();
 }
 
 /* ───────────────────────── Helpers ───────────────────────── */

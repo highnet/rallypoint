@@ -52,9 +52,12 @@ When the swarm's `visibility` is `"private"`, RLS hides memory from the anon
 key and the pages ask visitors to sign in at `/swarm/sign-in` (Supabase Auth
 email and password, or a magic link). Add your team in Supabase Auth. For
 magic links, add `https://<your-domain>/swarm/sign-in` to Supabase Auth's
-Redirect URLs. The session lives in an httpOnly cookie, `rp-swarm-token`.
-Live updates then use the reader's own access token, so Realtime applies the
-same RLS; the cookie stays httpOnly.
+Redirect URLs. Open the link in the same browser that requested it. The
+dashboard renews the session server-side and stores its credentials in
+HTTP-only cookies. Sign-in lasts up to 30 days by default. Set
+`sessionMaxAgeSeconds` in `app/swarm/swarm.config.ts` to shorten it. Private
+Realtime uses the reader's session on the server and sends update
+notifications to the browser.
 
 ## Make it yours
 

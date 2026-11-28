@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { holdLive, isLiveHeld, onLiveHoldChange } from "../_lib/live";
-import { liveToken } from "../_lib/live-token";
 
 /**
  * Live updates for every swarm page. Mounted once in the layout, it listens
@@ -32,7 +31,6 @@ const POLL_MS = 60_000;
 /** Consecutive channel errors before settling on polling. */
 const GIVE_UP_AFTER = 3;
 /** Renew the private-mode token this long before it expires. */
-const RENEW_BEFORE_MS = 60_000;
 
 type Status = "connecting" | "live" | "reconnecting" | "polling";
 type Shown = Status | "held";
@@ -69,7 +67,7 @@ export function LiveRefresh({
   /** The publishable (anon) key; never the service-role key. */
   publishableKey: string;
   tables: readonly string[];
-  /** Private mode: authorise Realtime with the reader's session token. */
+  /** Private mode uses a same-origin stream instead of the browser Supabase connection. */
   withSession: boolean;
 }) {
   const router = useRouter();
@@ -85,7 +83,8 @@ export function LiveRefresh({
     let debounce: number | undefined;
     let firstChangeAt = 0;
     let poll: number | undefined;
-    let renew: number | undefined;
+    let stream: EventSource | null = null;
+    let reconnect: number | undefined;
     let client: RealtimeClient | null = null;
     let errors = 0;
     let wasDown = false;
@@ -128,7 +127,9 @@ export function LiveRefresh({
     };
 
     const shutDown = () => {
-      window.clearTimeout(renew);
+      window.clearTimeout(reconnect);
+      stream?.close();
+      stream = null;
       const closing = client;
       client = null;
       if (closing) void closing.removeAllChannels().finally(() => closing.disconnect());
@@ -141,40 +142,59 @@ export function LiveRefresh({
       startPolling();
     };
 
-    // Private mode: the token is Supabase's short-lived access token. Swap
-    // in a newer one if the reader signed in again; otherwise stop listening
-    // before it expires and poll, as the pages will ask them to sign in.
-    const scheduleRenew = (current: string, expiresAt: number) => {
-      window.clearTimeout(renew);
-      renew = window.setTimeout(
-        async () => {
-          const next = await liveToken().catch(() => null);
-          if (disposed || !client) return;
-          if (!next || next.token === current) return fallBack();
-          await client.setAuth(next.token);
-          scheduleRenew(next.token, next.expiresAt);
-        },
-        Math.max(0, expiresAt - Date.now() - RENEW_BEFORE_MS),
-      );
+    // Private mode receives only invalidation signals. The server owns the
+    // Supabase connection and renews cookies before opening the next stream.
+    const connectPrivate = () => {
+      if (disposed) return;
+      stream = new EventSource("/swarm/live");
+      stream.addEventListener("update", changed);
+      stream.addEventListener("ready", () => {
+        if (disposed) return;
+        errors = 0;
+        stopPolling();
+        setStatus("live");
+        if (wasDown) changed();
+        wasDown = false;
+      });
+      stream.addEventListener("expired", () => {
+        if (disposed) return;
+        shutDown();
+        window.location.replace("/swarm/sign-in?expired=1");
+      });
+      const failed = () => {
+        if (disposed || !stream) return;
+        stream.close();
+        stream = null;
+        errors += 1;
+        if (errors >= GIVE_UP_AFTER) return fallBack();
+        wasDown = true;
+        reconnect = window.setTimeout(connectPrivate, 1000);
+      };
+      stream.addEventListener("unavailable", failed);
+      stream.onerror = failed;
     };
 
+    const signingOut = () => {
+      disposed = true;
+      window.clearTimeout(debounce);
+      stopPolling();
+      shutDown();
+    };
+    window.addEventListener("rp-swarm-sign-out", signingOut);
     const unhold = onLiveHoldChange(resume);
     document.addEventListener("visibilitychange", resume);
 
     void (async () => {
       try {
+        if (withSession) {
+          if (typeof EventSource === "undefined") return fallBack();
+          return connectPrivate();
+        }
         if (watched.length === 0 || typeof WebSocket === "undefined") return fallBack();
-        const session = withSession ? await liveToken() : null;
-        if (disposed) return;
-        if (withSession && !session) return fallBack();
         // Loaded on demand, so pages do not wait for it.
         const { RealtimeClient: Client } = await import("@supabase/realtime-js");
         if (disposed) return;
         client = new Client(`${url}/realtime/v1`, { params: { apikey: publishableKey } });
-        if (session) {
-          await client.setAuth(session.token);
-          scheduleRenew(session.token, session.expiresAt);
-        }
         // `wait` makes the server confirm the postgres_changes subscription,
         // so a table missing from the publication reports CHANNEL_ERROR
         // instead of a silent "Live".
@@ -218,6 +238,7 @@ export function LiveRefresh({
       stopPolling();
       unhold();
       document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("rp-swarm-sign-out", signingOut);
       shutDown();
     };
   }, [publishableKey, router, tableKey, url, withSession]);

@@ -134,6 +134,8 @@ export type SwarmGraphRendererOptions = {
   theme?: Partial<SwarmGraphTheme>;
   /** Turns off ambient motion; event sparks and replay still show, without particles. */
   reducedMotion?: boolean;
+  /** Keep event animation but stop continuous ambient motion. */
+  calmMotion?: boolean;
   /** Pointer over a node (`null` when it leaves). `point` is relative to the container. */
   onHover?: (node: SwarmNode | null, point: { x: number; y: number } | null) => void;
   onSelect?: (node: SwarmNode) => void;
@@ -434,7 +436,7 @@ export const MIN_LABEL_PX = 11;
 const radiusOf = (n: SwarmNode, effort: number, scale = 1, sector = SECTOR_RADIUS) => {
   switch (n.kind) {
     case 'hub':
-      return 26;
+      return 20;
     case 'sector':
       // Grows with effort, inside the bounded range (the default: 26 to 40).
       return (
@@ -483,6 +485,7 @@ export const createSwarmGraph = (
 ): SwarmGraphRenderer => {
   const theme = { ...DEFAULT_THEME, ...options.theme };
   const motion = !options.reducedMotion;
+  const ambientMotion = motion && !options.calmMotion;
   /** Icons are looked up once per agent id: the host's mapping is pure. */
   const iconCache = new Map<string, SwarmAgentIcon | null>();
   const iconOf = (n: SwarmNode) => {
@@ -1052,7 +1055,7 @@ export const createSwarmGraph = (
       .data(ringed, (n) => n.id)
       .join((enter) => {
         const c = enter.append('circle').attr('fill', 'none').attr('stroke-width', 1.5);
-        if (motion) {
+        if (ambientMotion) {
           c.append('animate')
             .attr('attributeName', 'stroke-opacity')
             .attr('values', '0.7;0;0.7')
@@ -1098,7 +1101,7 @@ export const createSwarmGraph = (
             .attr('fill', 'none')
             .attr('stroke-dasharray', '2 6')
             .attr('stroke-linecap', 'round');
-          if (motion)
+          if (ambientMotion)
             orbit
               .append('animateTransform')
               .attr('attributeName', 'transform')
@@ -1108,6 +1111,7 @@ export const createSwarmGraph = (
               .attr('dur', '40s')
               .attr('repeatCount', 'indefinite');
           inner.append('path').attr('class', 'sg-body');
+          inner.append('path').attr('class', 'sg-past').attr('fill', 'none');
           // Arrivals (and reduced motion) are posed per frame instead; see `stepLife`.
           const posed = (n: SimNode) => !motion || arrivals.has(n.id);
           g.filter(posed).attr('opacity', 1);
@@ -1244,6 +1248,7 @@ export const createSwarmGraph = (
       }
     });
 
+    drawPastEffort(groups);
     renderArcs(groups);
 
     groups
@@ -1274,7 +1279,7 @@ export const createSwarmGraph = (
       .data(sectors, (n) => n.id)
       .join((enter) => {
         const c = enter.append('circle').attr('opacity', 0);
-        if (motion)
+        if (ambientMotion)
           c.append('animate')
             .attr('attributeName', 'r')
             .attr('dur', '3.2s')
@@ -1291,7 +1296,7 @@ export const createSwarmGraph = (
           'values',
           n.active ? `${n.r * 2.4};${n.r * 3};${n.r * 2.4}` : `${n.r * 2.2};${n.r * 2.2}`,
         );
-        if (!motion || !n.active) el.attr('r', n.r * 2.2);
+        if (!ambientMotion || !n.active) el.attr('r', n.r * 2.2);
       });
 
     tags
@@ -1299,7 +1304,7 @@ export const createSwarmGraph = (
       .style('font-family', (n) => (n.kind === 'agent' ? theme.font : theme.monoFont))
       .attr('font-size', (n) =>
         n.kind === 'sector'
-          ? Math.max(MIN_LABEL_PX, Math.min(15, n.r * 0.5))
+          ? Math.max(MIN_LABEL_PX, Math.min(19, n.r * 0.55))
           : n.kind === 'agent'
             ? 12
             : MIN_LABEL_PX,
@@ -1588,13 +1593,9 @@ export const createSwarmGraph = (
       ).length;
       // What the number inside counts, so it is never a bare figure.
       const c = n.sector?.count;
-      const count =
-        c && c.value > 0
-          ? c.recent
-            ? `${c.unit} · ${c.recent} ${c.recentUnit ?? 'recent'}`
-            : c.unit
-          : null;
-      return [count, live ? `${live} live` : null].filter(Boolean).join(' · ');
+      const count = c && c.recent != null ? `${c.unit} · ${c.recent} ${c.recentUnit ?? 'recent'}` : c?.unit;
+      const score = n.sector?.score?.toLocaleString('en-US', { maximumFractionDigits: 2 });
+      return [score, n.sector?.version, count, live ? `${live} live` : 'idle'].filter(Boolean).join(' · ');
     }
     // The role, now that the node shows the agent's animal rather than a role letter (#200).
     if (n.kind === 'agent' && (n.active || n === hovered)) return n.agent?.role ?? '';
@@ -2058,6 +2059,22 @@ export const createSwarmGraph = (
     }
   };
 
+  const drawPastEffort = (groups: d3.Selection<SVGGElement, SimNode, SVGGElement, unknown>) => {
+    groups.select<SVGPathElement>('path.sg-past')
+      .attr('d', (node) => {
+        const dots = Math.min(24, node.pastAgents ?? 0);
+        const radius = node.r + 13;
+        return Array.from({ length: dots }, (_, i) => {
+          const angle = Math.PI * (1.05 + i * (0.9 / Math.max(1, dots - 1)));
+          return `M${Math.cos(angle) * radius},${Math.sin(angle) * radius}h0.01`;
+        }).join(' ');
+      })
+      .style('stroke', (node) => colorOf(node))
+      .attr('stroke-opacity', 0.6)
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-width', 3);
+  };
+
   /** Re-derive radii (effort changes during replay) without restarting the layout. */
   const resize = () => {
     for (const n of nodeById.values()) n.r = rOf(n);
@@ -2068,19 +2085,21 @@ export const createSwarmGraph = (
     tagGroups()
       .select<SVGTextElement>('text.sg-glyph')
       .filter((n) => n.kind === 'sector')
-      .attr('font-size', (n) => Math.max(MIN_LABEL_PX, Math.min(15, n.r * 0.5)));
+      .attr('font-size', (n) => Math.max(MIN_LABEL_PX, Math.min(19, n.r * 0.55)));
     countUp();
-    renderArcs(gNodes.selectAll<SVGGElement, SimNode>('g.sg-node'));
+    const groups = gNodes.selectAll<SVGGElement, SimNode>('g.sg-node');
+    drawPastEffort(groups);
+    renderArcs(groups);
     gBloom
       .selectAll<SVGCircleElement, SimNode>('circle')
-      .filter((n) => !motion || !n.active)
+      .filter((n) => !ambientMotion || !n.active)
       .attr('r', (n) => n.r * 2.2);
     layoutLabels();
   };
 
   /** Live agents stream effort into what they are on: their branch's worktree, or the PR they gate. */
   const ambient = (now: number) => {
-    if (!motion || replayOverride) return;
+    if (!ambientMotion || replayOverride) return;
     for (const l of simLinks) {
       if (!l.active || l.kind !== 'assignment') continue;
       const last = lastEmit.get(l.id) ?? 0;
@@ -2230,7 +2249,7 @@ export const createSwarmGraph = (
           .attr('opacity', t < 0.15 ? t / 0.15 : 1 - Math.max(0, (t - 0.55) / 0.45));
       });
 
-    if (motion && !intro) {
+    if (ambientMotion && !intro) {
       dashOffset = (dashOffset - 0.4) % 1000;
       gLinks
         .selectAll<SVGPathElement, SimLink>('path')

@@ -1,5 +1,7 @@
+import { swarmConfig } from "../swarm.config";
 import type { Metadata } from "next";
 
+import { DeliveryBar } from "../_components/charts";
 import { IssuePr, TargetChip } from "../_components/chips";
 import { FleetGraph } from "../_components/fleet-graph";
 import { RoleTag } from "../_components/role";
@@ -24,9 +26,11 @@ export default async function FleetPage() {
         lede={`Where the swarm's effort goes, live, with a replay of its whole history. Below it, every ${word("session")} working now and seen in the last two hours, with its latest progress note.`}
       />
       <QueryErrors errors={failed} />
+      {graph.delivery ? <DeliveryBar delivery={graph.delivery} /> : null}
       <FleetGraph
         input={graph.input}
-        note={graph.githubNote ? `GitHub is not shown: ${graph.githubNote}` : null}
+        note={graph.githubNote}
+        extraSectorIds={swarmConfig.fleetSectors?.map(({ id }) => id)}
         repoUrl={githubRepoUrl()}
       />
       {fleet.length === 0 ? (

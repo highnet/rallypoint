@@ -143,7 +143,16 @@ export type SwarmNavItem = {
   icon?: NavIconName;
 };
 
+export type FleetSector = {
+  id: string;
+  name?: string;
+  color?: string;
+  match: { labels?: string[]; paths?: string[] };
+};
+
 export type SwarmConfig = {
+  /** Additional fleet groups. Paths support repository-relative glob patterns. */
+  fleetSectors?: FleetSector[];
   project: { name: string; tagline: string };
   goal: { title: string; statement: string };
   measure: {

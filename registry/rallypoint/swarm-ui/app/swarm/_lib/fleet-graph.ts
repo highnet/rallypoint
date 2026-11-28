@@ -25,6 +25,8 @@
  * there is (at least the integration branch and the targets).
  */
 
+import { matchesGlob } from "node:path";
+
 import { rallypointBranch } from "../_graph/model";
 import type {
   SwarmAgent,
@@ -36,7 +38,7 @@ import type {
   SwarmStage,
   SwarmWorkItem,
 } from "../_graph/model";
-import type { SwarmTarget } from "./config-types";
+import type { FleetSector, SwarmTarget } from "./config-types";
 import { laneOf, targetsOf, type GithubItem } from "./github";
 import type {
   BuriedRow,
@@ -62,6 +64,8 @@ export type FleetGraphSource = {
   branchPrefix?: string;
   /** Configured targets first, then any found in data (`resolveTargets`). */
   targets: SwarmTarget[];
+  fleetSectors?: FleetSector[];
+  changedPaths?: ReadonlyMap<number, string[]>;
   sessions: SessionRow[];
   progress: ProgressRow[];
   results: ResultRow[];
@@ -101,13 +105,23 @@ export function stageOf(item: GithubItem): SwarmStage {
   return item.stateReason === "not_planned" ? "closed" : "merged";
 }
 
+export function fleetLabelSector(item: GithubItem, targetIds: ReadonlySet<string>, extra: FleetSector[]) {
+  const target = targetsOf(item).find((id) => targetIds.has(id));
+  return target ?? extra.find((sector) => item.labels.some(({ name }) => sector.match.labels?.includes(name)))?.id;
+}
+
 export function toSwarmInput(source: FleetGraphSource): SwarmInput {
   const { now, github } = source;
   const prefix = source.branchPrefix ?? "agent/";
 
   /* ── Sectors: the targets, and a fallback for untargeted work ── */
-  const targetIds = new Set(source.targets.map((target) => target.id));
-  const fallback = source.targets.length === 1 ? source.targets[0]!.id : OTHER_SECTOR;
+  const extra = new Map(
+    (source.fleetSectors ?? [])
+      .filter((sector) => sector.id !== OTHER_SECTOR && !source.targets.some((target) => target.id === sector.id))
+      .map((sector) => [sector.id, sector]),
+  );
+  const targetIds = new Set([...source.targets.map((target) => target.id), ...extra.keys()]);
+  const fallback = source.targets.length === 1 && !extra.size ? source.targets[0]!.id : OTHER_SECTOR;
   let usesOther = false;
   const known = (id: string | null | undefined) => (id && targetIds.has(id) ? id : null);
   const orFallback = (id: string | null) => {
@@ -131,10 +145,8 @@ export function toSwarmInput(source: FleetGraphSource): SwarmInput {
   const workItems: SwarmWorkItem[] = [];
   const workByIssue = new Map<number, string>();
   const workByPr = new Map<number, string>();
-  const itemsByNumber = new Map<number, GithubItem>();
 
   if (github) {
-    for (const item of github) itemsByNumber.set(item.number, item);
     const issues = github.filter((item) => !item.isPullRequest);
     const issueNumbers = new Set(issues.map((item) => item.number));
     const prs = github.filter((item) => item.isPullRequest);
@@ -143,21 +155,34 @@ export function toSwarmInput(source: FleetGraphSource): SwarmInput {
       prs
         .filter((pr) => pr.closes.includes(issue) && (pr.state === "open" || pr.mergedAt))
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-    const sectorOf = (item: GithubItem, pr?: GithubItem) =>
-      orFallback(
-        known(targetsOf(item)[0]) ??
-          (pr ? known(targetsOf(pr)[0]) : null) ??
-          (item.isPullRequest ? targetOfPr.get(item.number) : targetOfIssue.get(item.number)) ??
-          (pr ? targetOfPr.get(pr.number) : undefined) ??
-          null,
+    const explicitSector = (item: GithubItem) =>
+      fleetLabelSector(item, targetIds, [...extra.values()]);
+    const sectorOf = (item: GithubItem, pr?: GithubItem) => {
+      const pull = item.isPullRequest ? item : pr;
+      const paths = pull ? source.changedPaths?.get(pull.number) ?? [] : [];
+      return orFallback(
+        explicitSector(item) ??
+        (pr ? explicitSector(pr) : null) ??
+        [...extra.values()].find((sector) =>
+          sector.match.paths?.some((pattern) => paths.some((path) => matchesGlob(path, pattern))),
+        )?.id ??
+        (item.isPullRequest ? targetOfPr.get(item.number) : targetOfIssue.get(item.number)) ??
+        (pr ? targetOfPr.get(pr.number) : undefined) ??
+        null,
       );
-    const delivered = new Set<number>();
+    };
+    const delivered = new Map<number, number>();
     for (const issue of issues) {
       const pr = prFor(issue.number);
-      if (pr) delivered.add(pr.number);
       const id = `issue-${issue.number}`;
       workByIssue.set(issue.number, id);
-      if (pr) workByPr.set(pr.number, id);
+      if (pr) {
+        const order = pr.closes.indexOf(issue.number);
+        if (order < (delivered.get(pr.number) ?? Infinity)) {
+          delivered.set(pr.number, order);
+          workByPr.set(pr.number, id);
+        }
+      }
       workItems.push({
         id,
         sector: sectorOf(issue, pr),
@@ -442,17 +467,36 @@ export function toSwarmInput(source: FleetGraphSource): SwarmInput {
     }
   }
 
+  const latestByTarget = <Row extends { target: string | null; created_at: string }>(rows: Row[]) => {
+    const latest = new Map<string, Row>();
+    for (const row of rows) {
+      if (row.target && row.created_at > (latest.get(row.target)?.created_at ?? "")) latest.set(row.target, row);
+    }
+    return latest;
+  };
+  const latestVersion = latestByTarget(source.versions);
+  const latestScore = latestByTarget(source.results.filter((row) => row.passed && row.candidate_score != null));
   const sectors: SwarmSector[] = source.targets.map((target) => ({
     id: target.id,
     label: target.name,
     color: target.color,
+    score: latestVersion.get(target.id)?.score ?? latestScore.get(target.id)?.candidate_score ?? null,
+    version: latestVersion.get(target.id)?.version ?? null,
     count: counts.get(target.id) ?? (github || source.versions.length > 0 ? zero(github ? "merged" : source.shippedUnit ?? "shipped") : null),
   }));
+  for (const sector of extra.values()) {
+    sectors.push({
+      id: sector.id,
+      label: sector.name ?? sector.id,
+      color: sector.color,
+      count: counts.get(sector.id) ?? (github ? zero("merged") : null),
+    });
+  }
   if (usesOther) {
     sectors.push({
       id: OTHER_SECTOR,
       // The only sector when no target is configured or recorded: the whole codebase.
-      label: source.targets.length === 0 ? "Codebase" : "Other",
+      label: source.targets.length === 0 && !extra.size ? "Codebase" : "Other",
       color: "var(--rp-ink-soft)",
       count: counts.get(OTHER_SECTOR) ?? (github ? zero("merged") : null),
     });

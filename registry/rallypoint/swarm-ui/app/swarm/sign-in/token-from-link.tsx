@@ -1,36 +1,37 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 
-import { acceptMagicLinkToken } from "./actions";
+import { renewReaderSession } from "../_lib/live-token";
 
-/** Reads a magic link's `#access_token=…` fragment and hands it to the server. */
-export function TokenFromLink() {
-  const router = useRouter();
-  const [working, startWorking] = useTransition();
+export function SessionRecovery() {
+  const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    const token = hash.get("access_token");
-    if (!token) return;
-    window.history.replaceState(null, "", window.location.pathname);
-    startWorking(async () => {
-      const result = await acceptMagicLinkToken(token, Number(hash.get("expires_in") ?? 3600));
-      if (result.ok) router.replace("/swarm");
+    let current = true;
+    void renewReaderSession().then((status) => {
+      if (!current) return;
+      if (status === "ok") window.location.reload();
+      else if (status === "expired") window.location.replace("/swarm/sign-in?expired=1");
       else setFailed(true);
+    }).catch(() => {
+      if (current) setFailed(true);
     });
-  }, [router]);
+    return () => { current = false; };
+  }, [attempt]);
 
-  // With Cache Components this page can stay mounted, hidden, after you
-  // leave it. Drop a stale "expired" notice so a later visit starts clean.
-  useLayoutEffect(() => () => setFailed(false), []);
-
-  if (!working && !failed) return null;
   return (
-    <p aria-live="polite" className="rp-panel" role="status">
-      {working ? "Signing you in…" : "That link has expired or was already used. Request a new one."}
-    </p>
+    <div className="rp-panel">
+      <p aria-live="polite" role="status">
+        {failed ? "Could not renew your session. Try again in a moment." : "Restoring your sign-in…"}
+      </p>
+      {failed ? (
+        <button className="rp-button" onClick={() => { setFailed(false); setAttempt(attempt + 1); }} type="button">
+          Try again
+        </button>
+      ) : null}
+      <noscript><a href="/swarm/sign-in">Go to sign-in</a></noscript>
+    </div>
   );
 }

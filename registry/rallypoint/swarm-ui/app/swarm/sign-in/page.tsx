@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { Fix, Gate, PageHead, Panel } from "../_components/states";
 import { signInGuidance } from "../_lib/guidance";
-import { isSignedIn } from "../_lib/queries";
+import { EMAIL_COOKIE } from "../_lib/session";
+import { getSwarmContext, isSignedIn } from "../_lib/queries";
 import { readSupabaseEnv } from "../_lib/supabase";
 import { swarmConfig } from "../swarm.config";
 import { requestMagicLink, signInWithPassword } from "./actions";
 import { SignOut } from "./sign-out";
-import { TokenFromLink } from "./token-from-link";
+import { SessionRecovery } from "./token-from-link";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -19,8 +22,13 @@ export default async function SignInPage({
   const params = await searchParams;
   const { missing } = readSupabaseEnv();
   if (missing.length > 0) return <Gate context={{ state: "unconfigured", missing }} />;
-  const error = typeof params.error === "string" ? params.error : null;
+  if (typeof params.code === "string") redirect(`/swarm/sign-in/callback?code=${encodeURIComponent(params.code)}`);
+  const error = typeof params.error === "string" ? params.error
+    : params.expired === "1" ? "Your session expired. Sign in again." : null;
   const sent = params.sent === "1";
+
+  const context = await getSwarmContext();
+  if (context.state === "recover") return <SessionRecovery />;
 
   if (await isSignedIn()) {
     return (
@@ -31,13 +39,13 @@ export default async function SignInPage({
     );
   }
 
+  const email = (await cookies()).get(EMAIL_COOKIE)?.value ?? "";
   return (
     <>
       <PageHead
         title="Sign in"
         lede={`${swarmConfig.project.name} is private. Sign in with the account your team added in Supabase Auth.`}
       />
-      <TokenFromLink />
       {error ? (
         <Fix guidance={signInGuidance(error)} />
       ) : null}
@@ -51,7 +59,7 @@ export default async function SignInPage({
           <h2>Email and password</h2>
           <label>
             Email
-            <input autoComplete="email" name="email" required type="email" />
+            <input autoComplete="email" defaultValue={email} name="email" required type="email" />
           </label>
           <label>
             Password
@@ -65,7 +73,7 @@ export default async function SignInPage({
           <h2>Magic link</h2>
           <label>
             Email
-            <input autoComplete="email" name="email" required type="email" />
+            <input autoComplete="email" defaultValue={email} name="email" required type="email" />
           </label>
           <button className="rp-button rp-button-quiet" type="submit">
             Email me a link

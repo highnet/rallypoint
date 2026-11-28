@@ -431,6 +431,12 @@ if (process.features.typescript) {
   register(
     `data:text/javascript,${encodeURIComponent(`
       export async function resolve(specifier, context, next) {
+        if (specifier === "next/headers" && context.parentURL?.includes("/swarm/_lib/")) {
+          return { url: "data:text/javascript,export const cookies = async () => globalThis.sessionCookies;", shortCircuit: true };
+        }
+        if (specifier === "../swarm.config" && context.parentURL?.endsWith("/_lib/session.ts")) {
+          return { url: "data:text/javascript,export const swarmConfig = { sessionMaxAgeSeconds: 86400 };", shortCircuit: true };
+        }
         try {
           return await next(specifier, context);
         } catch (error) {
@@ -534,6 +540,72 @@ if (process.features.typescript) {
     assert.deepEqual(memoryOnly.workItems.map((w) => [w.id, w.stage, w.sector]), [["issue-9", "claimed", "main"]], "the one target takes untargeted work");
     assert.deepEqual(memoryOnly.sectors[0].count, { value: 1, unit: "shipped", recent: 1, recentUnit: "today" });
     assert.ok(memoryOnly.events.some((e) => e.id === "version:1"));
+  });
+
+  await test("reader sessions persist, rotate in one exchange, clear on refusal and revoke on sign-out", async () => {
+    const { startReaderSession, ensureReaderSession, endReaderSession, EMAIL_COOKIE, REFRESH_COOKIE } = await ui("_lib/session.ts");
+    const { TOKEN_COOKIE } = await ui("_lib/supabase.ts");
+    const originalFetch = globalThis.fetch;
+    const previousEnv = { ...process.env };
+    const jar = new Map();
+    const writes = [];
+    globalThis.sessionCookies = {
+      get: (name) => jar.has(name) ? { value: jar.get(name) } : undefined,
+      set: (name, value, options) => {
+        writes.push({ name, options });
+        if (options.maxAge === 0) jar.delete(name);
+        else jar.set(name, value);
+      },
+    };
+    const jwt = (seconds) => `test.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + seconds })).toString("base64url")}.test`;
+    const calls = [];
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL = "https://auth.test";
+      process.env.NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY = "publishable";
+      globalThis.fetch = async (url, request) => {
+        calls.push({ url: String(url), request });
+        if (String(url).includes("/logout")) return new Response(null, { status: 204 });
+        assert.match(String(url), /grant_type=refresh_token/);
+        const { refresh_token: refresh } = JSON.parse(request.body);
+        return refresh === "revoked"
+          ? Response.json({ message: "refresh refused" }, { status: 400 })
+          : Response.json({ access_token: jwt(3600), refresh_token: "rotated" });
+      };
+      await startReaderSession({ token: jwt(70), refreshToken: "initial" }, "reader@example.org");
+      for (const name of [TOKEN_COOKIE, REFRESH_COOKIE]) {
+        const { options } = writes.find((write) => write.name === name);
+        assert.deepEqual(options, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 86400 });
+      }
+      assert.equal(jar.get(EMAIL_COOKIE), "reader@example.org");
+      assert.equal((await ensureReaderSession()).status, "ok");
+      assert.equal(calls.length, 0);
+      jar.set(TOKEN_COOKIE, jwt(59));
+      const renewed = await Promise.all([ensureReaderSession(), ensureReaderSession()]);
+      assert.equal(calls.length, 1);
+      assert.equal(renewed[0].status, "ok");
+      assert.deepEqual(renewed[0], renewed[1]);
+      assert.equal(jar.get(REFRESH_COOKIE), "rotated");
+      jar.set(TOKEN_COOKIE, jwt(-1));
+      jar.set(REFRESH_COOKIE, "revoked");
+      assert.equal((await ensureReaderSession()).status, "expired");
+      assert.equal(jar.has(TOKEN_COOKIE), false);
+      assert.equal(jar.has(REFRESH_COOKIE), false);
+
+      const current = jwt(3600);
+      await startReaderSession({ token: current, refreshToken: "new" });
+      await endReaderSession();
+      assert.match(calls.at(-1).url, /\/logout\?scope=local/);
+      assert.equal(calls.at(-1).request.headers.Authorization, `Bearer ${current}`);
+      assert.deepEqual([...jar.keys()], [EMAIL_COOKIE]);
+    } finally {
+      globalThis.fetch = originalFetch;
+      delete globalThis.sessionCookies;
+      for (const key of ["NODE_ENV", "NEXT_PUBLIC_RALLYPOINT_SUPABASE_URL", "NEXT_PUBLIC_RALLYPOINT_SUPABASE_KEY"]) {
+        if (previousEnv[key] === undefined) delete process.env[key];
+        else process.env[key] = previousEnv[key];
+      }
+    }
   });
 
   const { ANIMALS, animalOf, assignAnimals, preferredAnimalIndex } = await ui("_lib/animals.ts");

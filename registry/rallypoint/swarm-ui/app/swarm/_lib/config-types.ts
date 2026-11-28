@@ -144,6 +144,8 @@ export type SwarmNavItem = {
 };
 
 export type SwarmConfig = {
+  /** Maximum remembered sign-in lifetime, in seconds. Default 30 days. */
+  sessionMaxAgeSeconds?: number;
   project: { name: string; tagline: string };
   goal: { title: string; statement: string };
   measure: {

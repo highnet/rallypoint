@@ -515,6 +515,10 @@
           "target": "app/swarm/_lib/live-token.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/_lib/session.ts",
+          "target": "app/swarm/_lib/session.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/live.ts",
           "target": "app/swarm/_lib/live.ts"
         },
@@ -669,6 +673,14 @@
         {
           "source": "swarm-ui/app/swarm/sign-in/page.tsx",
           "target": "app/swarm/sign-in/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/callback/route.ts",
+          "target": "app/swarm/sign-in/callback/route.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/live/route.ts",
+          "target": "app/swarm/live/route.ts"
         },
         {
           "source": "swarm-ui/app/swarm/sign-in/sign-out.tsx",
@@ -845,6 +857,10 @@
           "target": "swarm-ui/app/swarm/_lib/live-token.ts"
         },
         {
+          "source": "swarm-ui/app/swarm/_lib/session.ts",
+          "target": "swarm-ui/app/swarm/_lib/session.ts"
+        },
+        {
           "source": "swarm-ui/app/swarm/_lib/live.ts",
           "target": "swarm-ui/app/swarm/_lib/live.ts"
         },
@@ -999,6 +1015,14 @@
         {
           "source": "swarm-ui/app/swarm/sign-in/page.tsx",
           "target": "swarm-ui/app/swarm/sign-in/page.tsx"
+        },
+        {
+          "source": "swarm-ui/app/swarm/sign-in/callback/route.ts",
+          "target": "swarm-ui/app/swarm/sign-in/callback/route.ts"
+        },
+        {
+          "source": "swarm-ui/app/swarm/live/route.ts",
+          "target": "swarm-ui/app/swarm/live/route.ts"
         },
         {
           "source": "swarm-ui/app/swarm/sign-in/sign-out.tsx",

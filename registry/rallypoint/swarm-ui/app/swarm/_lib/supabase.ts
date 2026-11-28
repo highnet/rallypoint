@@ -174,7 +174,10 @@ export async function countRows(
 
 /* ───────────── Supabase Auth (private mode). Reads and session only. ───────────── */
 
-export type AuthResult = { ok: true; token: string; expiresIn: number } | { ok: false; message: string };
+export type AuthSession = { token: string; refreshToken: string; email?: string };
+export type AuthResult =
+  | { ok: true; session: AuthSession }
+  | { ok: false; message: string; refused: boolean };
 
 function authMessage(body: unknown, fallback: string): string {
   if (body && typeof body === "object") {
@@ -186,33 +189,47 @@ function authMessage(body: unknown, fallback: string): string {
   return fallback;
 }
 
-/** `POST /auth/v1/token?grant_type=password` */
-export async function passwordSignIn(email: string, password: string): Promise<AuthResult> {
+async function exchangeSession(
+  grant: "password" | "refresh_token" | "pkce",
+  credentials: Record<string, string>,
+): Promise<AuthResult> {
   const { env } = readSupabaseEnv();
-  if (!env) return { ok: false, message: "Supabase env is not set." };
+  if (!env) return { ok: false, message: "Supabase env is not set.", refused: false };
   try {
-    const res = await fetch(`${env.url}/auth/v1/token?grant_type=password`, {
+    const res = await fetch(`${env.url}/auth/v1/token?grant_type=${grant}`, {
       method: "POST",
       headers: { apikey: env.key, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(credentials),
       cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
     });
-    const body = (await res.json().catch(() => null)) as
-      | { access_token?: string; expires_in?: number }
-      | null;
-    if (!res.ok || !body?.access_token) {
-      return { ok: false, message: authMessage(body, "Sign-in failed.") };
+    const body = (await res.json().catch(() => null)) as {
+      access_token?: string;
+      refresh_token?: string;
+      user?: { email?: string };
+    } | null;
+    if (!res.ok || !body?.access_token || !body.refresh_token) {
+      return {
+        ok: false,
+        message: authMessage(body, "Sign-in failed."),
+        refused: [400, 401, 403, 404, 422].includes(res.status),
+      };
     }
-    return { ok: true, token: body.access_token, expiresIn: body.expires_in ?? 3600 };
+    return { ok: true, session: { token: body.access_token, refreshToken: body.refresh_token, email: body.user?.email } };
   } catch {
-    return { ok: false, message: "Could not reach Supabase Auth." };
+    return { ok: false, message: "Could not reach Supabase Auth.", refused: false };
   }
 }
+
+export const passwordSignIn = (email: string, password: string) => exchangeSession("password", { email, password });
+export const refreshSession = (refresh_token: string) => exchangeSession("refresh_token", { refresh_token });
+export const exchangeCode = (auth_code: string, code_verifier: string) => exchangeSession("pkce", { auth_code, code_verifier });
 
 /** `POST /auth/v1/otp`: sends a magic link to an existing user. */
 export async function sendMagicLink(
   email: string,
   redirectTo: string,
+  codeChallenge: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const { env } = readSupabaseEnv();
   if (!env) return { ok: false, message: "Supabase env is not set." };
@@ -222,7 +239,7 @@ export async function sendMagicLink(
       {
         method: "POST",
         headers: { apikey: env.key, "Content-Type": "application/json" },
-        body: JSON.stringify({ email, create_user: false }),
+        body: JSON.stringify({ email, create_user: false, code_challenge: codeChallenge, code_challenge_method: "s256" }),
         cache: "no-store",
       },
     );
@@ -236,17 +253,14 @@ export async function sendMagicLink(
   }
 }
 
-/** `GET /auth/v1/user`: true when the access token is valid. */
-export async function verifyToken(token: string): Promise<boolean> {
+/** Revoke only the current browser's Supabase session. */
+export async function revokeSession(token: string): Promise<void> {
   const { env } = readSupabaseEnv();
-  if (!env) return false;
-  try {
-    const res = await fetch(`${env.url}/auth/v1/user`, {
-      headers: { apikey: env.key, Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  if (!env) return;
+  await fetch(`${env.url}/auth/v1/logout?scope=local`, {
+    method: "POST",
+    headers: headers(env, token),
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
 }

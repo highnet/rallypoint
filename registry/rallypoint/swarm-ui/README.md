@@ -158,7 +158,15 @@ Words, target names and colours, and the navigation come from
 Set `visibility` to `"private"` (`npx rallypoint swarm init`, or the
 `swarm_settings` row). RLS then hides every table from the anon key, and the
 pages show a sign-in link. `/swarm/sign-in` signs in through Supabase Auth's
-REST API (email and password, or a magic link) in a server action and keeps
-the access token in an httpOnly, sameSite=lax cookie `rp-swarm-token`
-(secure in production). Sign-out clears it. Add users in Supabase Auth; for
-magic links, add `https://<your-host>/swarm/sign-in` to Auth's Redirect URLs.
+REST API (email and password, or a magic link). The dashboard keeps the
+access and refresh tokens in HTTP-only cookies and renews them on the server.
+The default remembered lifetime is 30 days. Set `sessionMaxAgeSeconds` in
+`swarm.config.ts` if your project uses a shorter session lifetime. Sign-out
+revokes the current Supabase session and clears the session cookies. The
+remembered email can still prefill the sign-in form.
+
+Add users in Supabase Auth. For magic links, add
+`https://<your-host>/swarm/sign-in` to Auth's Redirect URLs. The link must be
+opened in the browser that requested it, which holds the PKCE verifier.
+Private Realtime uses a same-origin event stream that carries only update
+notifications.

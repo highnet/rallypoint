@@ -14,6 +14,7 @@ import {
 } from "../_lib/guidance";
 import type { SwarmContext } from "../_lib/queries";
 import type { ReadError } from "../_lib/supabase";
+import { SessionRecovery } from "../sign-in/token-from-link";
 import { CopyButton } from "./copy";
 
 export function PageHead({ title, lede, children }: { title: string; lede?: ReactNode; children?: ReactNode }) {
@@ -177,6 +178,7 @@ RALLYPOINT_GITHUB_TOKEN=<read-only token>  # private repos, rate limits`;
 
 /** What every page renders when memory cannot be read yet. */
 export function Gate({ context }: { context: Exclude<SwarmContext, { state: "ok" }> }) {
+  if (context.state === "recover") return <SessionRecovery />;
   if (context.state === "unconfigured") {
     return (
       <Fix guidance={supabaseMissingGuidance(context.missing)} tone="plain">

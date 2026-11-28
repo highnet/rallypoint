@@ -990,7 +990,7 @@ try {
       await rp(["add", "swarm", "--force"]);
       assert.equal(await readFile(configPath, "utf8"), edited);
       for (const skill of ["agent", "conductor", "genesis", "steward", "strategist"]) {
-        const manifest = await readFile(resolve(fixture, ".agents/skills", `swarm-${skill}`, "SKILL.md"), "utf8");
+        const manifest = (await readFile(resolve(fixture, ".agents/skills", `swarm-${skill}`, "SKILL.md"), "utf8")).replace(/\r\n/g, "\n");
         assert.ok(manifest.startsWith(`---\nname: swarm-${skill}\ndescription: "`));
         assert.match(manifest, /\n---\n/);
       }

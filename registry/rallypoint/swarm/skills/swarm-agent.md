@@ -24,6 +24,10 @@ swarm next            # or: swarm next <target>, swarm next --only merger,review
 
 It prints `ROLE`, `TARGET` and the files to `READ`. Read every file it names
 completely, then do exactly that role, as the vanilla role prompt describes.
+For an exact dispatch, pass the provided `--only <role>` and `--issue <N>`
+or `--pr <N>` to `swarm next`. Stop if that work is unavailable. For an
+exact worker dispatch, claim that same issue with `claim.mjs --issue <N>`.
+
 The order is finish-first: merger → fixer → reviewer → improver → worker →
 planner → janitor. Exit code `4` means nothing waits for you: leave a retro
 and stop.

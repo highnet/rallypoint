@@ -30,7 +30,7 @@ process.env.no_proxy = process.env.NO_PROXY;
 const { createTransport, UnsupportedCommand, ApiError, applyJq } = await import(
   pathToFileURL(resolve(libDir, "api.mjs")).href
 );
-const { chooseTransport, chooseGitData, isCloudSession, isGraphqlBlocked, withGraphqlFallback, resolveTransport } =
+const { chooseTransport, chooseGitData, isCloudSession, isGraphqlBlocked, isGitHubApiHostDenied, withGraphqlFallback, resolveTransport } =
   await import(pathToFileURL(resolve(libDir, "gh.mjs")).href);
 const {
   coordinationRefs,
@@ -153,10 +153,15 @@ await test("isCloudSession and isGraphqlBlocked", () => {
   assert.equal(isCloudSession({ CLAUDE_CODE_REMOTE: "TRUE" }), true);
   assert.equal(isCloudSession({}), false);
   assert.equal(isGraphqlBlocked(ghFailure(GRAPHQL_403)), true);
+  assert.equal(isGraphqlBlocked(ghFailure('Post "https://api.github.com/graphql": Forbidden')), true);
+  assert.equal(isGraphqlBlocked(ghFailure('Get "https://api.github.com/user": Forbidden')), false);
   assert.equal(isGraphqlBlocked(ghFailure("HTTP 403: Forbidden (https://api.github.com/graphql)")), true);
   assert.equal(isGraphqlBlocked(ghFailure("HTTP 403: Resource not accessible by integration (https://api.github.com/repos/a/b)")), false);
   assert.equal(isGraphqlBlocked(ghFailure("HTTP 422: Reference already exists")), false);
   assert.equal(isGraphqlBlocked(undefined), false);
+  assert.equal(isGitHubApiHostDenied(ghFailure('Get "https://api.github.com/user": Forbidden')), true);
+  assert.equal(isGitHubApiHostDenied(ghFailure('Post "https://api.github.com/graphql": Forbidden')), false);
+  assert.equal(isGitHubApiHostDenied(ghFailure("HTTP 401: Bad credentials")), false);
 });
 
 await test("withGraphqlFallback: switches to REST for good on the GraphQL 403 and retries that call", () => {
@@ -166,7 +171,7 @@ await test("withGraphqlFallback: switches to REST for good on the GraphQL 403 an
   const transport = withGraphqlFallback({
     primary: (...args) => {
       primaryCalls.push(args);
-      if (args[0] === "pr") throw ghFailure(GRAPHQL_403);
+      if (args[0] === "pr") throw ghFailure('Post "https://api.github.com/graphql": Forbidden');
       return "from-gh";
     },
     fallback: () => {

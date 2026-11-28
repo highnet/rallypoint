@@ -52,8 +52,11 @@ session and uses the same lease, slot, budget and retro checks below.
    - `port-concepts`: dispatch the planner with the goal "port the
      best-evidenced concept to the targets that have not tried it".
    - `balanced`: plain finish-first order, spread across targets.
-4. Make sure no two sessions get the same job, so a second conductor or the
-   next tick does not double-dispatch. Each role has its own guard:
+4. Before acquiring a lease, validate the chosen job and its instruction
+   files with `swarm dispatch --runtime <runtime> --role <role> --agent <unique role agent id> --dry-run`.
+   Add `--issue <N>` for a worker or `--pr <N>` for a merger, fixer or reviewer.
+   Add `--target <target>` if the job was chosen from a target queue.
+   If validation fails, do not lease the job. Each role has its own guard:
    - **merger, fixer, reviewer**: lease the pull request first,
      `node .rallypoint/scripts/lease.mjs --role <role> --pr <N> --agent-id <conductor id>`.
    - **planner, janitor**: lease the role,
@@ -72,18 +75,16 @@ session and uses the same lease, slot, budget and retro checks below.
    foreground and report the role process's exit code. Dispatch exits with
    `1` for any nonzero child exit. Reserve the slot
    from dispatch through completion. On local timeout or uncertain Cloud
-   submission or status, inspect the role before retrying. Use this prompt,
-   filled in:
-
-   > Repository: <owner/repo> (default branch <branch>).
-   > Read .rallypoint/swarm/skills/swarm-agent.md and follow it.
-   > Use <unique role agent ID> for swarm prepare and all role commands.
-   > Take your role with `swarm next <target> --only <role>`. Do that one role, log progress, leave a retro and report the session ID.
+   submission or status, inspect the role before retrying. Run the checked
+   command again without `--dry-run`. For a remote session launched from a
+   client UI, copy the dry run's generated prompt verbatim into the fresh
+   session on that branch.
 
    Verify the retro with `swarm retros --session <session ID> --limit 1 --json`
    before reusing the slot. If the role could not open a session, inspect
    its output for its doctor failure. If a hosted task is still running or
    its status is uncertain, keep its slot reserved.
+
 
 6. Count every dispatch against `budget`. At the budget, stop dispatching and
    say so.

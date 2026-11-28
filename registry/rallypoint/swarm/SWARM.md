@@ -38,7 +38,8 @@ requests, labels, reviews, merges. Swarm adds:
 | `.rallypoint/swarm/realtime.sql` | turns on live dashboard updates for a project on an older schema | no (frozen) |
 | `.rallypoint/swarm/skills/` | agent, conductor, strategist, steward, genesis, concepts | yes |
 | `.rallypoint/swarm/playbooks/` | one per target: what works, what failed, why | yes |
-| `.claude/skills/swarm-*/SKILL.md` | pointers so Claude Code finds the skills | no |
+| `.agents/skills/swarm-*/SKILL.md` | native skill entry points for Codex | no |
+| `.claude/skills/swarm-*/SKILL.md` | native skill entry points for Claude Code | no |
 
 ## Set up
 
@@ -77,7 +78,7 @@ requests, labels, reviews, merges. Swarm adds:
 4. Check everything: `npx rallypoint@latest swarm doctor`.
 5. **Genesis.** Paste into a coding agent on the repository:
 
-   > Run swarm genesis. Follow .claude/skills/swarm-genesis/SKILL.md. Pitch: <your pitch>.
+   > Run the native swarm-genesis skill. Pitch: <your pitch>.
 
    It first interviews you with interview-me (https://interviewme.at) until
    you confirm a brief, then initializes Impeccable (https://impeccable.style)
@@ -88,16 +89,34 @@ requests, labels, reviews, merges. Swarm adds:
    `npx rallypoint@latest swarm plan plan.json`.
 7. Start working. Either one session at a time:
 
-   > Run a swarm agent. Follow .claude/skills/swarm-agent/SKILL.md exactly.
+   > Run a swarm agent. Use the native swarm-agent skill and follow its shared Rallypoint instructions.
 
    or leave it running in Claude Code with `/loop /swarm-conductor`.
 
-For a hosted Codex session, allow HTTPS to `api.github.com`, `github.com`,
-`registry.npmjs.org`, and the hostname of `RALLYPOINT_SUPABASE_URL`. Set
-`RALLYPOINT_TRANSPORT=rest` when using a REST-only proxy. Bind the GitHub
-credential required by the configured transport, `RALLYPOINT_SUPABASE_KEY`,
-and `RALLYPOINT_SWARM_SECRET` in the environment secret settings. Verify the
-running session with `npx rallypoint swarm doctor` before starting a conductor.
+New installs register both sets of skills. For an existing install, review
+the new `loop` and `swarm` items with `rallypoint view`, then run
+`rallypoint add loop --force` and `rallypoint add swarm --force` to replace
+older installed runtime files. The swarm install preserves the existing
+`.rallypoint/swarm.json`.
+
+Start a fresh session in the project
+root after installation. Invoke `$swarm-genesis`, `$swarm-agent`, `$swarm-conductor`,
+`$swarm-steward`, or `$swarm-strategist` in Codex. In Claude Code, use a
+leading slash instead of a dollar sign. Both use the same instructions under
+`.rallypoint/swarm/skills/`.
+
+For Codex Cloud, bind these in the environment before dispatching:
+- Allow HTTPS to `api.github.com`, `github.com`, `registry.npmjs.org`, and the
+  host named by `RALLYPOINT_SUPABASE_URL`.
+- Set `RALLYPOINT_SUPABASE_URL`, and bind `RALLYPOINT_SUPABASE_KEY` and
+  `RALLYPOINT_SWARM_SECRET` as secrets. Keep credentials out of prompts.
+- Bind a GitHub credential for the checkout's repository with the permissions
+  the role needs. The GitHub CLI reads `GH_TOKEN`. REST accepts
+  `GH_TOKEN` or `GITHUB_TOKEN`. Set `RALLYPOINT_TRANSPORT=rest` for a known
+  REST-only proxy. Otherwise automatic mode tries REST if GraphQL is denied.
+- In the running checkout, run `npx rallypoint swarm doctor`. An API-host
+  denial points to the network policy. An authentication error points to
+  the bound GitHub credential.
 
 If the hosted shell uses an HTTPS proxy, enable Node's environment proxy
 support in that shell. Configure it in the Cloud environment as well if
@@ -122,6 +141,24 @@ role prompt on stdin. This allows an unattended worker to edit files and
 run tools such as Git and npm without permission prompts. Use it in a
 trusted, isolated checkout with only the credentials the role needs.
 
+### Validate one exact job
+
+Run the read-only check before acquiring a claim or lease. Use `--issue` for
+a worker and `--pr` for a reviewer, fixer, or merger. The selected runtime
+determines which native entry point the check requires.
+
+```bash
+npx rallypoint swarm dispatch --runtime claude-local --role worker --issue 12 --agent vienna-worker-12 --dry-run
+npx rallypoint swarm dispatch --runtime codex-local --role reviewer --pr 34 --agent vienna-reviewer-34 --dry-run
+```
+
+The check reads the named GitHub item, verifies it fits the role, and lists
+the instruction files it found. It neither starts a client nor reserves
+work. Acquire any role lease through `lease.mjs`, then run the same command
+without `--dry-run`. A worker claims its named issue from inside its role.
+After the foreground client exits, check the reported session with
+`swarm retros --session <session-id> --limit 1 --json` before dispatching again.
+
 ### Claude Code cloud
 
 Use Claude Code's remote-session tools to start one separate remote session
@@ -134,7 +171,9 @@ Install the Codex CLI, run `codex login`, and run
 `npx rallypoint swarm doctor --runtime codex-local`. Read
 `.rallypoint/swarm/skills/swarm-conductor.md` in the conductor session.
 Use `swarm dispatch --runtime codex-local --prompt "<role prompt>"` to run
-one foreground `codex exec --full-auto -` process from the repository root.
+one foreground `codex exec` process from the repository root. The launcher
+uses Codex's workspace-write sandbox and enables network access for GitHub
+and Swarm memory.
 
 Both local runtimes inherit your environment and stream output. The command
 reports the role process's exit code and returns `0` on success or `1` for

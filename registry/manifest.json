@@ -359,20 +359,40 @@
           "target": ".claude/skills/swarm-agent/SKILL.md"
         },
         {
+          "source": "swarm/claude/swarm-agent/SKILL.md",
+          "target": ".agents/skills/swarm-agent/SKILL.md"
+        },
+        {
           "source": "swarm/claude/swarm-conductor/SKILL.md",
           "target": ".claude/skills/swarm-conductor/SKILL.md"
+        },
+        {
+          "source": "swarm/claude/swarm-conductor/SKILL.md",
+          "target": ".agents/skills/swarm-conductor/SKILL.md"
         },
         {
           "source": "swarm/claude/swarm-strategist/SKILL.md",
           "target": ".claude/skills/swarm-strategist/SKILL.md"
         },
         {
+          "source": "swarm/claude/swarm-strategist/SKILL.md",
+          "target": ".agents/skills/swarm-strategist/SKILL.md"
+        },
+        {
           "source": "swarm/claude/swarm-steward/SKILL.md",
           "target": ".claude/skills/swarm-steward/SKILL.md"
         },
         {
+          "source": "swarm/claude/swarm-steward/SKILL.md",
+          "target": ".agents/skills/swarm-steward/SKILL.md"
+        },
+        {
           "source": "swarm/claude/swarm-genesis/SKILL.md",
           "target": ".claude/skills/swarm-genesis/SKILL.md"
+        },
+        {
+          "source": "swarm/claude/swarm-genesis/SKILL.md",
+          "target": ".agents/skills/swarm-genesis/SKILL.md"
         }
       ]
     },

@@ -143,25 +143,23 @@ const hasGh = (env = process.env) => {
 export const isCloudSession = (env = process.env) =>
   ["1", "true"].includes(String(env.CLAUDE_CODE_REMOTE ?? "").trim().toLowerCase());
 
-/**
- * Whether a failed `gh` call failed because GraphQL is blocked, rather than
- * for a reason that would fail over REST too. Matches the Claude Code proxy's
- * own words, and any `HTTP 403` from the GraphQL endpoint.
- *
- * @param {unknown} error
- */
-export const isGraphqlBlocked = (error) => {
-  const detail = /** @type {{ stderr?: unknown, stdout?: unknown, message?: unknown }} */ (
-    error ?? {}
-  );
-  const text = [detail.stderr, detail.stdout, detail.message]
-    .filter((part) => part !== undefined && part !== null)
-    .map(String)
-    .join("\n");
+const failureText = (error) => {
+  const detail = /** @type {{ stderr?: unknown, stdout?: unknown, message?: unknown }} */ (error ?? {});
+  return [detail.stderr, detail.stdout, detail.message].filter((part) => part != null).map(String).join("\n");
+};
 
+/** Detect the network proxy's bare denial, distinct from GitHub's auth responses. */
+export const isGitHubApiHostDenied = (error) =>
+  !isGraphqlBlocked(error) &&
+  /https:\/\/api\.github\.com(?:\/[^"\s']*)?["']?: Forbidden(?:\s|$)/i.test(failureText(error));
+
+/** Whether automatic transport should retry a call over REST. */
+export const isGraphqlBlocked = (error) => {
+  const text = failureText(error);
   return (
     /GraphQL is not available from Claude Code sessions/i.test(text) ||
-    (/HTTP 403/.test(text) && /graphql/i.test(text))
+    (/HTTP 403/.test(text) && /graphql/i.test(text)) ||
+    /https:\/\/api\.github\.com\/graphql["']?: Forbidden(?:\s|$)/i.test(text)
   );
 };
 
@@ -349,11 +347,11 @@ export const resolveTransport = ({
       onSwitch: () => {
         current = {
           kind: "rest",
-          reason: "`gh` was refused with HTTP 403 because GitHub GraphQL is blocked here",
+          reason: "`gh` was refused because GitHub GraphQL is blocked here",
         };
         if (!quiet) {
           console.error(
-            "rallypoint: `gh` cannot use GitHub GraphQL here (HTTP 403); " +
+            "rallypoint: `gh` cannot use GitHub GraphQL here; " +
               "using the REST transport for the rest of this command.",
           );
         }

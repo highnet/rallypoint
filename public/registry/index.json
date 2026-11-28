@@ -15,7 +15,7 @@
       "requires": [
         "loop"
       ],
-      "fileCount": 24
+      "fileCount": 29
     },
     {
       "name": "swarm-ui",

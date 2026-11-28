@@ -21,7 +21,7 @@ export default async function FleetPage() {
     <>
       <PageHead
         title="Fleet"
-        lede={`Where the swarm's effort goes, live, with a replay of its whole history. Below it, every ${word("session")} working now and seen in the last two hours, with its latest progress note.`}
+        lede={`Where the swarm's effort goes, live, with a replay of its whole history. Below it, every ${word("session")} working now and seen in the last ten minutes, with its latest progress note.`}
       />
       <QueryErrors errors={failed} />
       <FleetGraph
@@ -32,8 +32,8 @@ export default async function FleetPage() {
       {fleet.length === 0 ? (
         <Empty>
           Nobody is working right now. An {word("agent")} shows up here within seconds of opening a{" "}
-          {word("session")} with <code>npx rallypoint swarm prepare</code>, and drops off two hours after its last
-          progress note.
+          {word("session")} with <code>npx rallypoint swarm prepare</code>, and drops off ten minutes after its last
+          heartbeat.
         </Empty>
       ) : (
         <table className="rp-table rp-reflow">

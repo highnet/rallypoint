@@ -21,7 +21,7 @@ export const createMemory = ({ url, key, secret, fetchImpl = globalThis.fetch } 
   const configured = () => Boolean(base && key);
   const canWrite = () => configured() && Boolean(secret);
 
-  const request = async (path, { method = "GET", body, headers = {} } = {}) => {
+  const request = async (path, { method = "GET", body, headers = {}, signal } = {}) => {
     if (!configured()) {
       throw new MemoryError("memory is not configured: set RALLYPOINT_SUPABASE_URL and RALLYPOINT_SUPABASE_KEY");
     }
@@ -29,6 +29,7 @@ export const createMemory = ({ url, key, secret, fetchImpl = globalThis.fetch } 
     try {
       response = await fetchImpl(`${base}/rest/v1/${path}`, {
         method,
+        signal,
         headers: {
           apikey: key,
           Authorization: `Bearer ${key}`,
@@ -58,7 +59,7 @@ export const createMemory = ({ url, key, secret, fetchImpl = globalThis.fetch } 
     return data;
   };
 
-  const rpc = (fn, args) => request(`rpc/${fn}`, { method: "POST", body: args });
+  const rpc = (fn, args, signal) => request(`rpc/${fn}`, { method: "POST", body: args, signal });
 
   const requireSecret = () => {
     if (!secret) throw new MemoryError("writes need RALLYPOINT_SWARM_SECRET (agents only; never commit it)");
@@ -99,6 +100,8 @@ export const createMemory = ({ url, key, secret, fetchImpl = globalThis.fetch } 
     // {publication: boolean, missing: string[]}: which memory tables the
     // dashboard cannot hear live yet (schema.sql, "Realtime").
     realtimeStatus: () => rpc("swarm_realtime_status", {}),
+    heartbeat: (id, signal) => rpc("swarm_heartbeat", { p_secret: requireSecret(), p_session: id }, signal),
+    sweep: () => rpc("swarm_sweep", { p_secret: requireSecret() }),
     check: () => rpc("swarm_check", { p_secret: requireSecret() }),
     insert: (table, row) => rpc("swarm_write", { p_secret: requireSecret(), p_table: table, p_row: row }),
     update: (table, id, patch) =>

@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import { IssuePr, StatusTag, TargetChip } from "../_components/chips";
 import { RoleTag } from "../_components/role";
 import { Empty, FilterBar, Gate, PageHead, QueryErrors, TimeAgo } from "../_components/states";
+import { isLiveSession } from "../_lib/fleet-graph";
 import { cap, word } from "../_lib/format";
 import { getSessions, getSwarmContext } from "../_lib/queries";
 import type { SessionStatus } from "../_lib/types";
 
 export const metadata: Metadata = { title: cap(word("sessions")) };
 
-const STATUSES: SessionStatus[] = ["working", "ended", "abandoned"];
+const STATUSES: (SessionStatus | "silent")[] = ["working", "silent", "ended", "abandoned"];
 
 export default async function SessionsPage({
   searchParams,
@@ -20,7 +21,8 @@ export default async function SessionsPage({
   const status = STATUSES.find((entry) => entry === params.status);
   const context = await getSwarmContext();
   if (context.state !== "ok") return <Gate context={context} />;
-  const { sessions, errors } = await getSessions(status);
+  const now = Date.now();
+  const { sessions, errors } = await getSessions(status, now);
 
   return (
     <>
@@ -56,7 +58,9 @@ export default async function SessionsPage({
                 <RoleTag role={session.role} />
                 <TargetChip id={session.target} />
                 <IssuePr issue={session.issue} pr={session.pr} />
-                <StatusTag status={session.status} />
+                {session.status === "working" && !isLiveSession(session, now) ? (
+                  <span className="rp-tag">Silent since <TimeAgo at={session.last_seen_at ?? session.started_at} /></span>
+                ) : <StatusTag status={session.status} />}
                 <TimeAgo at={session.started_at} />
               </div>
               {session.summary ? <p>{session.summary}</p> : null}

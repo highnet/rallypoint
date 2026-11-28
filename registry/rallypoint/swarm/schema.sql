@@ -273,7 +273,7 @@ left join lateral (
   limit 1
 ) p on true
 where s.status = 'working'
-  and s.last_seen_at > now() - interval '2 hours'
+  and s.last_seen_at > now() - interval '10 minutes'
 order by s.last_seen_at desc;
 
 -- "Claim to close" is measured on worker sessions: from the session opening
@@ -291,7 +291,7 @@ with
       (select count(*) from public.swarm_sessions) as sessions,
       (select count(*) from public.swarm_progress) as progress,
       (select count(*) from public.swarm_sessions
-         where status = 'working' and last_seen_at > now() - interval '2 hours') as working
+         where status = 'working' and last_seen_at > now() - interval '10 minutes') as working
   )
 select
   coalesce((select value #>> '{}' from public.swarm_settings where key = 'protocol_version'), 'p1')
@@ -426,6 +426,42 @@ begin
   if p_secret is null or extensions.crypt(p_secret, stored) <> stored then
     raise exception 'invalid swarm secret' using errcode = '28P01';
   end if;
+end;
+$$;
+
+-- Heartbeats never revive an ended or swept session. Both writes test the
+-- current row in the UPDATE, so a sweep racing a heartbeat cannot overwrite
+-- a recently refreshed session.
+create or replace function public.swarm_heartbeat(p_secret text, p_session uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform public.swarm_assert_secret(p_secret);
+  update public.swarm_sessions
+    set last_seen_at = greatest(last_seen_at, now())
+    where id = p_session and status = 'working';
+  return found;
+end;
+$$;
+
+create or replace function public.swarm_sweep(p_secret text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  swept integer;
+begin
+  perform public.swarm_assert_secret(p_secret);
+  update public.swarm_sessions
+    set status = 'abandoned', ended_at = last_seen_at
+    where status = 'working' and last_seen_at <= now() - interval '10 minutes';
+  get diagnostics swept = row_count;
+  return swept;
 end;
 $$;
 
@@ -632,6 +668,10 @@ revoke all on function public.swarm_set_secret(text) from public, anon, authenti
 -- once to set the secret over the API instead of the SQL editor.
 grant execute on function public.swarm_set_secret(text) to service_role;
 revoke all on function public.swarm_assert_secret(text) from public, anon, authenticated;
+revoke all on function public.swarm_heartbeat(text, uuid) from public;
+revoke all on function public.swarm_sweep(text) from public;
+grant execute on function public.swarm_heartbeat(text, uuid) to anon, authenticated;
+grant execute on function public.swarm_sweep(text) to anon, authenticated;
 revoke all on function public.swarm_write(text, text, jsonb) from public;
 revoke all on function public.swarm_update(text, text, text, jsonb) from public;
 revoke all on function public.swarm_set_setting(text, text, jsonb) from public;

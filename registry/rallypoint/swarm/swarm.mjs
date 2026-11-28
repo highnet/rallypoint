@@ -13,12 +13,14 @@
 // This file and lib/ are frozen to the improver: the swarm cannot edit the
 // code that measures it.
 
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { setTimeout as delay } from "node:timers/promises";
 
 import { allTargets, parseSwarmConfig } from "./lib/config.mjs";
 import { DEFAULT_MAX_WAIT_MS, dispatchCodexCloud } from "./lib/codex-cloud.mjs";
@@ -171,6 +173,18 @@ const requireSession = () => {
   return session;
 };
 
+const HEARTBEAT_INTERVAL_MS = 120_000;
+const SESSION_LIVE_MS = 10 * 60_000;
+const pulse = (id) => memory.heartbeat(id, AbortSignal.timeout(10_000));
+const processAlive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const touch = async (session, patch = {}) =>
   memory.update("swarm_sessions", session.id, { last_seen_at: new Date().toISOString(), ...patch });
 
@@ -209,6 +223,8 @@ ${strong("A session")}
   prepare [--agent <name>]       open a session
   next [target] [--only a,b]     take your role (merger → fixer → reviewer →
                                  improver → worker → planner → janitor)
+  heartbeat [--watch-pid <pid>]  refresh the session (repeat while that process lives)
+  sweep                         mark stale sessions abandoned
   log "<note>"                   progress as you go
   say --kind question|proposal|handoff|answer|note [--ref #n] [--thread id] "<body>"
   inbox [--ref #n] [--limit n]   recent messages
@@ -441,14 +457,55 @@ commands.init = async () => {
 commands.prepare = async () => {
   const existing = readSession();
   if (existing?.id && !flag("force")) {
-    out({ session: existing, reused: true }, `${muted("session already open:")} ${existing.id} ${muted("(use --force for a new one)")}`);
-    return EXIT.OK;
+    const [stored] = await memory.select("swarm_sessions", { filters: { id: `eq.${existing.id}` }, limit: 1 });
+    if (stored?.status === "working" && Date.parse(stored.last_seen_at) > Date.now() - SESSION_LIVE_MS) {
+      out({ session: existing, reused: true }, `${muted("session already open:")} ${existing.id} ${muted("(use --force for a new one)")}`);
+      return EXIT.OK;
+    }
+  }
+  if (process.env.RALLYPOINT_SWARM_SESSION) {
+    throw new UsageError("unset RALLYPOINT_SWARM_SESSION before opening a new session");
   }
   const agent = option("agent") ?? process.env.RALLYPOINT_AGENT ?? `agent-${randomBytes(3).toString("hex")}`;
   const row = await memory.insert("swarm_sessions", { agent });
   const session = { id: row.id, agent, startedAt: row.started_at };
   writeSession(session);
   out({ session }, `${green("session")} ${session.id} ${muted(`as ${agent}`)}\nNext: ${strong("swarm next")}`);
+  return EXIT.OK;
+};
+
+commands.heartbeat = async () => {
+  const id = requireSession().id;
+  const owner = flag("watch-pid") ? Number(option("watch-pid")) : null;
+  if (owner !== null && (!Number.isInteger(owner) || owner < 2 || owner > 2_147_483_647 || owner === process.pid)) {
+    throw new UsageError("--watch-pid requires the PID of the process doing the work");
+  }
+  if (owner === null) {
+    const working = await pulse(id);
+    out({ working }, working ? "Session heartbeat recorded." : "The session is no longer working.");
+    return working ? EXIT.OK : EXIT.NOTHING;
+  }
+  // Check the owner often, even though writes are only every two minutes.
+  // That also bounds how long a killed referee's helper can stay around.
+  let nextPulse = 0;
+  while (processAlive(owner)) {
+    if (Date.now() >= nextPulse) {
+      try {
+        if (!await pulse(id)) return EXIT.NOTHING;
+      } catch (error) {
+        if (error.code === "PGRST202" || [401, 403].includes(error.status)) throw error;
+        console.error(`swarm heartbeat: ${error.message}`);
+      }
+      nextPulse = Date.now() + HEARTBEAT_INTERVAL_MS;
+    }
+    await delay(1000);
+  }
+  return EXIT.OK;
+};
+
+commands.sweep = async () => {
+  const swept = await memory.sweep();
+  out({ swept }, `Marked ${swept} stale session(s) abandoned.`);
   return EXIT.OK;
 };
 
@@ -623,10 +680,18 @@ commands.referee = async () => {
     }
   }
 
+  const heartbeat = session?.id && memory.canWrite()
+    ? spawn(process.execPath, [fileURLToPath(import.meta.url), "heartbeat", "--cwd", cwd, "--watch-pid", String(process.pid)], {
+        cwd, env: { ...process.env, RALLYPOINT_SWARM_SESSION: session.id },
+        stdio: ["ignore", "ignore", "inherit"],
+      })
+    : null;
+  heartbeat?.on("error", (error) => console.error(`swarm heartbeat: ${error.message}`));
   let result;
   try {
     result = referee({ measure, runCommand, cwd, baselineCwd, requireBaseline: !flag("first") });
   } finally {
+    heartbeat?.kill();
     if (worktree) {
       try {
         git("worktree", "remove", "--force", worktree);
@@ -1071,10 +1136,30 @@ commands.dispatch = async () => {
     throw new UsageError("--max-wait-seconds must specify a positive duration within the timer limit");
   }
   if (runtime !== "codex-cloud") {
-    const childStatus = await dispatchLocal({
-      runtime, cwd: git("rev-parse", "--show-toplevel"), prompt, maxWaitMs,
-      stdout: asJson ? process.stderr : "inherit",
-    });
+    const repository = git("rev-parse", "--show-toplevel");
+    const previous = readSession()?.id;
+    let beating = false;
+    const timer = memory.canWrite() ? setInterval(async () => {
+      if (beating) return;
+      beating = true;
+      try {
+        const session = readSession();
+        if (session?.id && session.id !== previous) await pulse(session.id);
+      } catch (error) {
+        console.error(`swarm heartbeat: ${error.message}`);
+      } finally {
+        beating = false;
+      }
+    }, HEARTBEAT_INTERVAL_MS) : null;
+    let childStatus;
+    try {
+      childStatus = await dispatchLocal({
+        runtime, cwd: repository, prompt, maxWaitMs,
+        stdout: asJson ? process.stderr : "inherit",
+      });
+    } finally {
+      clearInterval(timer);
+    }
     out({ runtime, childStatus }, `${runtime} exited with code ${childStatus}.`);
     return childStatus === 0 ? EXIT.OK : EXIT.ERROR;
   }

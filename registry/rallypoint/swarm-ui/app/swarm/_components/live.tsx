@@ -16,7 +16,7 @@ import { liveToken } from "../_lib/live-token";
  *
  * - Debounced: 1.5 s after the last change, and at most 6 s after the first
  *   of a steady stream.
- * - Falls back to a refresh every 60 s while Realtime is unavailable (no
+ * - Refreshes every 60 s for clock-based expiry and when Realtime is unavailable (no
  *   publication, blocked WebSocket, expired session) or reconnecting.
  * - Waits while the tab is hidden or something holds the live signal (the
  *   fleet replay: `useLiveHold(replaying)`), then refreshes once if anything
@@ -84,7 +84,6 @@ export function LiveRefresh({
     let pending = false;
     let debounce: number | undefined;
     let firstChangeAt = 0;
-    let poll: number | undefined;
     let renew: number | undefined;
     let client: RealtimeClient | null = null;
     let errors = 0;
@@ -114,18 +113,12 @@ export function LiveRefresh({
       if (pending && !idle()) changed();
     };
 
-    const startPolling = () => {
-      if (poll !== undefined) return;
-      poll = window.setInterval(() => {
-        if (idle()) pending = true;
-        else router.refresh();
-      }, POLL_MS);
-    };
-
-    const stopPolling = () => {
-      window.clearInterval(poll);
-      poll = undefined;
-    };
+    // Expiry is a clock boundary, so Realtime sends nothing when an agent goes silent.
+    // Keep a slow refresh alongside Realtime so the header and session list age out.
+    const poll = window.setInterval(() => {
+      if (idle()) pending = true;
+      else router.refresh();
+    }, POLL_MS);
 
     const shutDown = () => {
       window.clearTimeout(renew);
@@ -138,7 +131,6 @@ export function LiveRefresh({
       if (disposed) return;
       shutDown();
       setStatus("polling");
-      startPolling();
     };
 
     // Private mode: the token is Supabase's short-lived access token. Swap
@@ -188,7 +180,6 @@ export function LiveRefresh({
           if (disposed || !client) return;
           if (state === "SUBSCRIBED") {
             errors = 0;
-            stopPolling();
             setStatus("live");
             // Catch up on whatever changed while the connection was down.
             if (wasDown) changed();
@@ -204,7 +195,6 @@ export function LiveRefresh({
               return fallBack();
             }
             setStatus("reconnecting");
-            startPolling();
           }
         });
       } catch {
@@ -215,7 +205,7 @@ export function LiveRefresh({
     return () => {
       disposed = true;
       window.clearTimeout(debounce);
-      stopPolling();
+      window.clearInterval(poll);
       unhold();
       document.removeEventListener("visibilitychange", resume);
       shutDown();

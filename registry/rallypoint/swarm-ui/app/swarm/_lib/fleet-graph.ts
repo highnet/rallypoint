@@ -171,13 +171,18 @@ export function toSwarmInput(source: FleetGraphSource): SwarmInput {
         null,
       );
     };
-    const delivered = new Set<number>();
+    const delivered = new Map<number, number>();
     for (const issue of issues) {
       const pr = prFor(issue.number);
-      if (pr) delivered.add(pr.number);
       const id = `issue-${issue.number}`;
       workByIssue.set(issue.number, id);
-      if (pr) workByPr.set(pr.number, id);
+      if (pr) {
+        const order = pr.closes.indexOf(issue.number);
+        if (order < (delivered.get(pr.number) ?? Infinity)) {
+          delivered.set(pr.number, order);
+          workByPr.set(pr.number, id);
+        }
+      }
       workItems.push({
         id,
         sector: sectorOf(issue, pr),

@@ -15,6 +15,7 @@ import {
   listItems,
   readFile,
   readPullPaths,
+  FLEET_PATH_PULL_LIMIT,
   readDefaultBranch,
   readGithubRepo,
   targetsOf,
@@ -475,20 +476,17 @@ export async function getFleetGraph(): Promise<FleetGraphData> {
   if (github.ok && repo && fleetSectors.some((sector) => sector.match.paths?.length)) {
     const targetIds = new Set([...targets, ...fleetSectors].map((sector) => sector.id));
     const labeled = new Set(github.items.filter((item) => fleetLabelSector(item, targetIds, fleetSectors)).map((item) => item.number));
+    const unlabeledIssues = new Set(github.items.filter((item) => !item.isPullRequest && !labeled.has(item.number)).map((item) => item.number));
     const prs = github.items.filter((item) =>
       item.isPullRequest && (item.state === "open" || item.mergedAt) &&
-      !labeled.has(item.number) && !item.closes.some((number) => labeled.has(number)),
+      !labeled.has(item.number) && (!item.closes.some((number) => labeled.has(number)) || item.closes.some((number) => unlabeledIssues.has(number))),
     );
-    // Fetch in small batches and stop on a denied batch instead of spending the remaining API quota.
-    for (let offset = 0; offset < prs.length; offset += 6) {
-      const batch = prs.slice(offset, offset + 6);
-      const files = await Promise.all(batch.map((pr) => readPullPaths(repo, pr.number)));
-      files.forEach((paths, index) => {
-        if (paths) changedPaths.set(batch[index]!.number, paths);
-      });
-      if (files.every((paths) => paths === null)) break;
-    }
-    missingPaths = changedPaths.size !== prs.length;
+    const batch = prs.slice(0, FLEET_PATH_PULL_LIMIT);
+    const files = await Promise.all(batch.map((pr) => readPullPaths(repo, pr.number)));
+    files.forEach((result, index) => {
+      if (result) changedPaths.set(batch[index]!.number, result.paths);
+    });
+    missingPaths = changedPaths.size !== prs.length || files.some((result) => result?.truncated);
   }
   const input = toSwarmInput({
     now: Date.now(),

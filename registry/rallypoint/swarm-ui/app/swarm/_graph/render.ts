@@ -1055,7 +1055,7 @@ export const createSwarmGraph = (
       .data(ringed, (n) => n.id)
       .join((enter) => {
         const c = enter.append('circle').attr('fill', 'none').attr('stroke-width', 1.5);
-        if (motion) {
+        if (ambientMotion) {
           c.append('animate')
             .attr('attributeName', 'stroke-opacity')
             .attr('values', '0.7;0;0.7')
@@ -1279,7 +1279,7 @@ export const createSwarmGraph = (
       .data(sectors, (n) => n.id)
       .join((enter) => {
         const c = enter.append('circle').attr('opacity', 0);
-        if (motion)
+        if (ambientMotion)
           c.append('animate')
             .attr('attributeName', 'r')
             .attr('dur', '3.2s')
@@ -1296,7 +1296,7 @@ export const createSwarmGraph = (
           'values',
           n.active ? `${n.r * 2.4};${n.r * 3};${n.r * 2.4}` : `${n.r * 2.2};${n.r * 2.2}`,
         );
-        if (!motion || !n.active) el.attr('r', n.r * 2.2);
+        if (!ambientMotion || !n.active) el.attr('r', n.r * 2.2);
       });
 
     tags
@@ -2092,7 +2092,7 @@ export const createSwarmGraph = (
     renderArcs(groups);
     gBloom
       .selectAll<SVGCircleElement, SimNode>('circle')
-      .filter((n) => !motion || !n.active)
+      .filter((n) => !ambientMotion || !n.active)
       .attr('r', (n) => n.r * 2.2);
     layoutLabels();
   };

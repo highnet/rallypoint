@@ -98,10 +98,10 @@ function githubHeaders(accept = "application/vnd.github+json"): Record<string, s
   return headers;
 }
 
-async function githubFetch(path: string, accept?: string): Promise<Response> {
+async function githubFetch(path: string, accept?: string, revalidate = REVALIDATE_SECONDS): Promise<Response> {
   return fetch(`${API}${path}`, {
     headers: githubHeaders(accept),
-    next: { revalidate: REVALIDATE_SECONDS },
+    next: { revalidate },
   });
 }
 
@@ -217,21 +217,18 @@ export async function listItems(): Promise<GithubReadResult<GithubItem[]>> {
   }
 }
 
-/** GitHub limits the file list to 3,000 entries per pull request. */
-export async function readPullPaths(repo: string, number: number): Promise<string[] | null> {
-  const paths: string[] = [];
+/** Bound optional path enrichment so it cannot use the whole anonymous API quota. */
+export const FLEET_PATH_PULL_LIMIT = 6;
+
+export async function readPullPaths(repo: string, number: number): Promise<{ paths: string[]; truncated: boolean } | null> {
   try {
-    for (let page = 1; page <= 30; page += 1) {
-      const response = await githubFetch(`/repos/${repo}/pulls/${number}/files?per_page=100&page=${page}`);
-      if (!response.ok) return null;
-      const files = (await response.json()) as { filename: string; previous_filename?: string }[];
-      for (const file of files) {
-        paths.push(file.filename);
-        if (file.previous_filename) paths.push(file.previous_filename);
-      }
-      if (files.length < 100) break;
-    }
-    return paths;
+    const response = await githubFetch(`/repos/${repo}/pulls/${number}/files?per_page=100`, undefined, 1800);
+    if (!response.ok) return null;
+    const files = (await response.json()) as { filename: string; previous_filename?: string }[];
+    return {
+      paths: files.flatMap((file) => file.previous_filename ? [file.filename, file.previous_filename] : [file.filename]),
+      truncated: response.headers.get("link")?.includes('rel="next"') ?? false,
+    };
   } catch {
     return null;
   }

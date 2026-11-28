@@ -534,10 +534,11 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
     for (const [key, group] of groups) {
       if (group.length < 2) continue;
       const representative = group[0]!;
+      const numbers = [...new Set(group.map((item) => item.pr!))];
       const grouped = {
         ...representative,
         id: `pulls:${key}`,
-        groupedPullRequests: group.map((item) => item.pr!),
+        groupedPullRequests: numbers.length > 1 ? numbers : undefined,
       };
       for (const item of group) aliases.set(item.id, grouped);
     }
@@ -632,14 +633,19 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
   }
 
   let branches = 0;
-  let pullRequests = 0;
+  let unnumberedPullRequests = 0;
+  const pullRequestNumbers = new Set<number>();
   for (const w of visibleWork) {
     const id = workNodeId(w.id);
     const phase = phaseOf(w.stage)!;
     const active = liveTargets.has(id);
     const sid = sectorNodeId(w.sector);
     if (phase === 'branch') branches++;
-    if (phase === 'pr') pullRequests += w.groupedPullRequests?.length ?? 1;
+    if (phase === 'pr') {
+      if (w.pr) {
+        for (const number of w.groupedPullRequests ?? [w.pr]) pullRequestNumbers.add(number);
+      } else unnumberedPullRequests++;
+    }
     nodes.push({
       id,
       kind: 'work',
@@ -798,7 +804,7 @@ export const buildSwarmGraph = (input: SwarmInput, options: SwarmGraphOptions = 
       agents: shown.size,
       sectors: input.sectors.length,
       branches,
-      pullRequests,
+      pullRequests: pullRequestNumbers.size + unnumberedPullRequests,
       stages,
     },
   };

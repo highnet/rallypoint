@@ -546,7 +546,7 @@ if (process.features.typescript) {
       gh(5, {}),
       gh(6, {}),
       gh(7, { isPullRequest: true, closes: [4], labels: labels("review:approved") }),
-      gh(8, { isPullRequest: true, closes: [5] }),
+      gh(8, { isPullRequest: true, closes: [5, 6] }),
       gh(9, { isPullRequest: true, closes: [2], state: "closed", mergedAt: ago(1) }),
       gh(10, { isPullRequest: true, labels: labels("documentation") }),
       gh(11, { isPullRequest: true, closes: [1] }),
@@ -556,7 +556,7 @@ if (process.features.typescript) {
     ];
 
     assert.deepEqual(deliveryOf(selected), {
-      total: 6, merged: 1, approved: 1, inReview: 2, inBranch: 1, open: 1,
+      total: 6, merged: 1, approved: 1, inReview: 3, inBranch: 1, open: 0,
     });
     const input = toSwarmInput({
       ...empty, now: NOW, integrationBranch: "main",
@@ -584,6 +584,10 @@ if (process.features.typescript) {
     const graph = buildSwarmGraph(input, { hideIdleAgents: true, groupPullRequests: true });
     assert.deepEqual(graph.nodes.filter((node) => node.kind === "agent").map((node) => node.agent.id), ["live"]);
     assert.equal(graph.nodes.find((node) => node.id === "sector:api").pastAgents, 1);
+    const shared = graph.nodes.filter((node) => node.workItem?.pr === 8);
+    assert.equal(shared.length, 1);
+    assert.equal(shared[0].label, "#8", "one PR closing two issues still links to that PR");
+    assert.equal(graph.totals.pullRequests, 6);
     const grouped = graph.nodes.find((node) => node.workItem?.groupedPullRequests);
     assert.ok(grouped, "same-sector pull requests with the same stage share a marker");
     assert.ok(graph.flows.some((flow) => flow.path.includes(grouped.id)), "replay routes events through the grouped marker");
